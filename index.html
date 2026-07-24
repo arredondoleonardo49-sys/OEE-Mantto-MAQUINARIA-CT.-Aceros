@@ -327,8 +327,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card-title">Identificación del turno</div>
       <div class="form-grid">
         <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select></div>
-        <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="updateInfoBox()"></select></div>
-        <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="updateInfoBox()"></select></div>
+        <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="updateInfoBox();checkHoraPanel()"></select></div>
+        <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="updateInfoBox();checkHoraPanel()"></select></div>
         <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha"></div>
         <div class="form-group form-full"><label>Operador</label><input type="text" id="reg-op" placeholder="Nombre del operador"></div>
       </div>
@@ -369,6 +369,45 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
       <div class="btn-actions"><span class="save-msg" id="save-msg"></span><span id="cloud-status" style="font-size:11px;font-family:'IBM Plex Mono',monospace"></span><button class="btn btn-primary" onclick="saveRecord()">Guardar registro</button></div>
+    </div>
+
+    <!-- REGISTRO HORA POR HORA LASER -->
+    <div id="reg-hora-panel" style="display:none">
+      <div class="form-card">
+        <div class="form-card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Producción hora por hora — <span id="reg-hora-maquina"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem">
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:.75rem;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Total fabricadas</div>
+            <div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:var(--text)" id="hora-total-fab">0</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:.75rem;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Piezas dañadas</div>
+            <div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#f06060" id="hora-total-dan">0</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--radius);padding:.75rem;text-align:center">
+            <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Eficiencia</div>
+            <div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace" id="hora-eficiencia" style="color:var(--text)">–</div>
+          </div>
+        </div>
+        <!-- Tabla de franjas -->
+        <div style="margin-bottom:1rem">
+          <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:var(--radius);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">
+            <span>Hora</span><span style="text-align:center">Piezas prod.</span><span style="text-align:center">Piezas dañadas</span>
+          </div>
+          <div id="hora-franjas-list"></div>
+        </div>
+        <!-- Gráfica -->
+        <div style="position:relative;height:200px;margin-bottom:.5rem">
+          <canvas id="hora-chart"></canvas>
+        </div>
+        <div class="btn-actions" style="margin-top:.5rem">
+          <span class="save-msg" id="hora-save-msg"></span>
+          <button class="btn btn-primary" onclick="saveHoraRecord()">Guardar registro hora por hora</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -701,6 +740,12 @@ function getGasUrl(){ return GAS_URL; }
 const TURNOS_CT={'TROQUELES':['Turno único (8:00–17:00)'],'LASER':['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'],'EST. MUEBLES':['Turno único (8:00–17:00)']};
 const TURNO_MIN={'Turno único (8:00–17:00)':540,'Turno 1 (8:00–17:00)':540,'Turno 2 (17:00–01:40)':520,'Turno 3 (23:00–07:00)':480};
 const PAROS_PROG=57;
+const LASER_MAQUINAS_HORA = ['GW1','GW2'];
+const LASER_FRANJAS = {
+  'Turno 1 (8:00–17:00)': ['8AM–9AM','9AM–10AM','10AM–11AM','11AM–12PM','12PM–12:30PM ⏸ Comida','12:30PM–1:30PM','1:30PM–2:30PM','2:30PM–3:30PM','3:30PM–4:30PM','4:30PM–5PM'],
+  'Turno 2 (17:00–01:40)': ['5PM–6PM','6PM–7PM','7PM–8PM','8PM–9PM','9PM–10PM','10PM–11PM','11PM–12AM','12AM–1AM'],
+  'Turno 3 (23:00–07:00)': ['11PM–12AM','12AM–1AM','1AM–2AM','2AM–3AM','3AM–4AM','4AM–5AM','5AM–6AM','6AM–7AM']
+};
 const COSTO_HORA_CT={
   'TROQUELES': 933.06,
   'LASER': 1264.46,
@@ -882,6 +927,16 @@ function updateMachineAndTurno(){
   document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option>${m.name}</option>`).join('')||'<option>Sin máquinas</option>';
   document.getElementById('reg-turno').innerHTML=TURNOS_CT[ct].map(t=>`<option>${t}</option>`).join('');
   updateInfoBox();calcOEE();
+  checkHoraPanel();
+}
+function checkHoraPanel(){
+  const ct=document.getElementById('reg-ct').value;
+  const machine=document.getElementById('reg-machine').value;
+  const turno=document.getElementById('reg-turno').value;
+  const panel=document.getElementById('reg-hora-panel');
+  const isLaserHora=ct==='LASER'&&LASER_MAQUINAS_HORA.includes(machine);
+  if(panel) panel.style.display=isLaserHora?'block':'none';
+  if(isLaserHora) renderHoraFranjas(machine,turno);
 }
 function updateInfoBox(){
   const ct=document.getElementById('reg-ct').value;const mn=document.getElementById('reg-machine').value;const turno=document.getElementById('reg-turno').value;
@@ -1691,6 +1746,135 @@ function deletePhoto(machineId){
   const m = machines.find(x => x.id === machineId);
   if(m){ m.photo = ''; save('machines'); renderConfig(); renderDashboard(); }
 }
+
+
+// ── REGISTRO HORA POR HORA LASER ──
+let horaChart = null;
+let horaRecords = [];
+
+function renderHoraFranjas(machine, turno){
+  const franjas = LASER_FRANJAS[turno] || [];
+  const mach = getMachineByName(machine);
+  const capPorHora = mach ? Math.round(mach.cap / franjas.length) : 0;
+  document.getElementById('reg-hora-maquina').textContent = machine + ' · ' + turno.split(' ')[0]+' '+turno.split(' ')[1];
+  const list = document.getElementById('hora-franjas-list');
+  list.innerHTML = franjas.map((f,i) => {
+    const isBreak = f.includes('Comida');
+    if(isBreak) return `
+      <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:6px 8px;border-bottom:0.5px solid var(--border);background:rgba(245,166,35,.06)">
+        <span style="font-size:12px;color:var(--amber);font-weight:600">⏸ ${f.replace(' ⏸ Comida','')}</span>
+        <div style="text-align:center;font-size:11px;color:var(--amber);grid-column:2/4;font-weight:500">Descanso para comida — 30 min</div>
+      </div>`;
+    return `
+      <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:5px 8px;border-bottom:0.5px solid var(--border)">
+        <span style="font-size:12px;color:var(--text2);font-weight:500">${f}</span>
+        <input type="number" id="hora-fab-${i}" min="0" placeholder="0" oninput="calcHoraTotales('${machine}','${turno}')"
+          style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
+        <input type="number" id="hora-dan-${i}" min="0" placeholder="0" oninput="calcHoraTotales('${machine}','${turno}')"
+          style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:#f06060;text-align:center;width:100%">
+      </div>`;
+  }).join('');
+  calcHoraTotales(machine, turno);
+}
+
+function getHoraData(machine, turno){
+  const franjas = LASER_FRANJAS[turno] || [];
+  return franjas.map((f,i)=>({
+    franja: f,
+    isBreak: f.includes('Comida'),
+    fabricadas: f.includes('Comida') ? 0 : (parseInt(document.getElementById('hora-fab-'+i)?.value)||0),
+    danadas: f.includes('Comida') ? 0 : (parseInt(document.getElementById('hora-dan-'+i)?.value)||0)
+  }));
+}
+
+function calcHoraTotales(machine, turno){
+  const data = getHoraData(machine, turno);
+  const totalFab = data.reduce((a,d)=>a+d.fabricadas,0);
+  const totalDan = data.reduce((a,d)=>a+d.danadas,0);
+  const mach = getMachineByName(machine);
+  const cap = mach ? mach.cap : 0;
+  const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
+  const eficColor = efic>=85?'#3ecf8e':efic>=60?'#f5a623':'#f06060';
+
+  document.getElementById('hora-total-fab').textContent = totalFab;
+  document.getElementById('hora-total-dan').textContent = totalDan;
+  const efEl = document.getElementById('hora-eficiencia');
+  efEl.textContent = efic+'%';
+  efEl.style.color = eficColor;
+
+  // Sync fab total to main OEE form
+  document.getElementById('reg-piezas').value = totalFab;
+  document.getElementById('reg-rechazadas').value = totalDan;
+  calcOEE();
+
+  // Chart
+  const dataFiltered = data.filter(d=>!d.isBreak);
+  const labels = dataFiltered.map(d=>d.franja);
+  const fabData = dataFiltered.map(d=>d.fabricadas);
+  const danData = dataFiltered.map(d=>d.danadas);
+  const canvas = document.getElementById('hora-chart');
+  if(!canvas) return;
+  if(horaChart) horaChart.destroy();
+  horaChart = new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Fabricadas',data:fabData,backgroundColor:'rgba(74,158,255,.7)',borderRadius:3},
+        {label:'Dañadas',data:danData,backgroundColor:'rgba(240,96,96,.7)',borderRadius:3}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8b8fa8',font:{size:11}}}},
+      scales:{
+        y:{beginAtZero:true,ticks:{color:'#555870',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},
+        x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}
+      }
+    }
+  });
+}
+
+function saveHoraRecord(){
+  const ct = document.getElementById('reg-ct').value;
+  const machine = document.getElementById('reg-machine').value;
+  const turno = document.getElementById('reg-turno').value;
+  const fecha = document.getElementById('reg-fecha').value || new Date().toISOString().slice(0,10);
+  const op = document.getElementById('reg-op').value || '–';
+  const data = getHoraData(machine, turno);
+  const totalFab = data.reduce((a,d)=>a+d.fabricadas,0);
+  const totalDan = data.reduce((a,d)=>a+d.danadas,0);
+  const mach = getMachineByName(machine);
+  const cap = mach ? mach.cap : 0;
+  const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
+
+  const rec = {
+    id: Date.now(), fecha, ct, machine, turno, op,
+    franjas: JSON.stringify(data),
+    totalFabricadas: totalFab, totalDanadas: totalDan,
+    capacidad: cap, eficiencia: efic
+  };
+
+  horaRecords.push(rec);
+  localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
+  cloudWriteRow('Produccion_Laser', rec);
+
+  const msg = document.getElementById('hora-save-msg');
+  msg.textContent = '✓ Registro hora por hora guardado';
+  msg.style.color = 'var(--green)';
+  setTimeout(()=>msg.textContent='', 3000);
+
+  // Clear inputs
+  const franjas = LASER_FRANJAS[turno] || [];
+  franjas.forEach((_,i)=>{
+    const f=document.getElementById('hora-fab-'+i); if(f) f.value='';
+    const d=document.getElementById('hora-dan-'+i); if(d) d.value='';
+  });
+  calcHoraTotales(machine, turno);
+}
+
+// Load horaRecords on init
+try{ horaRecords = JSON.parse(localStorage.getItem('oee_hora_laser_v1'))||[]; }catch(e){ horaRecords=[]; }
 
 // ── INIT ──
 const today=new Date().toISOString().slice(0,10);
