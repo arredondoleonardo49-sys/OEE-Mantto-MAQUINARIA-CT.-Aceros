@@ -252,6 +252,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </style>
 </head>
 <body>
+<!-- LOADING OVERLAY -->
+<div id="loading-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
+  <div style="font-size:15px;font-weight:600;color:var(--text);font-family:'IBM Plex Sans',sans-serif">OEE Planta</div>
+  <div style="font-size:12px;color:var(--text2)" id="loading-msg">Cargando datos...</div>
+  <div style="width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+    <div id="loading-bar" style="height:100%;background:var(--blue);border-radius:2px;width:0%;transition:width .3s"></div>
+  </div>
+</div>
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-text">OEE Planta</div>
@@ -286,7 +294,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <div class="sidebar-bottom" style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)">
     <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px" id="cloud-badge">● Conectando...</div>
-    <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace" id="sidebar-version">v5.1 · 3 CT · 15 máq.</div>
+    <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px" id="sidebar-version">v5.2 · 3 CT</div>
+    <button onclick="loadFromCloud()" style="width:100%;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:var(--radius);cursor:pointer;padding:5px 0;font-family:'IBM Plex Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'" title="Recargar datos desde la nube">↺ Sincronizar</button>
   </div>
 </nav>
 <div class="main" id="main-container">
@@ -412,11 +421,30 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div style="position:relative;height:200px;margin-bottom:.5rem">
           <canvas id="hora-chart"></canvas>
         </div>
-        <div class="btn-actions" style="margin-top:.5rem">
+      </div>
+
+      <!-- DIBUJOS/NIDOS — solo para máquinas laser -->
+      <div id="dibujo-panel" style="display:none" class="form-card">
+        <div class="form-card-title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span id="dibujo-panel-title">Alta de dibujos</span>
+        </div>
+        <div style="display:grid;grid-template-columns:130px 80px;gap:8px;padding:5px 0 6px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase">
+          <span>Nombre del dibujo / nido</span><span style="text-align:center">Tiempo (min)</span>
+        </div>
+        <div id="dibujo-list"></div>
+        <button class="btn-add-row" onclick="addDibujoRow()" style="margin-top:4px">+ Agregar</button>
+        <div class="row-total" style="margin-top:6px">
+          Tiempo total de programación: <span id="dibujo-total">0</span> min
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="btn-actions" style="margin-top:0">
           <span class="save-msg" id="hora-save-msg"></span>
           <button class="btn btn-primary" onclick="saveHoraRecord()">Guardar registro hora por hora</button>
         </div>
-      </div>
+      </div><!-- end save card -->
     </div><!-- end reg-hora-panel -->
 
     <!-- HISTORIAL + EVALUACIÓN SUB-TABS -->
@@ -429,7 +457,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div id="hora-tab-hist" class="tab-content active">
         <div class="filter-row" style="margin-bottom:.75rem">
           <select id="hora-hist-machine" onchange="renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-            <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option>
+            <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option><option value="Área General">Área General</option><option value="Punteadora">Punteadora</option>
           </select>
           <select id="hora-hist-turno" onchange="renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
             <option value="">Todos los turnos</option>
@@ -446,7 +474,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div id="hora-tab-eval" class="tab-content">
         <div class="filter-row" style="margin-bottom:1rem">
           <select id="eval-machine" onchange="renderEvaluacion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-            <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option>
+            <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option><option value="Área General">Área General</option><option value="Punteadora">Punteadora</option>
           </select>
           <select id="eval-turno" onchange="renderEvaluacion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
             <option value="">Todos los turnos</option>
@@ -802,11 +830,21 @@ function getGasUrl(){ return GAS_URL; }
 const TURNOS_CT={'TROQUELES':['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'],'LASER':['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'],'EST. MUEBLES':['Turno único (8:00–17:00)']};
 const TURNO_MIN={'Turno único (8:00–17:00)':540,'Turno 1 (8:00–17:00)':540,'Turno 2 (17:00–01:40)':520,'Turno 3 (23:00–07:00)':480};
 const PAROS_PROG=57;
-const LASER_MAQUINAS_HORA = ['GW1','GW2','Laser de Cama'];
+const LASER_MAQUINAS_HORA = ['GW1','GW2','Laser de Cama','Área General','Punteadora'];
 const LASER_FRANJAS = {
   'Turno 1 (8:00–17:00)': ['8AM–9AM','9AM–10AM','10AM–11AM','11AM–12PM','12PM–12:30PM ⏸ Comida','12:30PM–1:30PM','1:30PM–2:30PM','2:30PM–3:30PM','3:30PM–4:30PM','4:30PM–5PM'],
   'Turno 2 (17:00–01:40)': ['5PM–6PM','6PM–7PM','7PM–8PM','8PM–9PM','9PM–10PM','10PM–11PM','11PM–12AM','12AM–1AM'],
-  'Turno 3 (23:00–07:00)': ['11PM–12AM','12AM–1AM','1AM–2AM','2AM–3AM','3AM–4AM','4AM–5AM','5AM–6AM','6AM–7AM']
+  'Turno 3 (23:00–07:00)': ['11PM–12AM','12AM–1AM','1AM–2AM','2AM–3AM','3AM–4AM','4AM–5AM','5AM–6AM','6AM–7AM'],
+  'Turno único (8:00–17:00)': ['8AM–9AM','9AM–10AM','10AM–11AM','11AM–12PM','12PM–12:30PM ⏸ Comida','12:30PM–1:30PM','1:30PM–2:30PM','2:30PM–3:30PM','3:30PM–4:30PM','4:30PM–5PM']
+};
+
+// Machines that support dibujo/nido programming time tracking
+const MAQUINAS_DIBUJO = ['GW1','GW2','Laser de Cama'];
+// Label per machine type
+const DIBUJO_LABEL = {
+  'GW1': 'Alta de dibujos (tubular)',
+  'GW2': 'Alta de dibujos (tubular)',
+  'Laser de Cama': 'Creación de nidos (lámina)'
 };
 const COSTO_HORA_CT={
   'TROQUELES': 933.06,
@@ -907,41 +945,136 @@ function showCloudStatus(msg,type){
 }
 function pingCloud(){
   gasRequest({action:'ping'},
-    ()=>{const el=document.getElementById('cloud-badge');if(el){el.textContent='● Nube conectada';el.style.color='var(--green)';}},
-    ()=>{const el=document.getElementById('cloud-badge');if(el){el.textContent='○ Sin conexión';el.style.color='var(--text3)';}});
+    ()=>showCloudBadge(true),
+    ()=>showCloudBadge(false));
+}
+function showCloudBadge(ok){
+  const el=document.getElementById('cloud-badge');
+  if(!el) return;
+  el.textContent=ok?'● Nube conectada':'○ Sin conexión';
+  el.style.color=ok?'var(--green)':'var(--text3)';
 }
 // ── LOAD/SAVE ──
-function loadData(){
+// ── LOAD FROM LOCAL ──────────────────────────────────
+function loadLocal(){
   try{
     const m=localStorage.getItem(SK.machines);
     if(m){
       let loaded=JSON.parse(m);
-      // Migration: remove old EST. MUEBLES individual machines, keep only Área General + Punteadora
       const obsolete=['Soldadora 1','Soldadora 2','Soldadora 3','Detallado 1','Detallado 2'];
       const hadObsolete=loaded.some(x=>obsolete.includes(x.name));
       loaded=loaded.filter(x=>!obsolete.includes(x.name));
-      // Ensure Área General and Punteadora exist
-      if(!loaded.find(x=>x.name==='Área General'&&x.ct==='EST. MUEBLES')){
+      if(!loaded.find(x=>x.name==='Área General'&&x.ct==='EST. MUEBLES'))
         loaded.push({id:'m10',name:'Área General',ct:'EST. MUEBLES',cap:768,photo:''});
-      }
       if(!loaded.find(x=>x.name==='Punteadora'&&x.ct==='EST. MUEBLES')){
         const def=DEFAULT_MACHINES.find(x=>x.name==='Punteadora');
         if(def) loaded.push(def);
       }
       machines=loaded;
-      if(hadObsolete){localStorage.setItem(SK.machines,JSON.stringify(machines));console.log('Migrated EST. MUEBLES machines');}
-    } else {
-      machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES));
-    }
-  }catch(e){machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES));}
+      if(hadObsolete) localStorage.setItem(SK.machines,JSON.stringify(machines));
+    } else { machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
+  }catch(e){ machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
   try{records=JSON.parse(localStorage.getItem(SK.records))||[];}catch(e){records=[];}
   try{const l=localStorage.getItem(SK.laminas);laminas=l?JSON.parse(l):JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}catch(e){laminas=JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}
   try{const t=localStorage.getItem(SK.tubulares);tubulares=t?JSON.parse(t):JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}catch(e){tubulares=JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}
   try{aprovRecords=JSON.parse(localStorage.getItem(SK.aprovRecords))||[];}catch(e){aprovRecords=[];}
   try{mantLogs=JSON.parse(localStorage.getItem(SK.mantLogs))||[];}catch(e){mantLogs=[];}
+  try{horaRecords=JSON.parse(localStorage.getItem('oee_hora_laser_v1'))||[];}catch(e){horaRecords=[];}
   try{const saved=localStorage.getItem(SK.mantPlan);if(saved){const custom=JSON.parse(saved);Object.keys(custom).forEach(ct=>{Object.keys(custom[ct]).forEach(mach=>{if(MANT_DATA[ct]&&MANT_DATA[ct][mach])MANT_DATA[ct][mach].componentes=custom[ct][mach];});});}}catch(e){}
-  renderAll();
 }
+
+// ── LOAD FROM CLOUD ───────────────────────────────────
+function setLoadingMsg(msg, pct){
+  const el=document.getElementById('loading-msg'); if(el) el.textContent=msg;
+  const bar=document.getElementById('loading-bar'); if(bar) bar.style.width=pct+'%';
+}
+function hideLoadingOverlay(){
+  const ov=document.getElementById('loading-overlay');
+  if(ov){ ov.style.opacity='0'; ov.style.transition='opacity .4s'; setTimeout(()=>ov.remove(),400); }
+}
+
+function loadData(){
+  setLoadingMsg('Cargando datos locales...', 20);
+  loadLocal();
+  setLoadingMsg('Renderizando...', 40);
+  renderAll();
+  setLoadingMsg('Conectando con Google Sheets...', 60);
+  showCloudStatus('Sincronizando...','ok');
+  loadFromCloud();
+}
+
+function loadFromCloud(){
+  const sheets=[
+    {name:'OEE_Registros',    key:SK.records,       assign:(d)=>{ records=d; save('records'); }},
+    {name:'Aprovechamiento',  key:SK.aprovRecords,  assign:(d)=>{ aprovRecords=d; save('aprovRecords'); }},
+    {name:'Mantenimiento',    key:SK.mantLogs,      assign:(d)=>{ mantLogs=d; save('mantLogs'); }},
+    {name:'Produccion_Laser', key:'oee_hora_laser_v1', assign:(d)=>{ 
+      // Merge: keep muebles records, add laser records
+      const muebles=horaRecords.filter(r=>r.ct==='EST. MUEBLES');
+      horaRecords=[...d,...muebles];
+      localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
+    }},
+    {name:'Produccion_Muebles', key:'oee_hora_laser_v1', assign:(d)=>{
+      // Merge: keep laser records, add muebles records
+      const laser=horaRecords.filter(r=>r.ct!=='EST. MUEBLES');
+      horaRecords=[...laser,...d];
+      localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
+    }},
+  ];
+
+  let done=0;
+  const total=sheets.length;
+
+  sheets.forEach(sh=>{
+    gasRequest(
+      {action:'read', sheet:sh.name},
+      (data)=>{
+        try{
+          const rows=data.rows||[];
+          if(rows.length>0){
+            // Parse JSON fields that were stringified on write
+            const parsed=rows.map(r=>{
+              const obj={...r};
+              ['paros','franjas'].forEach(f=>{ if(typeof obj[f]==='string'){ try{obj[f]=JSON.parse(obj[f]);}catch(e){} } });
+              // Convert numeric strings
+              ['oee','disp','rend','cal','cumpl','parosNoProg','piezasProg','piezasTotal','piezasRechazo',
+               'tO','eficiencia','totalFabricadas','totalDanadas','capacidad',
+               'checkPct','checkDone','checkTotal','pesoTotal','merma','pctMerma','aprovechado','ahorro'].forEach(f=>{
+                if(obj[f]!==''&&obj[f]!==null&&obj[f]!==undefined) obj[f]=parseFloat(obj[f])||obj[f];
+              });
+              return obj;
+            });
+            sh.assign(parsed);
+          }
+        }catch(e){ console.warn('Cloud parse error for '+sh.name, e); }
+        done++;
+        if(done===total) onCloudLoaded();
+      },
+      (err)=>{
+        console.warn('Cloud read error for '+sh.name, err);
+        done++;
+        if(done===total){
+          // Even on error, show what we have from local
+          setLoadingMsg('Sin conexión — usando datos locales', 100);
+          setTimeout(()=>{ hideLoadingOverlay(); renderAll(); showCloudBadge(false); }, 800);
+        }
+      }
+    );
+  });
+}
+
+function onCloudLoaded(){
+  setLoadingMsg('Sincronización completa ✓', 100);
+  setTimeout(()=>{
+    hideLoadingOverlay();
+    renderAll();
+    showCloudStatus('✓ Datos sincronizados','ok');
+    showCloudBadge(true);
+  }, 400);
+}
+
+// Alias for backward compatibility
+function loadDataLegacy(){ loadLocal(); renderAll(); }
 function save(k){localStorage.setItem(SK[k],JSON.stringify(eval(k)));}
 // ── OEE CALC ──
 function calcIndicadores(turno,parosNoProg,piezasProg,piezasTotal,piezasRechazo,machineName){
@@ -1013,11 +1146,20 @@ function checkHoraPanel(){
   const machine=document.getElementById('reg-machine').value;
   const turno=document.getElementById('reg-turno').value;
   const isLaserHora=LASER_MAQUINAS_HORA.includes(machine);
-  // Show/hide the "Producción hora por hora" tab button
   const tabBtn=document.getElementById('reg-tab-hora-btn');
   if(tabBtn) tabBtn.style.display=isLaserHora?'':'none';
   if(isLaserHora) renderHoraFranjas(machine,turno);
-  // If switching away from laser, go back to OEE tab
+  // Show/hide dibujo panel
+  const dibujoPanel=document.getElementById('dibujo-panel');
+  const hasDibujo=MAQUINAS_DIBUJO.includes(machine);
+  if(dibujoPanel){
+    dibujoPanel.style.display=hasDibujo?'block':'none';
+    if(hasDibujo){
+      const lbl=document.getElementById('dibujo-panel-title');
+      if(lbl) lbl.textContent=DIBUJO_LABEL[machine]||'Alta de dibujos';
+      if(!document.querySelector('#dibujo-list .dibujo-row')) addDibujoRow();
+    }
+  }
   if(!isLaserHora){
     const oeeTab=document.querySelector('#page-registro .tab');
     const horaTab=document.getElementById('reg-tab-hora');
@@ -2035,16 +2177,20 @@ function saveHoraRecord(){
   const cap = mach ? mach.cap : 0;
   const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
 
+  const dibujos = MAQUINAS_DIBUJO.includes(machine) ? getDibujos() : [];
+  const tiempoDibujos = dibujos.reduce((a,d)=>a+d.minutos,0);
   const rec = {
     id: Date.now(), fecha, ct, machine, turno, op,
     franjas: JSON.stringify(data),
     totalFabricadas: totalFab, totalDanadas: totalDan,
-    capacidad: cap, eficiencia: efic
+    capacidad: cap, eficiencia: efic,
+    dibujos: JSON.stringify(dibujos), tiempoDibujos
   };
 
   horaRecords.push(rec);
   localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
-  cloudWriteRow('Produccion_Laser', rec);
+  const horaSheet = (ct==='LASER'||machine==='Laser de Cama') ? 'Produccion_Laser' : 'Produccion_Muebles';
+  cloudWriteRow(horaSheet, rec);
 
   // Auto-save OEE record with same data
   const paros = getParos();
@@ -2070,6 +2216,7 @@ function saveHoraRecord(){
     const m=document.getElementById('hora-motivo-'+i); if(m) m.value='';
     const mr=document.getElementById('hora-motivo-row-'+i); if(mr) mr.style.display='none';
   });
+  clearDibujos();
   calcHoraTotales(machine, turno);
   renderHoraHist();
 }
@@ -2101,8 +2248,20 @@ function renderHoraHist(){
         <span style="color:var(--text2)">${f.franja}</span>
         <span style="font-family:'IBM Plex Mono',monospace;text-align:center">${f.fabricadas}</span>
         <span style="font-family:'IBM Plex Mono',monospace;text-align:center;color:${f.danadas>0?'#f06060':'var(--text3)'}">${f.danadas>0?f.danadas:'–'}</span>
-        <span style="font-size:11px;color:${f.motivo?'var(--amber)':'var(--text3)'};font-style:${f.motivo?'normal':'italic'}">${f.motivo||''}</span>
+        <span style="font-size:11px;color:${f.motivo?'var(--amber)':'var(--text3)'}">${f.motivo||''}</span>
       </div>`).join('');
+    // Dibujos/nidos section
+    const dibujos = r.dibujos ? (typeof r.dibujos==='string'?JSON.parse(r.dibujos):r.dibujos) : [];
+    const dibujoSection = dibujos.length>0 ? `
+      <div style="padding:.5rem 1rem;background:rgba(74,158,255,.05);border-top:1px solid rgba(74,158,255,.15)">
+        <div style="font-size:10px;font-weight:600;color:#4a9eff;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
+          ${DIBUJO_LABEL[r.machine]||'Dibujos/Nidos'} — ${r.tiempoDibujos||0} min total
+        </div>
+        ${dibujos.map(d=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;display:flex;justify-content:space-between">
+          <span>${d.nombre}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;color:#4a9eff">${d.minutos} min</span>
+        </div>`).join('')}
+      </div>` : '';
 
     // Mini bar chart using inline SVG
     const maxVal = Math.max(...franjas.filter(f=>!f.isBreak).map(f=>f.fabricadas),1);
@@ -2140,6 +2299,7 @@ function renderHoraHist(){
           <span>Franja</span><span style="text-align:center">Piezas</span><span style="text-align:center">Dañadas</span><span>Motivo rechazo</span>
         </div>
         ${franjaRows}
+        ${dibujoSection}
         ${rechazadas.length>0?`<div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.1)">
           <div style="font-size:10px;font-weight:600;color:#f06060;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Rechazos registrados</div>
           ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo?`<span style="color:var(--amber)">· ${f.motivo}</span>`:''}</div>`).join('')}
@@ -2341,12 +2501,51 @@ function renderEvaluacion(){
   }
 }
 
+
+// ── DIBUJOS / NIDOS ──────────────────────────────────
+function addDibujoRow(){
+  const id='dib'+Date.now();
+  const d=document.createElement('div');
+  d.className='dibujo-row';
+  d.id=id;
+  d.style.cssText='display:grid;grid-template-columns:1fr 80px 32px;gap:8px;align-items:center;margin-bottom:6px';
+  d.innerHTML=`
+    <input type="text" placeholder="Nombre del dibujo o nido..." oninput="calcDibujoTotal()"
+      style="font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
+    <input type="number" min="0" placeholder="0" oninput="calcDibujoTotal()"
+      style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
+    <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="document.getElementById('${id}').remove();calcDibujoTotal()">×</button>`;
+  document.getElementById('dibujo-list').appendChild(d);
+}
+
+function calcDibujoTotal(){
+  const rows=document.querySelectorAll('#dibujo-list .dibujo-row');
+  let total=0;
+  rows.forEach(r=>{
+    const ins=r.querySelectorAll('input');
+    total+=(parseInt(ins[1]?.value)||0);
+  });
+  document.getElementById('dibujo-total').textContent=total;
+}
+
+function getDibujos(){
+  const rows=document.querySelectorAll('#dibujo-list .dibujo-row');
+  return Array.from(rows).map(r=>{
+    const ins=r.querySelectorAll('input');
+    return {nombre:ins[0]?.value.trim()||'Sin nombre', minutos:parseInt(ins[1]?.value)||0};
+  }).filter(d=>d.nombre!=='Sin nombre'||d.minutos>0);
+}
+
+function clearDibujos(){
+  document.getElementById('dibujo-list').innerHTML='';
+  calcDibujoTotal();
+}
+
 // ── INIT ──
 const today=new Date().toISOString().slice(0,10);
 ['reg-fecha','lam-fecha','tub-fecha','mlog-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
 updateMantMachine();
 loadData();
-setTimeout(pingCloud,1500);
 </script>
 </body>
 </html>
