@@ -113,7 +113,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .page-title{font-size:17px;font-weight:600;color:var(--text)}
 .page-sub{font-size:12px;color:var(--text2);margin-top:2px}
 .content{padding:1.25rem 1.5rem}
-.page{display:none}.page.active{display:block}
+.page{display:none}.page.active{display:block;position:relative}
 .tab-row{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
 .tab{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;font-weight:500}
 .tab:hover{color:var(--text)}.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
@@ -188,7 +188,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-collapsible{user-select:none;cursor:pointer}.ct-collapsible:hover{opacity:.8}
 .ct-chevron{font-size:14px;color:var(--text3);margin-left:4px;transition:transform .2s;flex-shrink:0}
 .ct-chevron.collapsed{transform:rotate(-90deg)}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.1rem}
+.card{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.1rem}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{text-align:left;padding:9px 12px;color:var(--text3);font-weight:500;font-size:11px;letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3)}
 .tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text)}
@@ -198,7 +198,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .badge{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 .badge.world{background:rgba(62,207,142,.15);color:var(--green)}.badge.good{background:rgba(74,158,255,.15);color:var(--blue)}
 .badge.avg{background:rgba(245,166,35,.15);color:var(--amber)}.badge.low{background:rgba(240,96,96,.15);color:var(--red)}
-.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.1rem}
+.chart-card{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.1rem}
 .chart-title{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
 .chart-title svg{flex-shrink:0}
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
@@ -257,6 +257,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .carousel-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;text-align:center;padding:1rem}
 #login-bg-carousel{position:fixed;inset:0;z-index:-1}
 #login-bg-carousel::after{content:'';position:absolute;inset:0;background:rgba(10,10,14,.72)}
+/* Fondo del Dashboard principal: mismas fotos de planta, pero apagadas
+   (grises, semitransparentes) para que no compitan visualmente con las
+   tarjetas de datos que van encima. */
+#dashboard-bg-carousel{position:fixed;inset:0;z-index:0;pointer-events:none}
+#dashboard-bg-carousel img{filter:grayscale(55%) brightness(.55) contrast(.92)}
+#dashboard-bg-carousel::after{content:'';position:absolute;inset:0;background:rgba(60,62,70,.5)}
 
 /* ── SIDEBAR USER ── */
 .sidebar-user{display:flex;align-items:center;gap:8px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius);margin-bottom:.6rem}
@@ -340,7 +346,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-status-chip.ok{background:rgba(62,207,142,.1);color:#3ecf8e;border:1px solid rgba(62,207,142,.25)}
 .programa-status-chip.pend{background:rgba(139,143,168,.1);color:var(--text3);border:1px solid var(--border)}
 .programa-status-chip svg{width:11px;height:11px}
-.programa-table-wrap{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg)}
+.programa-table-wrap{position:relative;overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg2)}
 .programa-table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
 .programa-table thead th{position:sticky;top:0;background:var(--bg3);color:var(--text2);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);z-index:1}
 .programa-table td{padding:6px 12px;border-bottom:0.5px solid var(--border);color:var(--text2)}
@@ -489,6 +495,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div class="main-single" id="main-single">
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
+  <div id="dashboard-bg-carousel" class="carousel"></div>
   <div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-page-sub">OEE del día en curso</div></div>
@@ -525,11 +532,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-muebles',this)" data-collapsed="true"><span class="ct-badge-icon muebles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg></span><span class="ct-badge muebles">EST. MUEBLES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
       <div id="ct-body-muebles" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-muebles"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
     </div>
-    <!-- Galería de imágenes de planta -->
-    <div class="chart-card">
-      <div class="chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Galería</div>
-      <div id="dashboard-carousel" class="carousel" style="height:260px;border-radius:var(--radius-lg)"><div class="carousel-empty">Aún no hay imágenes configuradas.</div></div>
-    </div>
   </div>
 </div>
 <!-- REGISTRO -->
@@ -549,9 +551,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>Identificación del turno</div>
         <div class="form-grid-4">
-          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select></div>
-          <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="updateInfoBox();checkHoraPanel()"></select></div>
-          <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="updateInfoBox();checkHoraPanel()"></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select></div>
+          <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
+          <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha" onchange="renderChecklist();renderProgramaDia()"></div>
         </div>
         <div class="info-box" style="margin:1rem 0 0">
@@ -1993,8 +1995,13 @@ function getMachineByName(n){return machines.find(m=>m.name===n);}
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
 function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t);}
 // ── CLOUD JSONP ──
+let _gasReqCounter=0;
 function gasRequest(params,onSuccess,onError){
-  const cbName='cb_'+Date.now();
+  // El nombre del callback debe ser único incluso si dos peticiones se
+  // disparan en el mismo milisegundo (ej. al subir el programa de GW1 y
+  // GW2 casi al mismo tiempo) — Date.now() solo no alcanza para eso, por
+  // eso se le agrega un contador incremental.
+  const cbName='cb_'+Date.now()+'_'+(_gasReqCounter++);
   const url=getGasUrl()+'?'+Object.entries({...params,callback:cbName}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
   window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);if(data&&data.error){if(onError)onError(data.error);}else{if(onSuccess)onSuccess(data);}};
   const script=document.createElement('script');script.src=url;
@@ -2534,10 +2541,10 @@ function getCTHoraGrandTotal(ct){
   return Object.values(lastByMachine).reduce((s,r)=>s+(r.totalFabricadas||0),0);
 }
 function renderDashboard(){
-  // Galería de imágenes — se inicializa una sola vez
+  // Fondo de imágenes de planta — se inicializa una sola vez
   if(!window._dashCarouselInit){
     window._dashCarouselInit=true;
-    createImageCarousel('dashboard-carousel', DASHBOARD_CAROUSEL_IMAGES, 7000);
+    createImageCarousel('dashboard-bg-carousel', DASHBOARD_CAROUSEL_IMAGES, 7000);
   }
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
@@ -2823,6 +2830,40 @@ function updateInfoBox(){
   renderChecklist();
   renderProgramaDia();
   refreshProgramaDiaFromCloud();
+  loadParosForContext();
+  // Se actualiza AL FINAL (después de usar el contexto anterior para
+  // restaurar/flush) — así la próxima vez que se cambie de máquina, se
+  // sabe correctamente cuál era "la anterior", sin importar si tiene
+  // hora×hora o no.
+  _prevHoraContext={ct, machine:mn, turno, fecha:document.getElementById('reg-fecha')?.value};
+}
+// Los paros son propios de cada máquina — al cambiar de máquina/turno, se
+// limpia la tarjeta y se recarga SOLO lo que ya se había guardado para
+// esta combinación exacta (ct+máquina+turno+fecha). Antes la lista se
+// quedaba con lo de la máquina anterior sin darse cuenta.
+function loadParosForContext(){
+  const list=document.getElementById('paros-list');
+  if(!list) return;
+  const ct=document.getElementById('reg-ct')?.value;
+  const machine=document.getElementById('reg-machine')?.value;
+  const turno=document.getElementById('reg-turno')?.value;
+  const fecha=document.getElementById('reg-fecha')?.value;
+  list.innerHTML='';
+  paroRows=[];
+  const matches=records.filter(r=>r.ct===ct && r.machine===machine && r.turno===turno && r.fecha===fecha);
+  const rec=matches.reduce((best,r)=>(!best||isNewerRecord(r,best))?r:best, null);
+  if(rec){
+    const savedParos=typeof rec.paros==='string'?JSON.parse(rec.paros||'[]'):(rec.paros||[]);
+    savedParos.forEach(p=>{
+      addParoRow();
+      const lastId=paroRows[paroRows.length-1];
+      const row=document.getElementById(lastId);
+      const inputs=row?row.querySelectorAll('input'):[];
+      if(inputs[0]) inputs[0].value = p.motivo==='Sin descripción' ? '' : (p.motivo||'');
+      if(inputs[1]) inputs[1].value = p.min || '';
+    });
+  }
+  updateParosTotal();
 }
 function calcOEE(){
   const turno=document.getElementById('reg-turno').value;const machine=document.getElementById('reg-machine').value;
@@ -3711,6 +3752,28 @@ function renderHoraFranjas(machine, turno){
         </div>
       </div>`;
   }).join('');
+
+  // Restaurar datos ya guardados para esta máquina+turno+fecha (si los
+  // hay) — así cambiar de máquina y volver no borra lo ya capturado, solo
+  // se ve "en blanco" momentáneamente mientras se pintan los valores.
+  const ctNow=document.getElementById('reg-ct')?.value;
+  const fechaNow=document.getElementById('reg-fecha')?.value;
+  const existing=horaRecords.find(r=>r.ct===ctNow && r.machine===machine && r.turno===turno && r.fecha===fechaNow);
+  if(existing){
+    const savedFranjas=typeof existing.franjas==='string'?JSON.parse(existing.franjas||'[]'):(existing.franjas||[]);
+    franjas.forEach((f,i)=>{
+      if(f.includes('Comida')) return;
+      const saved=savedFranjas[i];
+      if(!saved) return;
+      const fabEl=document.getElementById('hora-fab-'+i);
+      const danEl=document.getElementById('hora-dan-'+i);
+      const motEl=document.getElementById('hora-motivo-'+i);
+      if(fabEl && saved.fabricadas) fabEl.value=saved.fabricadas;
+      if(danEl && saved.danadas) danEl.value=saved.danadas;
+      if(motEl && saved.motivo) motEl.value=saved.motivo;
+      if(saved.danadas>0) toggleMotivoRow(i);
+    });
+  }
   calcHoraTotales(machine, turno);
 }
 
@@ -3752,51 +3815,85 @@ function isNewerRecord(candidate, current){
   return t(candidate) >= t(current);
 }
 let _liveSyncTimer=null;
+// Recuerda el contexto (ct/máquina/turno/fecha) de la última vez que se
+// pintó la cuadrícula de hora×hora — se usa para "vaciar" cualquier
+// captura pendiente ANTES de cambiar de máquina/turno/CT, así los datos
+// que se estaban escribiendo nunca se pierden ni se guardan bajo la
+// máquina equivocada.
+let _prevHoraContext=null;
 function scheduleLiveSync(){
   if(!currentUser) return;
+  const ctx={
+    ct: document.getElementById('reg-ct')?.value,
+    machine: document.getElementById('reg-machine')?.value,
+    turno: document.getElementById('reg-turno')?.value,
+    fecha: document.getElementById('reg-fecha')?.value,
+    op: document.getElementById('reg-op')?.value||'–'
+  };
   clearTimeout(_liveSyncTimer);
-  _liveSyncTimer=setTimeout(liveSyncHoraAndParos, 1500);
+  _liveSyncTimer=setTimeout(()=>liveSyncHoraAndParos(ctx), 1500);
 }
-function liveSyncHoraAndParos(){
-  const ct=document.getElementById('reg-ct')?.value;
-  const machine=document.getElementById('reg-machine')?.value;
-  const turno=document.getElementById('reg-turno')?.value;
-  const fecha=document.getElementById('reg-fecha')?.value;
-  const op=document.getElementById('reg-op')?.value||'–';
+// Si hay un guardado en espera (debounce) cuando el usuario cambia de
+// máquina/turno/CT, se ejecuta DE INMEDIATO usando el contexto anterior
+// (la máquina que se estaba llenando hasta este momento) — así no se
+// pierde lo que se acababa de escribir.
+function flushLiveSyncNow(){
+  clearTimeout(_liveSyncTimer);
+  if(_prevHoraContext){
+    try{ liveSyncHoraAndParos(_prevHoraContext); }
+    catch(e){ console.warn('flushLiveSyncNow falló (no crítico, no debe bloquear el cambio de máquina/turno):', e); }
+  }
+}
+function liveSyncHoraAndParos(ctxOverride){
+  const ct=ctxOverride?.ct ?? document.getElementById('reg-ct')?.value;
+  const machine=ctxOverride?.machine ?? document.getElementById('reg-machine')?.value;
+  const turno=ctxOverride?.turno ?? document.getElementById('reg-turno')?.value;
+  const fecha=ctxOverride?.fecha ?? document.getElementById('reg-fecha')?.value;
+  const op=ctxOverride?.op ?? (document.getElementById('reg-op')?.value||'–');
   if(!ct||!machine||!turno||!fecha) return;
-  if(!LASER_MAQUINAS_HORA.includes(machine)) return; // solo aplica a máquinas con hora×hora
 
-  const data=getHoraData(machine,turno);
-  const extra=getHorasExtra(machine,turno);
-  const allFrames=[...data.filter(d=>!d.isBreak), ...extra];
-  const totalFab=allFrames.reduce((a,d)=>a+d.fabricadas,0);
-  const totalDan=allFrames.reduce((a,d)=>a+d.danadas,0);
-  const mach=getMachineByName(machine);
-  const baseCap=mach?mach.cap:0;
-  const baseFranjas=data.filter(d=>!d.isBreak).length||1;
-  const cap=Math.round(baseCap+extra.length*(baseCap/baseFranjas));
-  const efic=cap>0?Math.round((totalFab/cap)*100):0;
-  const dibujos=MAQUINAS_DIBUJO.includes(machine)?getDibujos():[];
-  const tiempoDibujos=dibujos.reduce((a,d)=>a+d.minutos,0);
-  const allFranjas=[...data, ...extra.map(e=>({...e, franja:e.franja+'⚡'}))];
+  let totalFab=0, totalDan=0;
+  const isHoraMachine=LASER_MAQUINAS_HORA.includes(machine);
   const nowIso=new Date().toISOString();
 
-  const horaId=getHoraStableId(ct,machine,turno,fecha);
-  const horaRec={
-    id:horaId, fecha, ct, machine, turno, op,
-    franjas: JSON.stringify(allFranjas), horasExtra: extra.length,
-    totalFabricadas: totalFab, totalDanadas: totalDan,
-    capacidad: cap, eficiencia: efic,
-    dibujos: JSON.stringify(dibujos), tiempoDibujos,
-    updatedAt: nowIso
-  };
-  const hIdx=horaRecords.findIndex(r=>r.id===horaId);
-  if(hIdx>=0) horaRecords[hIdx]=horaRec; else horaRecords.push(horaRec);
-  localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
-  const horaSheet=ct==='LASER'?'Produccion_Laser':ct==='TROQUELES'?'Produccion_Troqueles':'Produccion_Muebles';
-  cloudUpsertRow(horaSheet, horaRec);
+  if(isHoraMachine){
+    const data=getHoraData(machine,turno);
+    const extra=getHorasExtra(machine,turno);
+    const allFrames=[...data.filter(d=>!d.isBreak), ...extra];
+    totalFab=allFrames.reduce((a,d)=>a+d.fabricadas,0);
+    totalDan=allFrames.reduce((a,d)=>a+d.danadas,0);
+    const mach=getMachineByName(machine);
+    const baseCap=mach?mach.cap:0;
+    const baseFranjas=data.filter(d=>!d.isBreak).length||1;
+    const cap=Math.round(baseCap+extra.length*(baseCap/baseFranjas));
+    const efic=cap>0?Math.round((totalFab/cap)*100):0;
+    const dibujos=MAQUINAS_DIBUJO.includes(machine)?getDibujos():[];
+    const tiempoDibujos=dibujos.reduce((a,d)=>a+d.minutos,0);
+    const allFranjas=[...data, ...extra.map(e=>({...e, franja:e.franja+'⚡'}))];
 
-  // Paros — misma lógica: id fijo, se actualiza en vivo (no solo al Guardar)
+    const horaId=getHoraStableId(ct,machine,turno,fecha);
+    const horaRec={
+      id:horaId, fecha, ct, machine, turno, op,
+      franjas: JSON.stringify(allFranjas), horasExtra: extra.length,
+      totalFabricadas: totalFab, totalDanadas: totalDan,
+      capacidad: cap, eficiencia: efic,
+      dibujos: JSON.stringify(dibujos), tiempoDibujos,
+      updatedAt: nowIso
+    };
+    const hIdx=horaRecords.findIndex(r=>r.id===horaId);
+    if(hIdx>=0) horaRecords[hIdx]=horaRec; else horaRecords.push(horaRec);
+    localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
+    const horaSheet=ct==='LASER'?'Produccion_Laser':ct==='TROQUELES'?'Produccion_Troqueles':'Produccion_Muebles';
+    cloudUpsertRow(horaSheet, horaRec);
+  } else {
+    // Máquinas sin hora×hora: piezas producidas/rechazadas vienen de los
+    // campos manuales de "Datos de producción".
+    totalFab=parseInt(document.getElementById('reg-piezas')?.value)||0;
+    totalDan=parseInt(document.getElementById('reg-rechazadas')?.value)||0;
+  }
+
+  // Paros — aplica a CUALQUIER máquina (con o sin hora×hora), mismo id
+  // fijo, se actualiza en vivo (no solo al presionar Guardar).
   const paros=getParos();
   const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
   const piezasProg=parseInt(document.getElementById('reg-programadas')?.value)||0;
@@ -3809,7 +3906,12 @@ function liveSyncHoraAndParos(){
   save('records');
   cloudUpsertRow('OEE_Registros', oeeRec);
 
-  renderDashboard();
+  // El guardado en sí ya terminó exitosamente arriba — refrescar el
+  // Dashboard es solo un "extra" visual. Si esto falla (ej. un problema
+  // pasajero con la librería de gráficas), NO debe detener ni bloquear lo
+  // que sigue en la cadena del evento (como reconstruir el selector de
+  // máquina al cambiar de CT/turno).
+  try{ renderDashboard(); }catch(e){ console.warn('renderDashboard falló tras sync en vivo (no crítico):', e); }
 }
 function calcHoraTotales(machine, turno){
   const data = getHoraData(machine, turno);
