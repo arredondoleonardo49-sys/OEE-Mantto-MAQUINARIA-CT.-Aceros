@@ -113,7 +113,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .page-title{font-size:17px;font-weight:600;color:var(--text)}
 .page-sub{font-size:12px;color:var(--text2);margin-top:2px}
 .content{padding:1.25rem 1.5rem}
-.page{display:none}.page.active{display:block;position:relative}
+.page{display:none}.page.active{display:block}
 .tab-row{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
 .tab{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;font-weight:500}
 .tab:hover{color:var(--text)}.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
@@ -188,7 +188,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-collapsible{user-select:none;cursor:pointer}.ct-collapsible:hover{opacity:.8}
 .ct-chevron{font-size:14px;color:var(--text3);margin-left:4px;transition:transform .2s;flex-shrink:0}
 .ct-chevron.collapsed{transform:rotate(-90deg)}
-.card{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.1rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1.1rem}
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{text-align:left;padding:9px 12px;color:var(--text3);font-weight:500;font-size:11px;letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3)}
 .tbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text)}
@@ -198,7 +198,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .badge{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
 .badge.world{background:rgba(62,207,142,.15);color:var(--green)}.badge.good{background:rgba(74,158,255,.15);color:var(--blue)}
 .badge.avg{background:rgba(245,166,35,.15);color:var(--amber)}.badge.low{background:rgba(240,96,96,.15);color:var(--red)}
-.chart-card{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.1rem}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem;margin-bottom:1.1rem}
 .chart-title{font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
 .chart-title svg{flex-shrink:0}
 .form-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
@@ -257,12 +257,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .carousel-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;text-align:center;padding:1rem}
 #login-bg-carousel{position:fixed;inset:0;z-index:-1}
 #login-bg-carousel::after{content:'';position:absolute;inset:0;background:rgba(10,10,14,.72)}
-/* Fondo del Dashboard principal: mismas fotos de planta, pero apagadas
-   (grises, semitransparentes) para que no compitan visualmente con las
-   tarjetas de datos que van encima. */
-#dashboard-bg-carousel{position:fixed;inset:0;z-index:0;pointer-events:none}
-#dashboard-bg-carousel img{filter:grayscale(55%) brightness(.55) contrast(.92)}
-#dashboard-bg-carousel::after{content:'';position:absolute;inset:0;background:rgba(60,62,70,.5)}
 
 /* ── SIDEBAR USER ── */
 .sidebar-user{display:flex;align-items:center;gap:8px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius);margin-bottom:.6rem}
@@ -346,7 +340,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-status-chip.ok{background:rgba(62,207,142,.1);color:#3ecf8e;border:1px solid rgba(62,207,142,.25)}
 .programa-status-chip.pend{background:rgba(139,143,168,.1);color:var(--text3);border:1px solid var(--border)}
 .programa-status-chip svg{width:11px;height:11px}
-.programa-table-wrap{position:relative;overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg2)}
+.programa-table-wrap{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg2)}
 .programa-table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
 .programa-table thead th{position:sticky;top:0;background:var(--bg3);color:var(--text2);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);z-index:1}
 .programa-table td{padding:6px 12px;border-bottom:0.5px solid var(--border);color:var(--text2)}
@@ -495,7 +489,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div class="main-single" id="main-single">
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page active">
-  <div id="dashboard-bg-carousel" class="carousel"></div>
   <div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-page-sub">OEE del día en curso</div></div>
@@ -2541,11 +2534,6 @@ function getCTHoraGrandTotal(ct){
   return Object.values(lastByMachine).reduce((s,r)=>s+(r.totalFabricadas||0),0);
 }
 function renderDashboard(){
-  // Fondo de imágenes de planta — se inicializa una sola vez
-  if(!window._dashCarouselInit){
-    window._dashCarouselInit=true;
-    createImageCarousel('dashboard-bg-carousel', DASHBOARD_CAROUSEL_IMAGES, 7000);
-  }
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
   const ct=currentDashCT;
