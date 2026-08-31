@@ -1069,12 +1069,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div id="cfg-usuarios" class="tab-content">
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agregar cuenta de usuario</div>
-        <div class="form-grid-5">
+        <div class="form-grid-4">
           <div class="form-group"><label>Nombre completo</label><input type="text" id="new-user-name" placeholder="Ej: Juan Pérez"></div>
           <div class="form-group"><label>Usuario</label><input type="text" id="new-user-username" placeholder="jperez"></div>
           <div class="form-group"><label>Contraseña</label><input type="text" id="new-user-password" placeholder="••••••••"></div>
           <div class="form-group"><label>Nivel</label><select id="new-user-role"><option value="operador">Operador</option><option value="lider">Líder</option><option value="ingeniero">Ingeniero</option></select></div>
-          <div class="form-group"><label>Centro de trabajo</label><select id="new-user-ct"><option value="">Todos (sin fijar)</option></select></div>
+        </div>
+        <div class="form-group" style="margin-top:.75rem">
+          <label>Centros de trabajo (opcional — ninguno marcado = ve todos, sin restricción)</label>
+          <div id="new-user-ct-checks" style="display:flex;flex-wrap:wrap;gap:14px;padding:.4rem 0"></div>
         </div>
         <div class="btn-actions" style="margin-top:.75rem"><span class="save-msg" id="add-user-msg"></span><button class="btn btn-primary" onclick="addUser()">Agregar usuario</button></div>
       </div>
@@ -1253,13 +1256,22 @@ function normalizeUserRow(u){
   const rawRole=(u.role||'').toString().trim().toLowerCase();
   const role=roleMap[rawRole]||'operador';
   const rawPassword=(u.password!==undefined && u.password!=='') ? u.password : u.pass;
+  // cts: puede venir como arreglo (uso local) o como JSON en texto (nube).
+  // Compatibilidad con el campo viejo "ct" (un solo CT) de antes de esta
+  // actualización.
+  let cts=[];
+  if(Array.isArray(u.cts)) cts=u.cts;
+  else if(typeof u.cts==='string' && u.cts){ try{ cts=JSON.parse(u.cts); }catch(e){ cts=[]; } }
+  else if(u.ct){ cts=[u.ct]; }
   return {
     id:(u.id||('u'+Date.now()+Math.random().toString(36).slice(2))).toString(),
     name:(u.name||u.username||'Usuario').toString(),
     username:(u.username||'').toString().trim(),
     password:(rawPassword!==undefined && rawPassword!==null) ? rawPassword.toString() : '',
     role,
-    active: !(u.active===false||u.active==='false'||u.active==='FALSE')
+    cts,
+    active: !(u.active===false||u.active==='false'||u.active==='FALSE'),
+    updatedAt: u.updatedAt||undefined
   };
 }
 // Garantiza que SIEMPRE exista una cuenta con rol Ingeniero disponible,
@@ -1302,7 +1314,7 @@ function initAuth(){
     // (Los cambios de rol/baja se refrescan en la sincronización normal tras el login.)
     const fresh=users.find(u=>u.id===stored.id && u.active!==false);
     if(fresh){
-      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role};
+      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[]};
       onLoginSuccess();
       return;
     }
@@ -1364,7 +1376,7 @@ function doLogin(){
   );
 }
 function completeLogin(user){
-  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,ct:user.ct||''};
+  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[]};
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
@@ -1380,33 +1392,44 @@ function onLoginSuccess(){
 }
 
 // ── Permisos por rol ──
-// Si la cuenta tiene un Centro de Trabajo fijo asignado (Configuración →
-// Usuarios), ya no lo selecciona manualmente: se precarga y se bloquea el
-// selector en Registro, y en el Dashboard (para líderes, que sí pueden
-// verlo) solo queda visible su propio CT.
+// Si la cuenta tiene uno o más Centros de Trabajo asignados (Configuración
+// → Usuarios), ya no los selecciona manualmente uno por uno: el selector
+// en Registro queda limitado a esos CT (y bloqueado del todo si es solo
+// uno), y en el Dashboard (para líderes, que sí pueden verlo) solo quedan
+// visibles los suyos.
 function applyUserCtLock(){
   if(!currentUser) return;
   const ctSel=document.getElementById('reg-ct');
-  const lockedCt=currentUser.ct;
-  if(lockedCt && CT_CONFIG[lockedCt]){
+  const lockedCts=(currentUser.cts&&currentUser.cts.length) ? currentUser.cts.filter(ct=>CT_CONFIG[ct]) : [];
+  if(lockedCts.length){
     if(ctSel){
-      ctSel.value=lockedCt;
-      ctSel.disabled=true;
-      ctSel.title='Tu cuenta ya tiene asignado este Centro de Trabajo — pide a tu ingeniero de procesos que lo cambie desde Configuración si hace falta.';
+      ctSel.innerHTML=lockedCts.map(ct=>`<option>${ct}</option>`).join('');
+      if(!lockedCts.includes(ctSel.value)) ctSel.value=lockedCts[0];
+      ctSel.disabled=lockedCts.length===1;
+      ctSel.title = lockedCts.length===1
+        ? 'Tu cuenta ya tiene asignado este Centro de Trabajo — pide a tu ingeniero de procesos que lo cambie desde Configuración si hace falta.'
+        : 'Tu cuenta tiene varios Centros de Trabajo asignados — elige entre ellos.';
     }
     updateMachineAndTurno();
-    const group=dashGroupOf(lockedCt);
-    document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='none');
+    // Dashboard: solo quedan visibles los botones de grupo relevantes a
+    // los CT asignados, y dentro de Estructura, solo los sub-CT asignados.
+    document.querySelectorAll('.dash-group-btn').forEach(b=>{
+      const m=(b.getAttribute('onclick')||'').match(/setDashGroup\('([^']+)'/);
+      const group=m?m[1]:null;
+      const relevant=group && lockedCts.some(ct=>dashGroupOf(ct)===group);
+      b.style.display = relevant ? '' : 'none';
+    });
+    document.querySelectorAll('.dash-ct-subbtn').forEach(b=>{
+      b.style.display = lockedCts.includes(b.dataset.ct) ? '' : 'none';
+    });
     const subnav=document.getElementById('dash-estructura-subnav');
-    if(group==='ESTRUCTURA'){
-      document.querySelectorAll('.dash-ct-subbtn').forEach(b=>{ b.style.display = b.dataset.ct===lockedCt ? '' : 'none'; });
-      if(subnav) subnav.style.display='flex';
-    } else if(subnav){
-      subnav.style.display='none';
-    }
-    currentDashCT=lockedCt;
+    if(subnav) subnav.style.display = lockedCts.some(ct=>dashGroupOf(ct)==='ESTRUCTURA') ? 'flex' : 'none';
+    if(!lockedCts.includes(currentDashCT)) currentDashCT=lockedCts[0];
   } else {
-    if(ctSel){ ctSel.disabled=false; ctSel.title=''; }
+    if(ctSel){
+      ctSel.innerHTML=ALL_CTS.map(ct=>`<option>${ct}</option>`).join('');
+      ctSel.disabled=false; ctSel.title='';
+    }
     document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='');
     document.querySelectorAll('.dash-ct-subbtn').forEach(b=>b.style.display='');
   }
@@ -1954,35 +1977,81 @@ function renderCtTargetsConfig(){
     </div>`;
   }).join('');
 }
+// Genera el bloque de checkboxes de Centro de Trabajo, reutilizado tanto
+// en el formulario de "agregar usuario" como en el editor de cada cuenta
+// existente. `groupClass` identifica el grupo para poder leerlos después.
+function ctCheckboxesHtml(groupClass, selectedCts){
+  selectedCts=selectedCts||[];
+  return ALL_CTS.map(ct=>`
+    <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer">
+      <input type="checkbox" class="${groupClass}" value="${ct}" ${selectedCts.includes(ct)?'checked':''} style="width:13px;height:13px;accent-color:var(--blue);cursor:pointer">
+      ${ctLabel(ct)}
+    </label>`).join('');
+}
 function renderUsersConfig(){
   const wrap=document.getElementById('users-list');
   if(!wrap) return;
-  // Poblar el select de "nuevo usuario" con los CT del registro central
-  // (una sola vez basta, pero es barato repetirlo y así nunca se
-  // desactualiza si se agrega un CT nuevo).
-  const newCtSel=document.getElementById('new-user-ct');
-  if(newCtSel && newCtSel.options.length<=1){
-    newCtSel.innerHTML='<option value="">Todos (sin fijar)</option>'+ALL_CTS.map(ct=>`<option value="${ct}">${ctLabel(ct)}</option>`).join('');
+  const newCtChecks=document.getElementById('new-user-ct-checks');
+  if(newCtChecks && !newCtChecks.dataset.built){
+    newCtChecks.innerHTML=ctCheckboxesHtml('new-user-ctchk', []);
+    newCtChecks.dataset.built='1';
   }
   if(!users.length){ wrap.innerHTML='<div class="empty-state">Sin cuentas registradas.</div>'; return; }
-  const ctOptionsHtml=(selected)=>'<option value="">Todos</option>'+ALL_CTS.map(ct=>`<option value="${ct}" ${selected===ct?'selected':''}>${ctLabel(ct)}</option>`).join('');
-  wrap.innerHTML=users.map(u=>`
-    <div style="display:grid;grid-template-columns:1fr 120px 130px 120px 90px 70px;gap:8px;align-items:center;padding:.6rem 0;border-bottom:0.5px solid var(--border)">
-      <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}</div></div>
-      <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-        <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
-        <option value="lider" ${u.role==='lider'?'selected':''}>Líder</option>
-        <option value="ingeniero" ${u.role==='ingeniero'?'selected':''}>Ingeniero</option>
-      </select>
-      <select onchange="changeUserCt('${u.id}',this.value)" title="Centro de trabajo asignado — si tiene uno fijo, ya no lo selecciona manualmente al registrar" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-        ${ctOptionsHtml(u.ct||'')}
-      </select>
-      <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
-      <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
-      <div style="display:flex;gap:4px;justify-content:flex-end">
-        <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="${u.active!==false?'Desactivar':'Activar'}" onclick="toggleUserActive('${u.id}')">${u.active!==false?'⏸':'▶'}</button>
+  wrap.innerHTML=users.map(u=>{
+    const userCts=u.cts&&u.cts.length?u.cts:[];
+    const ctSummary=userCts.length?userCts.map(ctLabel).join(', '):'Todos (sin restricción)';
+    return `
+    <div style="padding:.6rem 0;border-bottom:0.5px solid var(--border)">
+      <div style="display:grid;grid-template-columns:1fr 120px 1fr 120px 90px 90px;gap:8px;align-items:center">
+        <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}</div></div>
+        <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+          <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
+          <option value="lider" ${u.role==='lider'?'selected':''}>Líder</option>
+          <option value="ingeniero" ${u.role==='ingeniero'?'selected':''}>Ingeniero</option>
+        </select>
+        <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo asignados" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
+        <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
+        <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="${u.active!==false?'Desactivar':'Activar'}" onclick="toggleUserActive('${u.id}')">${u.active!==false?'⏸':'▶'}</button>
+          <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="Eliminar cuenta" onclick="deleteUser('${u.id}','${u.name.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
       </div>
-    </div>`).join('');
+      <div id="ct-editor-${u.id}" style="display:none;padding:.6rem 0 0;flex-wrap:wrap;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;gap:14px;padding:.4rem .5rem;background:var(--bg3);border-radius:var(--radius)">
+          ${ctCheckboxesHtml('edit-ctchk-'+u.id, userCts)}
+        </div>
+        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="saveUserCts('${u.id}')">Guardar centros de trabajo</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleUserCtEditor(id){
+  const el=document.getElementById('ct-editor-'+id);
+  if(!el) return;
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+function saveUserCts(id){
+  const checked=Array.from(document.querySelectorAll('.edit-ctchk-'+id+':checked')).map(el=>el.value);
+  changeUserCts(id, checked);
+}
+function changeUserCts(id, cts){
+  const u=users.find(x=>x.id===id); if(!u) return;
+  u.cts=cts; delete u.ct; u.updatedAt=new Date().toISOString();
+  localStorage.setItem(SK_USERS, JSON.stringify(users));
+  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(cts)});
+  renderUsersConfig();
+  // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
+  // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
+  if(currentUser && currentUser.id===id){ currentUser.cts=cts; applyUserCtLock(); }
+}
+function deleteUser(id, name){
+  if(currentUser && currentUser.id===id){ alert('No puedes eliminar la cuenta con la que tienes la sesión iniciada.'); return; }
+  if(!confirm(`¿Eliminar la cuenta de "${name}"? Esta acción no se puede deshacer.`)) return;
+  users=users.filter(u=>u.id!==id);
+  localStorage.setItem(SK_USERS, JSON.stringify(users));
+  cloudDeleteRow('Usuarios', id);
+  renderUsersConfig();
 }
 // Antes de escribir en Usuarios, siempre trae primero la versión más
 // reciente de la nube y la fusiona con lo que hay en memoria. Esto evita
@@ -1993,20 +2062,21 @@ function addUser(){
   const username=document.getElementById('new-user-username').value.trim();
   const password=document.getElementById('new-user-password').value.trim();
   const role=document.getElementById('new-user-role').value;
-  const ct=document.getElementById('new-user-ct')?.value||'';
+  const cts=Array.from(document.querySelectorAll('.new-user-ctchk:checked')).map(el=>el.value);
   const msg=document.getElementById('add-user-msg');
   if(!name||!username||!password){ msg.textContent='Completa todos los campos.'; msg.style.color='var(--amber)'; return; }
   if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())){ msg.textContent='Ese nombre de usuario ya existe.'; msg.style.color='var(--amber)'; return; }
-  const newUser={id:'u'+Date.now(), name, username, password, role, ct, active:true, updatedAt:new Date().toISOString()};
+  const newUser={id:'u'+Date.now(), name, username, password, role, cts, active:true, updatedAt:new Date().toISOString()};
   users.push(newUser);
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   // Se agrega/actualiza SOLO esta cuenta en la nube — nunca se reescribe la
   // hoja completa, así jamás se puede borrar otra cuenta por accidente al
   // agregar o editar esta.
-  cloudUpsertRow('Usuarios', newUser);
+  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts)});
   document.getElementById('new-user-name').value='';
   document.getElementById('new-user-username').value='';
   document.getElementById('new-user-password').value='';
+  document.querySelectorAll('.new-user-ctchk').forEach(el=>el.checked=false);
   msg.textContent='✓ Usuario agregado'; msg.style.color='var(--green)';
   setTimeout(()=>msg.textContent='',3000);
   renderUsersConfig();
@@ -2017,16 +2087,6 @@ function changeUserRole(id,role){
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   cloudUpsertRow('Usuarios', u);
   renderUsersConfig();
-}
-function changeUserCt(id,ct){
-  const u=users.find(x=>x.id===id); if(!u) return;
-  u.ct=ct; u.updatedAt=new Date().toISOString();
-  localStorage.setItem(SK_USERS, JSON.stringify(users));
-  cloudUpsertRow('Usuarios', u);
-  renderUsersConfig();
-  // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
-  // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
-  if(currentUser && currentUser.id===id){ currentUser.ct=ct; applyUserCtLock(); }
 }
 function changeUserPassword(id,pw){
   if(!pw.trim()) return;
