@@ -142,6 +142,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .dash-ct-btn{font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:6px 14px;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);transition:all .15s;font-weight:500}
 .dash-ct-btn:hover{color:var(--text);border-color:var(--blue)}
 .dash-ct-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.dash-ct-subbtn{font-size:11px;padding:4px 11px}
+.dash-ct-subbtn.active{background:#c084fc;border-color:#c084fc}
+#dash-estructura-subnav{padding-top:2px;border-top:1px dashed var(--border)}
 
 .ct-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
 .ct-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
@@ -149,12 +152,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-card.troqueles::before{background:var(--blue)}
 .ct-card.laser::before{background:var(--green)}
 .ct-card.muebles::before{background:var(--amber)}
+.ct-card.sillas::before{background:#c084fc}
+.ct-card.mamparas::before{background:#fb7185}
 .ct-card-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
 .ct-card-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .ct-card-icon svg{width:17px;height:17px}
 .ct-card-icon.troqueles{background:rgba(74,158,255,.12);color:#4a9eff}
 .ct-card-icon.laser{background:rgba(62,207,142,.12);color:#3ecf8e}
 .ct-card-icon.muebles{background:rgba(245,166,35,.12);color:#f5a623}
+.ct-card-icon.sillas{background:rgba(192,132,252,.12);color:#c084fc}
+.ct-card-icon.mamparas{background:rgba(251,113,133,.12);color:#fb7185}
 .ct-card-header-text{display:flex;flex-direction:column;gap:2px}
 .ct-card-body{display:flex;gap:1.75rem;flex-wrap:wrap;align-items:center}
 .ct-card-hero{flex:1 1 200px;min-width:180px}
@@ -185,6 +192,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-badge.troqueles{background:rgba(74,158,255,.12);color:#4a9eff;border:1px solid rgba(74,158,255,.25)}
 .ct-badge.laser{background:rgba(62,207,142,.12);color:#3ecf8e;border:1px solid rgba(62,207,142,.25)}
 .ct-badge.muebles{background:rgba(245,166,35,.12);color:#f5a623;border:1px solid rgba(245,166,35,.25)}
+.ct-badge.sillas{background:rgba(192,132,252,.12);color:#c084fc;border:1px solid rgba(192,132,252,.25)}
+.ct-badge.mamparas{background:rgba(251,113,133,.12);color:#fb7185;border:1px solid rgba(251,113,133,.25)}
 .ct-collapsible{user-select:none;cursor:pointer}.ct-collapsible:hover{opacity:.8}
 .ct-chevron{font-size:14px;color:var(--text3);margin-left:4px;transition:transform .2s;flex-shrink:0}
 .ct-chevron.collapsed{transform:rotate(-90deg)}
@@ -206,6 +215,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
 .form-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.form-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem}
 .checklist-split{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:1.5rem;align-items:stretch}
 .checklist-split .paros-card{display:flex;flex-direction:column;border-right:1px solid var(--border);padding-right:1.5rem}
 .checklist-split .paros-card .paros-list{flex:1}
@@ -492,10 +502,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-page-sub">OEE del día en curso</div></div>
-      <div style="display:flex;gap:6px">
-        <button class="dash-ct-btn active" onclick="setDashCT('TROQUELES',this)">Troqueles</button>
-        <button class="dash-ct-btn" onclick="setDashCT('LASER',this)">Laser</button>
-        <button class="dash-ct-btn" onclick="setDashCT('EST. MUEBLES',this)">Est. Muebles</button>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <div style="display:flex;gap:6px">
+          <button class="dash-ct-btn dash-group-btn active" onclick="setDashGroup('TROQUELES',this)">Troqueles</button>
+          <button class="dash-ct-btn dash-group-btn" onclick="setDashGroup('LASER',this)">Laser</button>
+          <button class="dash-ct-btn dash-group-btn" onclick="setDashGroup('ESTRUCTURA',this)">Estructura</button>
+        </div>
+        <div id="dash-estructura-subnav" style="display:none;gap:6px">
+          <button class="dash-ct-btn dash-ct-subbtn active" data-ct="EST. MUEBLES" onclick="setDashCT('EST. MUEBLES',this)">Muebles</button>
+          <button class="dash-ct-btn dash-ct-subbtn" data-ct="EST. SILLAS" onclick="setDashCT('EST. SILLAS',this)">Sillas</button>
+          <button class="dash-ct-btn dash-ct-subbtn" data-ct="EST. MAMPARAS" onclick="setDashCT('EST. MAMPARAS',this)">Mamparas</button>
+        </div>
       </div>
     </div>
   </div>
@@ -514,16 +531,24 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <!-- Detalle por máquina colapsable -->
     <div class="ct-section">
-      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-troqueles',this)" data-collapsed="true"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-troqueles',this)" data-collapsed="true"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
       <div id="ct-body-troqueles" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-troqueles"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
     </div>
     <div class="ct-section">
-      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-laser',this)" data-collapsed="true"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-laser',this)" data-collapsed="true"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
       <div id="ct-body-laser" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-laser"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
     </div>
     <div class="ct-section">
       <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-muebles',this)" data-collapsed="true"><span class="ct-badge-icon muebles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg></span><span class="ct-badge muebles">EST. MUEBLES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
       <div id="ct-body-muebles" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-muebles"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
+    </div>
+    <div class="ct-section">
+      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-sillas',this)" data-collapsed="true"><span class="ct-badge-icon sillas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M6 13v6"/><path d="M18 13v6"/><path d="M8 19h8"/></svg></span><span class="ct-badge sillas">EST. SILLAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+      <div id="ct-body-sillas" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-sillas"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
+    </div>
+    <div class="ct-section">
+      <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-mamparas',this)" data-collapsed="true"><span class="ct-badge-icon mamparas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg></span><span class="ct-badge mamparas">EST. MAMPARAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+      <div id="ct-body-mamparas" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-mamparas"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
     </div>
   </div>
 </div>
@@ -544,7 +569,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>Identificación del turno</div>
         <div class="form-grid-4">
-          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
           <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha" onchange="renderChecklist();renderProgramaDia()"></div>
@@ -859,16 +884,24 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="mant-plan" class="tab-content active">
       <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-laser',this)"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-laser',this)"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
         <div id="mant-body-laser"><div id="mant-plan-laser"></div></div>
       </div>
       <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-troqueles',this)"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-troqueles',this)"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
         <div id="mant-body-troqueles"><div id="mant-plan-troqueles"></div></div>
       </div>
       <div class="ct-section">
         <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-muebles',this)"><span class="ct-badge-icon muebles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg></span><span class="ct-badge muebles">EST. MUEBLES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
         <div id="mant-body-muebles"><div id="mant-plan-muebles"></div></div>
+      </div>
+      <div class="ct-section">
+        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-sillas',this)"><span class="ct-badge-icon sillas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M6 13v6"/><path d="M18 13v6"/><path d="M8 19h8"/></svg></span><span class="ct-badge sillas">EST. SILLAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+        <div id="mant-body-sillas"><div id="mant-plan-sillas"></div></div>
+      </div>
+      <div class="ct-section">
+        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-mamparas',this)"><span class="ct-badge-icon mamparas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg></span><span class="ct-badge mamparas">EST. MAMPARAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
+        <div id="mant-body-mamparas"><div id="mant-plan-mamparas"></div></div>
       </div>
       <div style="display:flex;gap:16px;margin-top:.5rem;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span class="who-op">Operador</span> Verificación diaria</div>
@@ -880,7 +913,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Seleccionar intervención</div>
         <div class="mant-log-grid">
           <div class="form-group"><label>Fecha</label><input type="date" id="mlog-fecha"></div>
-          <div class="form-group"><label>Centro de trabajo</label><select id="mlog-ct" onchange="updateMantMachine()"><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="mlog-ct" onchange="updateMantMachine()"><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
           <div class="form-group"><label>Máquina</label><select id="mlog-machine" onchange="updateMantComp()"></select></div>
           <div class="form-group"><label>Componente</label><select id="mlog-comp" onchange="loadChecklist()"></select></div>
           <div class="form-group"><label>Tipo</label><select id="mlog-tipo"><option value="Operador">Operador</option><option value="Técnico">Técnico</option></select></div>
@@ -911,7 +944,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="mant-historial" class="tab-content">
       <div class="filter-row">
-        <select id="mh-ct" onchange="updateMantHistMachineFilter();renderMantHist()"><option value="">Todos los centros</option><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option></select>
+        <select id="mh-ct" onchange="updateMantHistMachineFilter();renderMantHist()"><option value="">Todos los centros</option><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
         <select id="mh-machine" onchange="renderMantHist()"><option value="">Todas las máquinas</option></select>
         <select id="mh-tipo" onchange="renderMantHist()"><option value="">Operador y Técnico</option><option>Operador</option><option>Técnico</option></select>
         <select id="mh-res" onchange="renderMantHist()"><option value="">Todos los resultados</option><option value="ok">Correcto</option><option value="obs">Con observaciones</option><option value="falla">Falla encontrada</option></select>
@@ -958,7 +991,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar"><div class="page-title">Historial OEE</div><div class="page-sub">Todos los turnos capturados</div></div>
   <div class="content">
     <div class="filter-row">
-      <select id="filter-ct" onchange="filterChanged()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select>
+      <select id="filter-ct" onchange="filterChanged()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
       <select id="filter-machine" onchange="renderHistory()"><option value="">Todas las máquinas</option></select>
       <select id="filter-turno" onchange="renderHistory()"><option value="">Todos los turnos</option></select>
       <button class="btn" style="margin-left:auto;border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearAllRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
@@ -983,7 +1016,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Agregar nueva máquina</div>
         <div class="add-machine-row">
           <div class="form-group"><label>Nombre</label><input type="text" id="new-machine-name" placeholder="Ej: Torno-5"></div>
-          <div class="form-group"><label>Centro de trabajo</label><select id="new-machine-ct"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="new-machine-ct"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
           <div class="form-group"><label>Capacidad (pzas/turno)</label><input type="number" id="new-machine-cap" min="1" placeholder="0"></div>
           <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="addMachine()">Agregar</button></div>
         </div>
@@ -993,9 +1026,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div class="save-msg" id="add-machine-msg"></div>
       </div>
-      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div></div><div id="config-troqueles"></div></div>
-      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div></div><div id="config-laser"></div></div>
+      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div></div><div id="config-troqueles"></div></div>
+      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div></div><div id="config-laser"></div></div>
       <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon muebles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg></span><span class="ct-badge muebles">EST. MUEBLES</span><div class="ct-line"></div></div><div id="config-muebles"></div></div>
+      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon sillas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M6 13v6"/><path d="M18 13v6"/><path d="M8 19h8"/></svg></span><span class="ct-badge sillas">EST. SILLAS</span><div class="ct-line"></div></div><div id="config-sillas"></div></div>
+      <div class="ct-section"><div class="ct-header"><span class="ct-badge-icon mamparas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg></span><span class="ct-badge mamparas">EST. MAMPARAS</span><div class="ct-line"></div></div><div id="config-mamparas"></div></div>
       <div class="btn-actions"><span class="save-msg" id="config-msg"></span><button class="btn btn-primary" onclick="saveConfig()">Guardar cambios</button></div>
     </div>
     <div id="cfg-laminas" class="tab-content">
@@ -1034,11 +1069,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div id="cfg-usuarios" class="tab-content">
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agregar cuenta de usuario</div>
-        <div class="form-grid-4">
+        <div class="form-grid-5">
           <div class="form-group"><label>Nombre completo</label><input type="text" id="new-user-name" placeholder="Ej: Juan Pérez"></div>
           <div class="form-group"><label>Usuario</label><input type="text" id="new-user-username" placeholder="jperez"></div>
           <div class="form-group"><label>Contraseña</label><input type="text" id="new-user-password" placeholder="••••••••"></div>
           <div class="form-group"><label>Nivel</label><select id="new-user-role"><option value="operador">Operador</option><option value="lider">Líder</option><option value="ingeniero">Ingeniero</option></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="new-user-ct"><option value="">Todos (sin fijar)</option></select></div>
         </div>
         <div class="btn-actions" style="margin-top:.75rem"><span class="save-msg" id="add-user-msg"></span><button class="btn btn-primary" onclick="addUser()">Agregar usuario</button></div>
       </div>
@@ -1077,7 +1113,29 @@ function CLOUD_ENABLED(){ return true; }
 function getGasUrl(){ return GAS_URL; }
 
 // ── CONSTANTS ──
-const TURNOS_CT={'TROQUELES':['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'],'LASER':['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'],'EST. MUEBLES':['Turno único (8:00–17:00)']};
+// Registro central de Centros de Trabajo — única fuente de verdad para
+// nombre, color, hoja de la nube, turnos y costo por hora. Agregar un CT
+// nuevo en el futuro solo requiere una línea aquí (en vez de tocar 20
+// lugares distintos del código).
+const CT_CONFIG={
+  'TROQUELES':    {label:'Troqueles', cls:'troqueles', sheet:'Produccion_Troqueles', group:null,
+                    turnos:['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'], costoHora:933.06},
+  'LASER':        {label:'Laser',     cls:'laser',     sheet:'Produccion_Laser',     group:null,
+                    turnos:['Turno 1 (8:00–17:00)','Turno 2 (17:00–01:40)','Turno 3 (23:00–07:00)'], costoHora:1264.46},
+  'EST. MUEBLES': {label:'Muebles',   cls:'muebles',   sheet:'Produccion_Muebles',   group:'ESTRUCTURA',
+                    turnos:['Turno único (8:00–17:00)'], costoHora:1563.33},
+  'EST. SILLAS':  {label:'Sillas',    cls:'sillas',    sheet:'Produccion_Sillas',    group:'ESTRUCTURA',
+                    turnos:['Turno único (8:00–17:00)'], costoHora:1563.33},
+  'EST. MAMPARAS':{label:'Mamparas',  cls:'mamparas',  sheet:'Produccion_Mamparas',  group:'ESTRUCTURA',
+                    turnos:['Turno único (8:00–17:00)'], costoHora:1563.33},
+};
+const ALL_CTS=Object.keys(CT_CONFIG);
+const ESTRUCTURA_CTS=ALL_CTS.filter(ct=>CT_CONFIG[ct].group==='ESTRUCTURA');
+function ctSheet(ct){ return (CT_CONFIG[ct]&&CT_CONFIG[ct].sheet) || 'Produccion_Muebles'; }
+function ctLabel(ct){ return (CT_CONFIG[ct]&&CT_CONFIG[ct].label) || ct; }
+function ctClass(ct){ return (CT_CONFIG[ct]&&CT_CONFIG[ct].cls) || ''; }
+
+const TURNOS_CT={}; ALL_CTS.forEach(ct=>{ TURNOS_CT[ct]=CT_CONFIG[ct].turnos; });
 const TURNO_MIN={'Turno único (8:00–17:00)':540,'Turno 1 (8:00–17:00)':540,'Turno 2 (17:00–01:40)':520,'Turno 3 (23:00–07:00)':480};
 const PAROS_PROG=57;
 const LASER_MAQUINAS_HORA = ['GW1','GW2','Laser de Cama','Área General','Punteadora','Newton 1','Newton 2'];
@@ -1099,11 +1157,7 @@ const DIBUJO_LABEL = {
   'GW2': 'Alta de dibujos (tubular)',
   'Laser de Cama': 'Creación de nidos (lámina)'
 };
-const COSTO_HORA_CT={
-  'TROQUELES': 933.06,
-  'LASER': 1264.46,
-  'EST. MUEBLES': 1563.33
-};
+const COSTO_HORA_CT={}; ALL_CTS.forEach(ct=>{ COSTO_HORA_CT[ct]=CT_CONFIG[ct].costoHora; });
 const DEFAULT_MACHINES=[
   {id:'m1',name:'Prensa Fluidrica',ct:'TROQUELES',cap:850,photo:'assets/maquina-prensa-fluidrica.jpg'},
   {id:'m2',name:'Prensa 60',ct:'TROQUELES',cap:7200,photo:'assets/maquina-prensa-60.jpg'},
@@ -1310,7 +1364,7 @@ function doLogin(){
   );
 }
 function completeLogin(user){
-  currentUser={id:user.id,name:user.name,username:user.username,role:user.role};
+  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,ct:user.ct||''};
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
@@ -1326,6 +1380,37 @@ function onLoginSuccess(){
 }
 
 // ── Permisos por rol ──
+// Si la cuenta tiene un Centro de Trabajo fijo asignado (Configuración →
+// Usuarios), ya no lo selecciona manualmente: se precarga y se bloquea el
+// selector en Registro, y en el Dashboard (para líderes, que sí pueden
+// verlo) solo queda visible su propio CT.
+function applyUserCtLock(){
+  if(!currentUser) return;
+  const ctSel=document.getElementById('reg-ct');
+  const lockedCt=currentUser.ct;
+  if(lockedCt && CT_CONFIG[lockedCt]){
+    if(ctSel){
+      ctSel.value=lockedCt;
+      ctSel.disabled=true;
+      ctSel.title='Tu cuenta ya tiene asignado este Centro de Trabajo — pide a tu ingeniero de procesos que lo cambie desde Configuración si hace falta.';
+    }
+    updateMachineAndTurno();
+    const group=dashGroupOf(lockedCt);
+    document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='none');
+    const subnav=document.getElementById('dash-estructura-subnav');
+    if(group==='ESTRUCTURA'){
+      document.querySelectorAll('.dash-ct-subbtn').forEach(b=>{ b.style.display = b.dataset.ct===lockedCt ? '' : 'none'; });
+      if(subnav) subnav.style.display='flex';
+    } else if(subnav){
+      subnav.style.display='none';
+    }
+    currentDashCT=lockedCt;
+  } else {
+    if(ctSel){ ctSel.disabled=false; ctSel.title=''; }
+    document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='');
+    document.querySelectorAll('.dash-ct-subbtn').forEach(b=>b.style.display='');
+  }
+}
 function applyRolePermissions(){
   if(!currentUser) return;
   const role=currentUser.role;
@@ -1358,6 +1443,7 @@ function applyRolePermissions(){
   const cfgUsersTab=document.getElementById('cfg-usuarios-tab-btn');
   if(cfgUsersTab) cfgUsersTab.style.display = role==='ingeniero' ? '' : 'none';
 
+  applyUserCtLock();
   applyOperatorRegistroUI();
 }
 
@@ -1856,11 +1942,7 @@ function autoFillPiezasProgramadas(rec){
 function renderCtTargetsConfig(){
   const wrap=document.getElementById('ct-targets-config');
   if(!wrap) return;
-  const cts=[
-    {key:'TROQUELES', label:'TROQUELES', cls:'troqueles'},
-    {key:'LASER', label:'LASER', cls:'laser'},
-    {key:'EST. MUEBLES', label:'EST. MUEBLES', cls:'muebles'}
-  ];
+  const cts=ALL_CTS.map(ct=>({key:ct, label:ct, cls:ctClass(ct)}));
   wrap.innerHTML=cts.map(c=>{
     const t=ctTargets[c.key]||{piezasProgramadas:0,capacidadInstalada:0};
     return `<div style="display:grid;grid-template-columns:140px 1fr 1fr;gap:1rem;align-items:end;padding:.85rem 0;border-bottom:0.5px solid var(--border)">
@@ -1875,14 +1957,25 @@ function renderCtTargetsConfig(){
 function renderUsersConfig(){
   const wrap=document.getElementById('users-list');
   if(!wrap) return;
+  // Poblar el select de "nuevo usuario" con los CT del registro central
+  // (una sola vez basta, pero es barato repetirlo y así nunca se
+  // desactualiza si se agrega un CT nuevo).
+  const newCtSel=document.getElementById('new-user-ct');
+  if(newCtSel && newCtSel.options.length<=1){
+    newCtSel.innerHTML='<option value="">Todos (sin fijar)</option>'+ALL_CTS.map(ct=>`<option value="${ct}">${ctLabel(ct)}</option>`).join('');
+  }
   if(!users.length){ wrap.innerHTML='<div class="empty-state">Sin cuentas registradas.</div>'; return; }
+  const ctOptionsHtml=(selected)=>'<option value="">Todos</option>'+ALL_CTS.map(ct=>`<option value="${ct}" ${selected===ct?'selected':''}>${ctLabel(ct)}</option>`).join('');
   wrap.innerHTML=users.map(u=>`
-    <div style="display:grid;grid-template-columns:1fr 140px 140px 90px 70px;gap:8px;align-items:center;padding:.6rem 0;border-bottom:0.5px solid var(--border)">
+    <div style="display:grid;grid-template-columns:1fr 120px 130px 120px 90px 70px;gap:8px;align-items:center;padding:.6rem 0;border-bottom:0.5px solid var(--border)">
       <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}</div></div>
       <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
         <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
         <option value="lider" ${u.role==='lider'?'selected':''}>Líder</option>
         <option value="ingeniero" ${u.role==='ingeniero'?'selected':''}>Ingeniero</option>
+      </select>
+      <select onchange="changeUserCt('${u.id}',this.value)" title="Centro de trabajo asignado — si tiene uno fijo, ya no lo selecciona manualmente al registrar" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+        ${ctOptionsHtml(u.ct||'')}
       </select>
       <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
       <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
@@ -1900,10 +1993,11 @@ function addUser(){
   const username=document.getElementById('new-user-username').value.trim();
   const password=document.getElementById('new-user-password').value.trim();
   const role=document.getElementById('new-user-role').value;
+  const ct=document.getElementById('new-user-ct')?.value||'';
   const msg=document.getElementById('add-user-msg');
   if(!name||!username||!password){ msg.textContent='Completa todos los campos.'; msg.style.color='var(--amber)'; return; }
   if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())){ msg.textContent='Ese nombre de usuario ya existe.'; msg.style.color='var(--amber)'; return; }
-  const newUser={id:'u'+Date.now(), name, username, password, role, active:true, updatedAt:new Date().toISOString()};
+  const newUser={id:'u'+Date.now(), name, username, password, role, ct, active:true, updatedAt:new Date().toISOString()};
   users.push(newUser);
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   // Se agrega/actualiza SOLO esta cuenta en la nube — nunca se reescribe la
@@ -1923,6 +2017,16 @@ function changeUserRole(id,role){
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   cloudUpsertRow('Usuarios', u);
   renderUsersConfig();
+}
+function changeUserCt(id,ct){
+  const u=users.find(x=>x.id===id); if(!u) return;
+  u.ct=ct; u.updatedAt=new Date().toISOString();
+  localStorage.setItem(SK_USERS, JSON.stringify(users));
+  cloudUpsertRow('Usuarios', u);
+  renderUsersConfig();
+  // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
+  // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
+  if(currentUser && currentUser.id===id){ currentUser.ct=ct; applyUserCtLock(); }
 }
 function changeUserPassword(id,pw){
   if(!pw.trim()) return;
@@ -1944,9 +2048,33 @@ function toggleUserActive(id){
 // ── DASHBOARD CT FILTER ──────────────────────────────
 let currentDashCT = 'TROQUELES';
 
+// Grupo al que pertenece un CT — los CT sueltos son su propio "grupo"
+// (Troqueles, Laser), mientras que Muebles/Sillas/Mamparas comparten el
+// grupo "ESTRUCTURA" y se navegan aparte, en la sub-barra.
+function dashGroupOf(ct){ return (CT_CONFIG[ct] && CT_CONFIG[ct].group) || ct; }
+
+function setDashGroup(group, btn){
+  document.querySelectorAll('.dash-group-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const subnav=document.getElementById('dash-estructura-subnav');
+  if(group==='ESTRUCTURA'){
+    subnav.style.display='flex';
+    // Si ya estábamos viendo un CT de Estructura, se queda ahí; si no,
+    // entra mostrando el primero (Muebles) por defecto.
+    const target=ESTRUCTURA_CTS.includes(currentDashCT) ? currentDashCT : ESTRUCTURA_CTS[0];
+    const subBtn=document.querySelector(`.dash-ct-subbtn[data-ct="${target}"]`);
+    setDashCT(target, subBtn);
+  } else {
+    subnav.style.display='none';
+    setDashCT(group, null);
+  }
+}
+
 function setDashCT(ct, btn){
   currentDashCT = ct;
-  document.querySelectorAll('.dash-ct-btn').forEach(b=>b.classList.remove('active'));
+  if(dashGroupOf(ct)==='ESTRUCTURA'){
+    document.querySelectorAll('.dash-ct-subbtn').forEach(b=>b.classList.remove('active'));
+  }
   if(btn) btn.classList.add('active');
   renderDashboard();
 }
@@ -1962,12 +2090,14 @@ function todayStr(){ return new Date().toISOString().slice(0,10); }
 function oeeColor(v){return v>=85?'#3ecf8e':v>=60?'#f5a623':'#f06060';}
 function cumplColor(v){return v>=95?'#3ecf8e':v>=80?'#f5a623':'#f06060';}
 function oeeBadge(v){if(v>=85)return'<span class="badge world">Clase mundial</span>';if(v>=60)return'<span class="badge good">Aceptable</span>';if(v>=40)return'<span class="badge avg">Bajo</span>';return'<span class="badge low">Crítico</span>';}
-function ctClass(ct){return ct==='TROQUELES'?'troqueles':ct==='LASER'?'laser':'muebles';}
+function oeeBadge(v){if(v>=85)return'<span class="badge world">Clase mundial</span>';if(v>=60)return'<span class="badge good">Aceptable</span>';if(v>=40)return'<span class="badge avg">Bajo</span>';return'<span class="badge low">Crítico</span>';}
 // ── Iconos SVG sutiles (correlación visual con el dato que acompañan) ──
 const ICONS={
-  troqueles:'<path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/>',
-  laser:'<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>',
+  troqueles:'<rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/>',
+  laser:'<path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/>',
   muebles:'<path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/>',
+  sillas:'<rect x="6" y="3" width="12" height="10" rx="1"/><path d="M6 13v6"/><path d="M18 13v6"/><path d="M8 19h8"/>',
+  mamparas:'<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/>',
   alertTriangle:'<path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
   dollar:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
   target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
@@ -2115,21 +2245,14 @@ function fastRefreshToday(){
   const today=todayStr();
   const todaySheets=[
     {name:'OEE_Registros', assign:(d)=>{ records=mergeRecordsById(records,d); }},
-    {name:'Produccion_Laser', assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='LASER');
-      const otherCts=horaRecords.filter(r=>r.ct!=='LASER');
-      horaRecords=[...mergeRecordsById(existing,d),...otherCts];
-    }},
-    {name:'Produccion_Muebles', assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='EST. MUEBLES');
-      const otherCts=horaRecords.filter(r=>r.ct!=='EST. MUEBLES');
-      horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
-    }},
-    {name:'Produccion_Troqueles', assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='TROQUELES');
-      const otherCts=horaRecords.filter(r=>r.ct!=='TROQUELES');
-      horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
-    }},
+    ...ALL_CTS.map(ct=>({
+      name: ctSheet(ct),
+      assign:(d)=>{
+        const existing=horaRecords.filter(r=>r.ct===ct);
+        const otherCts=horaRecords.filter(r=>r.ct!==ct);
+        horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
+      }
+    })),
   ];
   withGasLock(done=>{
     gasRequest(
@@ -2234,7 +2357,7 @@ function loadLocal(){
     const savedTargets=localStorage.getItem(SK.ctTargets);
     ctTargets=savedTargets?JSON.parse(savedTargets):{};
   }catch(e){ ctTargets={}; }
-  ['TROQUELES','LASER','EST. MUEBLES'].forEach(ct=>{
+  ALL_CTS.forEach(ct=>{
     if(!ctTargets[ct]) ctTargets[ct]={piezasProgramadas:0, capacidadInstalada:0};
   });
   try{atrasos=JSON.parse(localStorage.getItem(SK.atrasos))||[];}catch(e){atrasos=[];}
@@ -2338,24 +2461,15 @@ function loadFromCloud(){
       {name:'Aprovechamiento', assign:(d)=>{ aprovRecords=mergeRecordsById(aprovRecords,d); save('aprovRecords'); }},
       {name:'Mantenimiento',   assign:(d)=>{ mantLogs=mergeRecordsById(mantLogs,d); save('mantLogs'); }},
     ]),
-    {name:'Produccion_Laser',  assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='LASER');
-      const otherCts=horaRecords.filter(r=>r.ct!=='LASER');
-      horaRecords=[...mergeRecordsById(existing,d),...otherCts];
-      localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
-    }},
-    {name:'Produccion_Muebles',assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='EST. MUEBLES');
-      const otherCts=horaRecords.filter(r=>r.ct!=='EST. MUEBLES');
-      horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
-      localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
-    }},
-    {name:'Produccion_Troqueles',assign:(d)=>{
-      const existing=horaRecords.filter(r=>r.ct==='TROQUELES');
-      const otherCts=horaRecords.filter(r=>r.ct!=='TROQUELES');
-      horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
-      localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
-    }},
+    ...ALL_CTS.map(ct=>({
+      name: ctSheet(ct),
+      assign:(d)=>{
+        const existing=horaRecords.filter(r=>r.ct===ct);
+        const otherCts=horaRecords.filter(r=>r.ct!==ct);
+        horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
+        localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
+      }
+    })),
     {name:'Usuarios', assign:(d)=>{
       if(d && d.length){ users=ensureFallbackAdmin(mergeRecordsById(users, d.map(normalizeUserRow))); localStorage.setItem(SK_USERS,JSON.stringify(users)); }
     }},
@@ -2537,7 +2651,7 @@ function renderDashboard(){
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
   const ct=currentDashCT;
-  const cls=ct==='TROQUELES'?'troqueles':ct==='LASER'?'laser':'muebles';
+  const cls=ctClass(ct);
 
   const subEl=document.getElementById('dash-page-sub');
   if(subEl) subEl.textContent='OEE del día en curso — '+todayStr();
@@ -2566,7 +2680,7 @@ function renderDashboard(){
         <div class="ct-card-header">
           <div class="ct-card-icon ${cls}">${ic(cls,17)}</div>
           <div class="ct-card-header-text">
-            <span class="ct-badge ${cls}">${ct==='EST. MUEBLES'?'MUEBLES':ct}</span>
+            <span class="ct-badge ${cls}">${ctLabel(ct).toUpperCase()}</span>
             <span style="font-size:10px;color:var(--text3)">${ctRecs.length} máq. con registro hoy</span>
           </div>
         </div>
@@ -2635,8 +2749,8 @@ function renderDashboard(){
   renderDashHoraPanel(ct);
 
   // ── Mostrar solo la sección de tabla del CT seleccionado ──
-  ['TROQUELES','LASER','EST. MUEBLES'].forEach(c=>{
-    const c2=c==='TROQUELES'?'troqueles':c==='LASER'?'laser':'muebles';
+  ALL_CTS.forEach(c=>{
+    const c2=ctClass(c);
     const section=document.querySelector(`.ct-badge.${c2}`)?.closest('.ct-section');
     if(section) section.style.display=dashCTVisible(c)?'':'none';
   });
@@ -2645,7 +2759,7 @@ function renderDashboard(){
   if(body) body.style.display='';
 
   // ── Tabla de máquinas del CT seleccionado (colapsable, datos de hoy) ──
-  const tblId=ct==='TROQUELES'?'tbl-troqueles':ct==='LASER'?'tbl-laser':'tbl-muebles';
+  const tblId='tbl-'+cls;
   const tb=document.getElementById(tblId).querySelector('tbody');
   const ctM=getMachinesByCT(ct);
   if(!ctM.length){
@@ -3092,8 +3206,8 @@ function updateFilterSelects(){
 function filterChanged(){updateFilterSelects();renderHistory();}
 // ── CONFIGURACIÓN ──
 function renderConfig(){
-  ['TROQUELES','LASER','EST. MUEBLES'].forEach(ct=>{
-    const id='config-'+(ct==='TROQUELES'?'troqueles':ct==='LASER'?'laser':'muebles');
+  ALL_CTS.forEach(ct=>{
+    const id='config-'+ctClass(ct);
     const el=document.getElementById(id);if(!el)return;
     const ctM=getMachinesByCT(ct);if(!ctM.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem">Sin máquinas.</div>';return;}
     el.innerHTML=ctM.map(m=>`<div class="machine-config-card"><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
@@ -3282,7 +3396,12 @@ const MANT_DATA={
       {n:'Electrodos — reperfilar o cambiar',f:'Mensual',who:'tec',crit:'Alta'},{n:'Brazos de cobre — oxidación y tornillería',f:'Mensual',who:'tec',crit:'Alta'},{n:'Sistema de enfriamiento — incrustaciones',f:'Mensual',who:'tec',crit:'Alta'},
       {n:'Mecanismo de presión — fuerza entre electrodos',f:'Mensual',who:'tec',crit:'Alta'},{n:'Transformador — temperatura y aislamiento',f:'Cada 3 meses',who:'tec',crit:'Alta'},{n:'Mangueras de agua — grietas y fugas',f:'Mensual',who:'tec',crit:'Alta'}
     ],riesgos:['Electrodos desgastados → punto incompleto → unión débil','Sin flujo de agua → sobrecalentamiento del transformador','Holgura en brazos → punto descentrado → rechazo']}
-  }
+  },
+  // Sillas y Mamparas son centros nuevos — inician sin componentes de
+  // mantenimiento predefinidos. Se agregan desde Mantenimiento → Plan una
+  // vez que Leonardo dé de alta las máquinas de cada uno.
+  'EST. SILLAS':{},
+  'EST. MAMPARAS':{}
 };
 // ── CHECKLIST DATA ──
 const CHECKLIST={
@@ -3427,8 +3546,8 @@ function submitAtrasoForm(ct){
   renderDashboard();
 }
 function renderMantPlan(){
-  ['LASER','TROQUELES','EST. MUEBLES'].forEach(ct=>{
-    const ctKey=ct==='LASER'?'laser':ct==='TROQUELES'?'troqueles':'muebles';
+  ALL_CTS.forEach(ct=>{
+    const ctKey=ctClass(ct);
     const el=document.getElementById('mant-plan-'+ctKey);if(!el)return;
     el.innerHTML=Object.entries(MANT_DATA[ct]).map(([mname,mdata],mi)=>{
       const mid='mant-m-'+ctKey+'-'+mi;
@@ -3567,7 +3686,7 @@ function renderMantHist(){
     }).join('');
     return`<div style="margin-bottom:.75rem;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
       <div style="display:flex;align-items:center;gap:10px;padding:.6rem 1rem;background:var(--bg3);cursor:pointer" onclick="toggleMantHistSection('mhs${safeId}',this)">
-        <span class="ct-badge ${badge}" style="font-size:10px">${mdata.ct==='EST. MUEBLES'?'MUEBLES':mdata.ct}</span>
+        <span class="ct-badge ${badge}" style="font-size:10px">${ctLabel(mdata.ct).toUpperCase()}</span>
         <span style="font-size:13px;font-weight:600;color:var(--text)">${mname}</span>
         <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px">
           <span style="color:var(--text3)">${total} reg.</span>
@@ -3613,7 +3732,7 @@ function renderCumplimiento(){
     const badge=data.ct==='LASER'?'laser':data.ct==='TROQUELES'?'troqueles':'muebles';
     return`<div style="display:grid;grid-template-columns:20px 120px 80px 1fr 60px 60px 60px;gap:8px;align-items:center;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
       <span>${semDot}</span><span style="font-weight:500;color:var(--text)">${mname}</span>
-      <span><span class="ct-badge ${badge}" style="font-size:10px">${data.ct==='EST. MUEBLES'?'MUEBLES':data.ct}</span></span>
+      <span><span class="ct-badge ${badge}" style="font-size:10px">${ctLabel(data.ct).toUpperCase()}</span></span>
       <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${color};width:${avgM??0}%"></div></div>
       <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:${color};text-align:right">${avgM!=null?avgM+'%':'–'}</span>
       <span style="color:#3ecf8e;text-align:center">${data.ok} ✓</span>
@@ -3871,7 +3990,7 @@ function liveSyncHoraAndParos(ctxOverride){
     const hIdx=horaRecords.findIndex(r=>r.id===horaId);
     if(hIdx>=0) horaRecords[hIdx]=horaRec; else horaRecords.push(horaRec);
     localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
-    const horaSheet=ct==='LASER'?'Produccion_Laser':ct==='TROQUELES'?'Produccion_Troqueles':'Produccion_Muebles';
+    const horaSheet=ctSheet(ct);
     cloudUpsertRow(horaSheet, horaRec);
   } else {
     // Máquinas sin hora×hora: piezas producidas/rechazadas vienen de los
@@ -3992,9 +4111,7 @@ function saveHoraRecord(){
   const hIdx = horaRecords.findIndex(r=>r.id===horaId);
   if(hIdx>=0) horaRecords[hIdx]=rec; else horaRecords.push(rec);
   localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
-  const horaSheet = ct==='LASER' ? 'Produccion_Laser' :
-    ct==='TROQUELES' ? 'Produccion_Troqueles' : 'Produccion_Muebles';
-  cloudUpsertRow(horaSheet, rec);
+  cloudUpsertRow(ctSheet(ct), rec);
 
   // Auto-save OEE record with same data
   const paros = getParos();
@@ -4165,13 +4282,14 @@ function deleteHoraRecord(id){
   horaRecords = horaRecords.filter(r=>r.id!==id);
   localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
   renderHoraHist();
-  const sheet=rec&&rec.ct==='LASER'?'Produccion_Laser':rec&&rec.ct==='TROQUELES'?'Produccion_Troqueles':rec&&rec.ct==='EST. MUEBLES'?'Produccion_Muebles':null;
+  const sheet=rec&&rec.ct&&CT_CONFIG[rec.ct]?ctSheet(rec.ct):null;
   if(sheet){
     cloudDeleteRow(sheet, id);
   } else {
     // Registro con "ct" corrupto/vacío (datos viejos/incompletos) — para no
-    // dejarlo "resucitando" en la nube, se intenta borrar en las 3 hojas.
-    ['Produccion_Laser','Produccion_Muebles','Produccion_Troqueles'].forEach(s=>cloudDeleteRow(s, id));
+    // dejarlo "resucitando" en la nube, se intenta borrar en todas las
+    // hojas de producción conocidas.
+    ALL_CTS.map(ctSheet).forEach(s=>cloudDeleteRow(s, id));
   }
 }
 
@@ -4180,9 +4298,7 @@ function clearHoraRecords(){
   horaRecords = [];
   localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
   renderHoraHist();
-  cloudWriteAll('Produccion_Laser', []);
-  cloudWriteAll('Produccion_Muebles', []);
-  cloudWriteAll('Produccion_Troqueles', []);
+  ALL_CTS.map(ctSheet).forEach(sheet=>cloudWriteAll(sheet, []));
 }
 
 
