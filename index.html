@@ -1389,6 +1389,11 @@ function logout(){
 function onLoginSuccess(){
   applyRolePermissions();
   loadData();
+  // applyRolePermissions() (y por lo tanto applyUserCtLock/updateMachineAndTurno)
+  // corre ANTES de que loadData() cargue las máquinas guardadas localmente,
+  // así que la primera vez el selector de máquina se arma con la lista aún
+  // vacía. Se vuelve a aplicar aquí, ya con los datos locales disponibles.
+  applyUserCtLock();
 }
 
 // ── Permisos por rol ──
@@ -1430,6 +1435,7 @@ function applyUserCtLock(){
       ctSel.innerHTML=ALL_CTS.map(ct=>`<option>${ct}</option>`).join('');
       ctSel.disabled=false; ctSel.title='';
     }
+    updateMachineAndTurno();
     document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='');
     document.querySelectorAll('.dash-ct-subbtn').forEach(b=>b.style.display='');
   }
