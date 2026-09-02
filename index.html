@@ -14,6 +14,11 @@
 body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .25s cubic-bezier(.4,0,.2,1)}
+.sidebar-mini{width:52px;min-width:52px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px}
+.nav-item-mini{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;color:var(--text3);cursor:pointer;transition:all .15s}
+.nav-item-mini svg{width:17px;height:17px}
+.nav-item-mini:hover{color:var(--text);background:var(--bg3)}
+.nav-item-mini.active{color:var(--blue);background:rgba(74,158,255,.12)}
 .sidebar.collapsed{width:56px;min-width:56px}
 .sidebar-logo{padding:1.25rem 1.25rem 1rem;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;transition:padding .25s}
 .sidebar.collapsed .sidebar-logo{padding:1rem 0;display:flex;justify-content:center;align-items:center}
@@ -119,6 +124,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .tab:hover{color:var(--text)}.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .tab.tab-disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 .tab-content{display:none}.tab-content.active{display:block}
+/* Vista dividida de Registrar turno: Registro + Programa del día uno junto
+   al otro, cada uno con su propio scroll, ocultando la pestaña Historial
+   (no aplica a este modo) y las pestañas normales. */
+#reg-content.reg-split-mode{display:flex;gap:1rem;align-items:flex-start}
+#reg-content.reg-split-mode #reg-tab-row{display:none}
+#reg-content.reg-split-mode #reg-tab-form,
+#reg-content.reg-split-mode #reg-tab-programa{display:block!important;flex:1;min-width:0;max-height:calc(100vh - 130px);overflow-y:auto;padding-right:4px}
+#reg-content.reg-split-mode #reg-tab-historial{display:none!important}
+/* El contenedor exterior ya maneja el scroll en modo dividido — se deja
+   que la tabla interna crezca libremente (sin su propio límite de alto)
+   para no tener dos barras de scroll una dentro de la otra, y para que
+   aproveche el espacio que libera ocultar la tarjeta de subida. */
+#reg-content.reg-split-mode .programa-table-wrap{max-height:none;border:none}
 .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem}
 .metric-card.metric-card-flex{display:flex;align-items:center;gap:12px}
@@ -353,6 +371,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-table-wrap{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg2)}
 .programa-table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
 .programa-table thead th{position:sticky;top:0;background:var(--bg3);color:var(--text2);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);z-index:1}
+.programa-filter-row th{position:sticky;top:29px;background:var(--bg2);padding:2px 6px 5px;z-index:1}
+.programa-filter-input,.programa-filter-select{width:100%;font-size:10px;padding:2px 3px;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:var(--text3);transition:border-color .15s,background .15s}
+.programa-filter-input::placeholder{color:var(--text3);opacity:.6}
+.programa-filter-input:focus,.programa-filter-select:focus{outline:none;border-bottom-color:var(--blue);background:rgba(74,158,255,.06);color:var(--text)}
+.programa-filter-input:not(:placeholder-shown){color:var(--text2);border-bottom-color:var(--text3)}
 .programa-table td{padding:6px 12px;border-bottom:0.5px solid var(--border);color:var(--text2)}
 .programa-obs-input{width:100%;min-width:140px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 8px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text);transition:all .15s}
 .programa-obs-input:hover{border-color:var(--border);background:var(--bg3)}
@@ -495,6 +518,29 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
   </div>
 </nav>
+<!-- Barra de navegación compacta: solo visible en vista dividida, para
+     poder seguir moviéndose entre menús sin perder el espacio que gana la
+     barra lateral completa al ocultarse. -->
+<nav class="sidebar-mini" id="sidebar-mini" style="display:none">
+  <div class="nav-item-mini" onclick="navigate('dashboard',this)" data-label="Dashboard" title="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  </div>
+  <div class="nav-item-mini active" onclick="navigate('registro',this)" data-label="Registrar turno" title="Registrar turno">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+  </div>
+  <div class="nav-item-mini" onclick="navigate('aprovechamiento',this)" data-label="Aprovechamiento" title="Aprovechamiento">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+  </div>
+  <div class="nav-item-mini" onclick="navigate('mantenimiento',this)" data-label="Mantenimiento" title="Mantenimiento">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+  </div>
+  <div class="nav-item-mini" onclick="navigate('historial',this)" data-label="Historial" title="Historial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  </div>
+  <div class="nav-item-mini" onclick="navigate('config',this)" data-label="Configuración" title="Configuración">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  </div>
+</nav>
 <div class="main" id="main-container">
 <div class="main-single" id="main-single">
 <!-- DASHBOARD -->
@@ -554,9 +600,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 <!-- REGISTRO -->
 <div id="page-registro" class="page">
-  <div class="topbar"><div class="page-title">Registrar turno</div><div class="page-sub">Captura datos reales — OEE calculado automáticamente</div></div>
-  <div class="content">
-    <div class="tab-row">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><div class="page-title">Registrar turno</div><div class="page-sub">Captura datos reales — OEE calculado automáticamente</div></div>
+      <button class="dash-ct-btn" id="reg-split-btn" onclick="toggleRegSplit()" title="Ver el registro y el programa del día uno junto al otro">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+        Vista dividida
+      </button>
+    </div>
+  </div>
+  <div class="content" id="reg-content">
+    <div class="tab-row" id="reg-tab-row">
       <div class="tab active" id="reg-tab-form-btn" onclick="switchTab('reg-tab-form',this)">Registro</div>
       <div class="tab" id="reg-tab-programa-btn" onclick="switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
       <div class="tab" onclick="switchTab('reg-tab-historial',this)">Historial</div>
@@ -577,12 +631,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="info-box" style="margin:1rem 0 0">
           <div class="info-box-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Referencia del turno</div>
           <div class="info-grid-6">
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="info-item-text"><div class="il">Turno</div><div class="iv" id="inf-turno">–</div></div></div>
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41a2 2 0 0 0-.59 1.42V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg></div><div class="info-item-text"><div class="il">Duración</div><div class="iv" id="inf-duracion">–</div></div></div>
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><div class="info-item-text"><div class="il">T. planeado</div><div class="iv" id="inf-planeado">–</div></div></div>
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg></div><div class="info-item-text"><div class="il">Capacidad</div><div class="iv" id="inf-capacidad">–</div></div></div>
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg></div><div class="info-item-text"><div class="il">Centro</div><div class="iv" id="inf-ct">–</div></div></div>
-            <div class="info-item"><div class="info-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="info-item-text"><div class="il">Operador</div><input type="text" id="reg-op" placeholder="Nombre" class="inf-input"></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(74,158,255,.12);color:#4a9eff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="info-item-text"><div class="il">Turno</div><div class="iv" id="inf-turno">–</div></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(56,189,248,.12);color:#38bdf8"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41a2 2 0 0 0-.59 1.42V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg></div><div class="info-item-text"><div class="il">Duración</div><div class="iv" id="inf-duracion">–</div></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(62,207,142,.12);color:#3ecf8e"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div><div class="info-item-text"><div class="il">T. planeado</div><div class="iv" id="inf-planeado">–</div></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(245,166,35,.12);color:#f5a623"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg></div><div class="info-item-text"><div class="il">Capacidad</div><div class="iv" id="inf-capacidad">–</div></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(192,132,252,.12);color:#c084fc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg></div><div class="info-item-text"><div class="il">Centro</div><div class="iv" id="inf-ct">–</div></div></div>
+            <div class="info-item"><div class="info-item-icon" style="background:rgba(251,113,133,.12);color:#fb7185"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div class="info-item-text"><div class="il">Operador</div><input type="text" id="reg-op" placeholder="Nombre" class="inf-input"></div></div>
           </div>
         </div>
       </div>
@@ -591,9 +645,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Datos de producción</div>
         <div class="form-grid-3">
-          <div class="form-group"><label>Piezas programadas</label><input type="number" id="reg-programadas" min="0" value="0" oninput="delete this.dataset.autofilled;calcOEE()"><div class="input-hint">Meta del turno</div></div>
-          <div class="form-group"><label>Piezas producidas</label><input type="number" id="reg-piezas" min="0" value="0" oninput="calcOEE()"><div class="input-hint">Buenas + rechazadas</div></div>
-          <div class="form-group"><label>Piezas rechazadas</label><input type="number" id="reg-rechazadas" min="0" value="0" oninput="calcOEE()"><div class="input-hint">Scrap + retrabajo</div></div>
+          <div class="form-group"><label>Piezas programadas</label><input type="number" id="reg-programadas" min="0" value="0" oninput="delete this.dataset.autofilled;calcOEE()" style="font-size:19px;font-weight:700;color:#4a9eff"><div class="input-hint">Meta del turno</div></div>
+          <div class="form-group"><label>Piezas producidas</label><input type="number" id="reg-piezas" min="0" value="0" oninput="calcOEE()" style="font-size:19px;font-weight:700;color:#3ecf8e"><div class="input-hint">Buenas + rechazadas</div></div>
+          <div class="form-group"><label>Piezas rechazadas</label><input type="number" id="reg-rechazadas" min="0" value="0" oninput="calcOEE()" style="font-size:19px;font-weight:700;color:#f06060"><div class="input-hint">Scrap + retrabajo</div></div>
         </div>
         <div class="oee-result">
           <div class="oee-result-body">
@@ -1451,7 +1505,7 @@ function applyRolePermissions(){
   if(roleEl) roleEl.textContent=ROLE_LABEL[role]||role;
 
   const allowedPages = role==='operador' ? ['registro'] : ['dashboard','registro','aprovechamiento','mantenimiento','historial','config'];
-  document.querySelectorAll('.nav-item[onclick]').forEach(item=>{
+  document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
     const m=item.getAttribute('onclick').match(/navigate\('(\w+)'/);
     if(!m) return;
     item.style.display = allowedPages.includes(m[1]) ? '' : 'none';
@@ -1790,6 +1844,45 @@ function renderProgramaProgress(rec){
   const done=body.filter(r=>r[rec.cortadoColIdx]===true).length;
   el.textContent=`${done} / ${body.length} piezas cortadas`;
 }
+// Filtros activos por columna de la tabla del Programa del día — se
+// conservan entre reconstrucciones de la tabla (sync en segundo plano,
+// cambio de máquina, etc.) hasta que el operador los borre.
+let programaFilters={};
+function setProgramaFilter(colIdx,value){
+  if(value){ programaFilters[colIdx]=value; } else { delete programaFilters[colIdx]; }
+  applyProgramaFilters();
+}
+function clearProgramaFilters(){
+  programaFilters={};
+  document.querySelectorAll('.programa-filter-input').forEach(el=>el.value='');
+  document.querySelectorAll('.programa-filter-select').forEach(el=>el.value='');
+  applyProgramaFilters();
+}
+function applyProgramaFilters(){
+  const scope=document.getElementById('programa-table-container');
+  if(!scope) return;
+  const rows=scope.querySelectorAll('.programa-table tbody tr');
+  let visibleCount=0;
+  rows.forEach(tr=>{
+    let visible=true;
+    for(const colIdx in programaFilters){
+      const filterVal=programaFilters[colIdx];
+      if(!filterVal) continue;
+      if(filterVal==='__done__'||filterVal==='__pending__'){
+        const isDone=tr.classList.contains('programa-row-done');
+        if((filterVal==='__done__')!==isDone){ visible=false; break; }
+        continue;
+      }
+      const td=tr.children[colIdx];
+      const text=td?td.textContent.trim().toLowerCase():'';
+      if(!text.includes(filterVal.toLowerCase())){ visible=false; break; }
+    }
+    tr.style.display=visible?'':'none';
+    if(visible) visibleCount++;
+  });
+  const counter=document.getElementById('programa-filter-count');
+  if(counter) counter.textContent = Object.keys(programaFilters).length ? `${visibleCount} de ${rows.length} filas` : '';
+}
 function renderProgramaTable(rec){
   const rows=rec&&rec.rows;
   if(!rows || !rows.length) return '<div class="empty-state">Sin datos en esta hoja.</div>';
@@ -1797,12 +1890,25 @@ function renderProgramaTable(rec){
   const body=rows.slice(1);
   const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
-  const thead=`<thead><tr>${header.map(h=>`<th>${h===''?'&nbsp;':String(h)}</th>`).join('')}</tr></thead>`;
+  const thead=`<thead><tr>${header.map(h=>`<th>${h===''?'&nbsp;':String(h)}</th>`).join('')}</tr>
+    <tr class="programa-filter-row">${header.map((h,cIdx)=>{
+      if(cIdx===cortadoColIdx){
+        const cur=programaFilters[cIdx]||'';
+        return `<th><select class="programa-filter-select" onchange="setProgramaFilter(${cIdx},this.value)">
+          <option value="">Todos</option>
+          <option value="__done__" ${cur==='__done__'?'selected':''}>✓ Cortados</option>
+          <option value="__pending__" ${cur==='__pending__'?'selected':''}>Pendientes</option>
+        </select></th>`;
+      }
+      const cur=(programaFilters[cIdx]||'').toString().replace(/"/g,'&quot;');
+      return `<th><input type="text" class="programa-filter-input" value="${cur}" placeholder="Filtrar…" oninput="setProgramaFilter(${cIdx},this.value)"></th>`;
+    }).join('')}</tr>
+  </thead>`;
   const tbody=`<tbody>${body.map((row,rIdx)=>{
     const isDone=row[cortadoColIdx]===true;
     return `<tr class="${isDone?'programa-row-done':''}">${header.map((_,cIdx)=>{
     if(cIdx===cortadoColIdx){
-      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} onchange="updateProgramaCell('${rec.fecha}','${rec.machine}',${rIdx},${cortadoColIdx},this.checked);this.closest('tr').classList.toggle('programa-row-done',this.checked)"></td>`;
+      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} onchange="updateProgramaCell('${rec.fecha}','${rec.machine}',${rIdx},${cortadoColIdx},this.checked);this.closest('tr').classList.toggle('programa-row-done',this.checked);applyProgramaFilters()"></td>`;
     }
     if(cIdx===obsColIdx){
       const val=row[cIdx]!=null?String(row[cIdx]):'';
@@ -1811,7 +1917,8 @@ function renderProgramaTable(rec){
     return `<td>${row[cIdx]!=null&&row[cIdx]!==''?String(row[cIdx]):''}</td>`;
   }).join('')}</tr>`;
   }).join('')}</tbody>`;
-  return `<div class="programa-table-wrap"><table class="programa-table">${thead}${tbody}</table></div>`;
+  setTimeout(applyProgramaFilters,0);
+  return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table">${thead}${tbody}</table></div>`;
 }
 // Descarga un .xlsx con el programa del día completo (todas las máquinas
 // con datos para la fecha seleccionada), incluyendo lo marcado como
@@ -1892,7 +1999,7 @@ function renderProgramaDia(){
   if(container.contains(document.activeElement) && document.activeElement!==document.body) return;
 
   const canUpload=currentUser.role==='ingeniero'||currentUser.role==='lider';
-  if(uploadCard) uploadCard.style.display=canUpload?'':'none';
+  if(uploadCard) uploadCard.style.display=(canUpload && !regSplitActive)?'':'none';
 
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
@@ -1939,6 +2046,11 @@ function renderProgramaDia(){
         <span style="margin-left:auto">Subido por ${rec.uploadedByName} — ${hhmm}</span>
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
         ${canUpload?`<button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el programa del día completo (todas las máquinas cargadas) con lo cortado y las observaciones">${ic('box',12)}Descargar registro del día</button>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <span style="font-size:11px;color:var(--text3)">Escribe en cualquier columna para filtrar — se combinan entre sí.</span>
+        <span id="programa-filter-count" style="font-size:11px;color:var(--blue);font-weight:600"></span>
+        <button class="btn" style="margin-left:auto;font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="clearProgramaFilters()">✕ Limpiar filtros</button>
       </div>
     </div>
     <div style="padding:0 1rem 1rem">${renderProgramaTable(rec)}</div>`;
@@ -3331,12 +3443,13 @@ function toggleMantMachine(bodyId,headerEl){const body=document.getElementById(b
 // ── NAV & TABS ──
 function navigate(page,el){
   if(currentUser && currentUser.role==='operador' && page!=='registro'){ return; }
+  if(page!=='registro' && regSplitActive) toggleRegSplit();
   // Hide all pages explicitly (class + inline style)
   document.querySelectorAll('.page').forEach(p=>{
     p.classList.remove('active');
     p.style.display='';  // clear any inline display overrides
   });
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .nav-item-mini').forEach(n=>n.classList.remove('active'));
 
   const target=document.getElementById('page-'+page);
   if(!target) return;
@@ -3348,7 +3461,12 @@ function navigate(page,el){
   }
 
   target.classList.add('active');
-  el.classList.add('active');
+  // Se marca como activo en AMBAS barras (completa y mini) — solo una está
+  // visible a la vez según el modo, pero conviene que las dos queden
+  // sincronizadas para cuando se vuelva a mostrar la otra.
+  document.querySelectorAll('.nav-item, .nav-item-mini').forEach(n=>{
+    if((n.getAttribute('onclick')||'').includes(`navigate('${page}'`)) n.classList.add('active');
+  });
 
   updateFullscreenBtnVisibility(page);
   try{ if(page==='dashboard')renderDashboard(); }catch(e){}
@@ -3380,6 +3498,37 @@ function switchTab(id,el){
   document.getElementById(id).classList.add('active');el.classList.add('active');
 }
 function renderAll(){renderDashboard();renderHistory();updateFilterSelects();renderHoraHist();renderProgramaDia();updateFullscreenBtnVisibility();}
+// ── VISTA DIVIDIDA DE REGISTRAR TURNO (Registro + Programa del día) ──
+// Pensada para que el operador vea su registro de hora×hora y su programa
+// del día al mismo tiempo. Se oculta el menú lateral mientras está activa
+// para aprovechar mejor el espacio.
+let regSplitActive=false;
+function toggleRegSplit(){
+  regSplitActive=!regSplitActive;
+  const content=document.getElementById('reg-content');
+  const sidebar=document.getElementById('sidebar');
+  const sidebarMini=document.getElementById('sidebar-mini');
+  const btn=document.getElementById('reg-split-btn');
+  if(regSplitActive){
+    if(content) content.classList.add('reg-split-mode');
+    if(sidebar) sidebar.style.display='none';
+    if(sidebarMini){
+      sidebarMini.style.display='flex';
+      sidebarMini.querySelectorAll('.nav-item-mini').forEach(item=>{
+        item.classList.toggle('active', item.getAttribute('onclick').includes("navigate('registro'"));
+      });
+    }
+    if(btn) btn.classList.add('active');
+    renderProgramaDia();
+    refreshProgramaDiaFromCloud();
+  } else {
+    if(content) content.classList.remove('reg-split-mode');
+    if(sidebar) sidebar.style.display='';
+    if(sidebarMini) sidebarMini.style.display='none';
+    if(btn) btn.classList.remove('active');
+    renderProgramaDia(); // para que la tarjeta de subida reaparezca si el rol la permite
+  }
+}
 // ── MANTENIMIENTO DATA ──
 const MANT_DATA={
   'LASER':{
