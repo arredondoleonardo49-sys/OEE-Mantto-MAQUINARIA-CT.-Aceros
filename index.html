@@ -613,7 +613,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="tab-row" id="reg-tab-row">
       <div class="tab active" id="reg-tab-form-btn" onclick="switchTab('reg-tab-form',this)">Registro</div>
       <div class="tab" id="reg-tab-programa-btn" onclick="switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
-      <div class="tab" onclick="switchTab('reg-tab-historial',this)">Historial</div>
+      <div class="tab" onclick="switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
     </div>
 
     <!-- TAB: REGISTRO -->
@@ -1630,6 +1630,14 @@ function onChecklistToggle(){
 }
 function saveChecklist(){
   if(!currentUser) return;
+  // El checklist de arranque representa una revisión física que hace
+  // quien opera la máquina — un Ingeniero o Administrador no debe poder
+  // completarlo (ni por accidente, ni por ninguna otra vía), para que
+  // nunca aparezca "contestado" sin que el operador realmente lo hizo.
+  if(currentUser.role!=='operador'){
+    console.warn('saveChecklist bloqueado: solo la cuenta de Operador puede completar el checklist de arranque.');
+    return;
+  }
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
   const turno=document.getElementById('reg-turno').value;
@@ -2060,6 +2068,29 @@ function renderProgramaDia(){
 // fórmula "TOTAL DE PIEZAS" del Excel original) y la coloca automáticamente
 // en "Piezas programadas" de Datos de producción, para que no haya que
 // capturarla dos veces.
+// Máquinas cuyo programa del día viene de un archivo Excel subido (y por
+// lo tanto tienen una columna "Cant." real que sumar), agrupadas por CT.
+// Para estos CT, la meta de "Piezas programadas (CT)" del Dashboard se
+// calcula sola a partir de esos archivos — no es un valor manual.
+const CT_PROGRAMADAS_AUTO_MACHINES={ 'LASER': ['GW1','GW2'] };
+function getCTProgramadasAuto(ct, fecha){
+  const machinesList=CT_PROGRAMADAS_AUTO_MACHINES[ct];
+  if(!machinesList) return null; // este CT no tiene programa por archivo — usar el valor manual de Metas por CT
+  let total=0, anyData=false;
+  machinesList.forEach(m=>{
+    const rec=programaDia.find(r=>r.fecha===fecha && r.machine===m);
+    if(!rec || !rec.rows || !rec.rows.length) return;
+    anyData=true;
+    const header=rec.rows[0]||[];
+    const colIdx=header.findIndex(h=>String(h).trim().toLowerCase()==='cant.');
+    if(colIdx<0) return;
+    total+=rec.rows.slice(1).reduce((sum,row)=>{
+      const v=parseFloat(row[colIdx]);
+      return sum+(isNaN(v)?0:v);
+    },0);
+  });
+  return anyData?total:0;
+}
 function autoFillPiezasProgramadas(rec){
   const input=document.getElementById('reg-programadas');
   if(!input || !rec || !rec.rows || !rec.rows.length) return;
@@ -2086,10 +2117,12 @@ function renderCtTargetsConfig(){
   const cts=ALL_CTS.map(ct=>({key:ct, label:ct, cls:ctClass(ct)}));
   wrap.innerHTML=cts.map(c=>{
     const t=ctTargets[c.key]||{piezasProgramadas:0,capacidadInstalada:0};
+    const isAuto=!!CT_PROGRAMADAS_AUTO_MACHINES[c.key];
+    const autoVal=isAuto?getCTProgramadasAuto(c.key, todayStr()):null;
     return `<div style="display:grid;grid-template-columns:140px 1fr 1fr;gap:1rem;align-items:end;padding:.85rem 0;border-bottom:0.5px solid var(--border)">
       <span class="ct-badge ${c.cls}">${c.label}</span>
-      <div class="form-group"><label>Piezas programadas (CT)</label>
-        <input type="number" min="0" value="${t.piezasProgramadas}" onchange="updateCtTargetField('${c.key}','piezasProgramadas',this.value)"></div>
+      <div class="form-group"><label>Piezas programadas (CT)${isAuto?' <span style="color:var(--text3);font-weight:400">— se calcula sola (GW1+GW2)</span>':''}</label>
+        <input type="number" min="0" value="${isAuto?(autoVal||0):t.piezasProgramadas}" ${isAuto?'disabled title="Este valor se calcula automáticamente sumando el programa del día de GW1 y GW2 — no se edita aquí."':`onchange="updateCtTargetField('${c.key}','piezasProgramadas',this.value)"`}></div>
       <div class="form-group"><label>Capacidad instalada (CT)</label>
         <input type="number" min="0" value="${t.capacidadInstalada}" onchange="updateCtTargetField('${c.key}','capacidadInstalada',this.value)"></div>
     </div>`;
@@ -2847,10 +2880,14 @@ function renderDashboard(){
     const color=ctAvg===null?'var(--text3)':oeeColor(ctAvg);
 
     // ── Indicadores destacados: piezas programadas / capacidad instalada
-    // (editables desde Configuración → Metas por CT) y adelanto/atraso ──
+    // (editables desde Configuración → Metas por CT, salvo Laser que se
+    // calcula solo sumando GW1+GW2 del programa del día subido) y
+    // adelanto/atraso ──
     const target=ctTargets[ct]||{piezasProgramadas:0,capacidadInstalada:0};
+    const autoProgramadas=getCTProgramadasAuto(ct, todayStr());
+    const piezasProgramadasCT=autoProgramadas!=null?autoProgramadas:(target.piezasProgramadas||0);
     const piezasProducidasCT=getCTHoraGrandTotal(ct);
-    const diffCT=piezasProducidasCT-(target.piezasProgramadas||0);
+    const diffCT=piezasProducidasCT-piezasProgramadasCT;
     const esAdelanto=diffCT>=0;
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
@@ -2865,8 +2902,8 @@ function renderDashboard(){
         <div class="ct-card-body">
           <div class="ct-highlight-row">
             <div class="ct-highlight-box">
-              <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)</div>
-              <div class="ct-highlight-val" style="color:var(--text)">${target.piezasProgramadas||0}</div>
+              <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
+              <div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>
               <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}</div>
             </div>
             <div class="ct-highlight-box">
@@ -2965,7 +3002,11 @@ function renderDashboard(){
 
   // ── Gráfica OEE por máquina del CT (datos de hoy) ──
   const titleEl=document.getElementById('dash-chart-title-text');
-  const ctMachines=Object.keys(last).filter(k=>k.split('|')[0]===ct);
+  // Solo máquinas que SIGUEN existiendo hoy en Configuración — si se
+  // eliminó una máquina, no debe seguir apareciendo aquí solo porque
+  // tenga un registro viejo de hoy en la nube.
+  const currentMachineNames=new Set(getMachinesByCT(ct).map(m=>m.name));
+  const ctMachines=Object.keys(last).filter(k=>k.split('|')[0]===ct && currentMachineNames.has(k.split('|')[1]));
   const labels=ctMachines.map(k=>k.split('|')[1]);
   const data=ctMachines.map(k=>last[k].oee);
   const color=ct==='TROQUELES'?'#4a9eff':ct==='LASER'?'#3ecf8e':'#f5a623';
@@ -3373,7 +3414,7 @@ function renderHistory(){
   let filtered=[...records].reverse();if(fct)filtered=filtered.filter(r=>r.ct===fct);if(fm)filtered=filtered.filter(r=>r.machine===fm);if(ft)filtered=filtered.filter(r=>r.turno===ft);
   const tb=document.getElementById('history-body');const em=document.getElementById('history-empty');
   if(!filtered.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';
-  tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${r.machine}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord(${r.id})" title="Eliminar registro">×</button></td></tr>`).join('');
+  tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${r.machine}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord('${r.id}')" title="Eliminar registro">×</button></td></tr>`).join('');
 }
 function updateFilterSelects(){
   const fct=document.getElementById('filter-ct').value;const mlist=fct?getMachinesByCT(fct):machines;
@@ -4000,7 +4041,7 @@ function clearAllMantLogs(){
 
 function deleteRecord(id){
   if(!confirm('¿Eliminar este registro de OEE?')) return;
-  records = records.filter(r => r.id !== id);
+  records = records.filter(r => String(r.id) !== String(id));
   save('records');
   renderHistory();
   renderDashboard();
@@ -4460,7 +4501,7 @@ function renderHoraHist(){
           ${r.totalDanadas>0?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Dañadas</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#f06060">${r.totalDanadas}</div></div>`:''}
           <div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Eficiencia</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${eficColor}">${r.eficiencia}%</div></div>
           <div>${miniChart}</div>
-          <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteHoraRecord(${r.id})" title="Eliminar">×</button>
+          <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteHoraRecord('${r.id}')" title="Eliminar">×</button>
         </div>
       </div>
       <!-- Franja detail (collapsible) -->
@@ -4476,7 +4517,7 @@ function renderHoraHist(){
           ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo?`<span style="color:var(--amber)">· ${f.motivo}</span>`:''}</div>`).join('')}
         </div>`:``}
       </div>
-      <button onclick="toggleHoraDetail(${r.id},this)" style="width:100%;text-align:center;padding:5px;font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">
+      <button onclick="toggleHoraDetail('${r.id}',this)" style="width:100%;text-align:center;padding:5px;font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">
         ▾ Ver detalle por franja
       </button>
     </div>`;
@@ -4493,8 +4534,8 @@ function toggleHoraDetail(id, btn){
 
 function deleteHoraRecord(id){
   if(!confirm('¿Eliminar este registro?')) return;
-  const rec=horaRecords.find(r=>r.id===id);
-  horaRecords = horaRecords.filter(r=>r.id!==id);
+  const rec=horaRecords.find(r=>String(r.id)===String(id));
+  horaRecords = horaRecords.filter(r=>String(r.id)!==String(id));
   localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
   renderHoraHist();
   const sheet=rec&&rec.ct&&CT_CONFIG[rec.ct]?ctSheet(rec.ct):null;
@@ -4531,6 +4572,12 @@ function renderEvaluacion(){
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
   filtered = filtered.filter(r=>r.op&&r.op!=='–');
+
+  // Solo Operador y Líder registran piezas como parte de su trabajo — un
+  // Ingeniero puede llegar a hacerlo (ej. una prueba, cubrir un turno),
+  // pero no corresponde evaluarlo como si fuera su desempeño habitual.
+  const ingenieroNames=new Set(users.filter(u=>u.role==='ingeniero').map(u=>(u.name||'').trim().toLowerCase()));
+  filtered = filtered.filter(r=>!ingenieroNames.has(r.op.trim().toLowerCase()));
 
   const evalBody = document.getElementById('eval-body');
   const evalEmpty = document.getElementById('eval-empty');
