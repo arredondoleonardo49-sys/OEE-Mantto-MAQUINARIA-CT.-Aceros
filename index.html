@@ -791,8 +791,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <!-- HISTORIAL HORA POR HORA -->
         <div id="hora-tab-hist" class="tab-content active">
           <div class="filter-row" style="margin-bottom:.75rem">
+            <select id="hora-hist-ct" onchange="populateHistMachineOptions('hora-hist-ct','hora-hist-machine');renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+              <option value="">Todos los centros</option>
+            </select>
             <select id="hora-hist-machine" onchange="renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-              <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option><option value="Área General">Área General</option><option value="Punteadora">Punteadora</option>
+              <option value="">Todas las máquinas</option>
             </select>
             <select id="hora-hist-turno" onchange="renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
               <option value="">Todos los turnos</option>
@@ -808,8 +811,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <!-- EVALUACIÓN POR OPERADOR -->
         <div id="hora-tab-eval" class="tab-content">
           <div class="filter-row" style="margin-bottom:1rem">
+            <select id="eval-ct" onchange="populateHistMachineOptions('eval-ct','eval-machine');renderEvaluacion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+              <option value="">Todos los centros</option>
+            </select>
             <select id="eval-machine" onchange="renderEvaluacion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
-              <option value="">Todas las máquinas</option><option value="GW1">GW1</option><option value="GW2">GW2</option><option value="Laser de Cama">Laser de Cama</option><option value="Área General">Área General</option><option value="Punteadora">Punteadora</option>
+              <option value="">Todas las máquinas</option>
             </select>
             <select id="eval-turno" onchange="renderEvaluacion()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
               <option value="">Todos los turnos</option>
@@ -4416,6 +4422,31 @@ try{ horaRecords = JSON.parse(localStorage.getItem('oee_hora_laser_v1'))||[]; }c
 
 
 // ── HISTORIAL HORA POR HORA ──
+// Los filtros de "Historial hora×hora" y "Evaluación por operador" dentro
+// de Registrar turno necesitan un selector de Centro de Trabajo — sin él,
+// se mezclaban registros de todos los CT en una sola lista. Se pueblan
+// una sola vez (idempotente) y el de máquina se ajusta según el CT
+// elegido, para no ofrecer máquinas que no pertenecen a ese CT.
+function populateHistCtOptions(){
+  ['hora-hist-ct','eval-ct'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel && sel.options.length<=1){
+      sel.innerHTML='<option value="">Todos los centros</option>'+ALL_CTS.map(ct=>`<option value="${ct}">${ctLabel(ct)}</option>`).join('');
+    }
+  });
+}
+function populateHistMachineOptions(ctSelId, machineSelId){
+  const ct=document.getElementById(ctSelId)?.value||'';
+  const machineSel=document.getElementById(machineSelId);
+  if(!machineSel) return;
+  // Solo interesan las máquinas con hora×hora habilitada — son las únicas
+  // que generan registros en este historial.
+  const pool = ct ? getMachinesByCT(ct) : machines;
+  const mlist = pool.filter(m=>LASER_MAQUINAS_HORA.includes(m.name));
+  const current=machineSel.value;
+  machineSel.innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option>${m.name}</option>`).join('');
+  if(mlist.some(m=>m.name===current)) machineSel.value=current;
+}
 function renderHoraHist(){
   // Busca el registro OEE (records/OEE_Registros) correspondiente a un
   // registro hora×hora, para poder mostrar los paros que se capturaron en
@@ -4423,9 +4454,13 @@ function renderHoraHist(){
   function findMatchingOeeRecord(horaRec){
     return records.find(r=>r.ct===horaRec.ct&&r.machine===horaRec.machine&&r.turno===horaRec.turno&&r.fecha===horaRec.fecha&&r.op===horaRec.op) || null;
   }
+  populateHistCtOptions();
+  populateHistMachineOptions('hora-hist-ct','hora-hist-machine');
+  const fct = document.getElementById('hora-hist-ct')?.value||'';
   const fmachine = document.getElementById('hora-hist-machine')?.value||'';
   const fturno = document.getElementById('hora-hist-turno')?.value||'';
   let filtered = [...horaRecords].reverse();
+  if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
   const body = document.getElementById('hora-hist-body');
@@ -4565,10 +4600,14 @@ let evalTrendChart = null;
 const EVAL_COLORS = ['#4a9eff','#3ecf8e','#f5a623','#c084fc','#fb7185','#38bdf8','#f06060','#a3e635'];
 
 function renderEvaluacion(){
+  populateHistCtOptions();
+  populateHistMachineOptions('eval-ct','eval-machine');
+  const fct = document.getElementById('eval-ct')?.value||'';
   const fmachine = document.getElementById('eval-machine')?.value||'';
   const fturno = document.getElementById('eval-turno')?.value||'';
 
   let filtered = [...horaRecords];
+  if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
   filtered = filtered.filter(r=>r.op&&r.op!=='–');
