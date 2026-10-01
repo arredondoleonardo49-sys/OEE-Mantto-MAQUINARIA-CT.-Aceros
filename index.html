@@ -614,7 +614,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="tab-row" id="reg-tab-row">
       <div class="tab active" id="reg-tab-form-btn" onclick="switchTab('reg-tab-form',this)">Registro</div>
       <div class="tab" id="reg-tab-programa-btn" onclick="switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
-      <div class="tab" onclick="switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
+      <div class="tab" id="reg-tab-historial-btn" onclick="switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
     </div>
 
     <!-- TAB: REGISTRO -->
@@ -857,9 +857,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar"><div class="page-title">Aprovechamiento de material</div><div class="page-sub">Lámina y tubular por turno</div></div>
   <div class="content">
     <div class="tab-row">
-      <div class="tab active" onclick="switchTab('tab-lamina',this)">Lámina — Laser de Cama</div>
-      <div class="tab" onclick="switchTab('tab-tubular',this)">Tubular — Laser</div>
-      <div class="tab" onclick="switchTab('tab-aprov-hist',this)">Historial</div>
+      <div class="tab active" id="tab-lamina-btn" onclick="switchTab('tab-lamina',this)">Lámina — Laser de Cama</div>
+      <div class="tab" id="tab-tubular-btn" onclick="switchTab('tab-tubular',this)">Tubular — Laser</div>
+      <div class="tab" id="tab-aprov-hist-btn" onclick="switchTab('tab-aprov-hist',this)">Historial</div>
     </div>
     <div id="tab-lamina" class="tab-content active">
       <div class="form-card" style="padding:.85rem 1rem"><div class="form-card-title" style="margin-bottom:.5rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Datos del registro</div>
@@ -948,10 +948,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar"><div class="page-title">Mantenimiento preventivo</div><div class="page-sub">Componentes críticos · Operador y Técnico</div></div>
   <div class="content">
     <div class="tab-row">
-      <div class="tab active" onclick="switchTab('mant-plan',this)">Plan</div>
-      <div class="tab" onclick="switchTab('mant-registro',this)">Registrar</div>
-      <div class="tab" onclick="switchTab('mant-historial',this)">Historial</div>
-      <div class="tab" onclick="switchTab('mant-cumplimiento',this)">Cumplimiento</div>
+      <div class="tab active" id="mant-plan-btn" onclick="switchTab('mant-plan',this)">Plan</div>
+      <div class="tab" id="mant-registro-btn" onclick="switchTab('mant-registro',this)">Registrar</div>
+      <div class="tab" id="mant-historial-btn" onclick="switchTab('mant-historial',this)">Historial</div>
+      <div class="tab" id="mant-cumplimiento-btn" onclick="switchTab('mant-cumplimiento',this)">Cumplimiento</div>
     </div>
     <div id="mant-plan" class="tab-content active">
       <div class="ct-section">
@@ -1077,11 +1077,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar"><div class="page-title">Configuración</div><div class="page-sub">Máquinas y materiales de referencia</div></div>
   <div class="content">
     <div class="tab-row">
-      <div class="tab active" onclick="switchTab('cfg-maquinas',this)">Máquinas</div>
-      <div class="tab" onclick="switchTab('cfg-laminas',this)">Calibres de lámina</div>
-      <div class="tab" onclick="switchTab('cfg-tubulares',this)">Tipos de tubular</div>
-      <div class="tab" id="cfg-usuarios-tab-btn" onclick="switchTab('cfg-usuarios',this);renderUsersConfig()">Usuarios</div>
-      <div class="tab" onclick="switchTab('cfg-metas',this);renderCtTargetsConfig()">Metas por CT</div>
+      <div class="tab active" id="cfg-maquinas-btn" onclick="switchTab('cfg-maquinas',this)">Máquinas</div>
+      <div class="tab" id="cfg-laminas-btn" onclick="switchTab('cfg-laminas',this)">Calibres de lámina</div>
+      <div class="tab" id="cfg-tubulares-btn" onclick="switchTab('cfg-tubulares',this)">Tipos de tubular</div>
+      <div class="tab" id="cfg-usuarios-btn" onclick="switchTab('cfg-usuarios',this);renderUsersConfig()">Usuarios</div>
+      <div class="tab" id="cfg-metas-btn" onclick="switchTab('cfg-metas',this);renderCtTargetsConfig()">Metas por CT</div>
     </div>
     <div id="cfg-maquinas" class="tab-content active">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Agregar nueva máquina</div>
@@ -1334,6 +1334,13 @@ function normalizeUserRow(u){
   if(Array.isArray(u.cts)) cts=u.cts;
   else if(typeof u.cts==='string' && u.cts){ try{ cts=JSON.parse(u.cts); }catch(e){ cts=[]; } }
   else if(u.ct){ cts=[u.ct]; }
+  // permissions: igual que cts, puede venir como objeto (local) o como
+  // JSON en texto (nube). Las cuentas creadas antes de esta función no
+  // tienen nada guardado — se les da el set por defecto de su rol.
+  let permissions=null;
+  if(u.permissions && typeof u.permissions==='object' && !Array.isArray(u.permissions)) permissions=u.permissions;
+  else if(typeof u.permissions==='string' && u.permissions){ try{ permissions=JSON.parse(u.permissions); }catch(e){ permissions=null; } }
+  if(!permissions) permissions=defaultPermissions(role);
   return {
     id:(u.id||('u'+Date.now()+Math.random().toString(36).slice(2))).toString(),
     name:(u.name||u.username||'Usuario').toString(),
@@ -1341,6 +1348,7 @@ function normalizeUserRow(u){
     password:(rawPassword!==undefined && rawPassword!==null) ? rawPassword.toString() : '',
     role,
     cts,
+    permissions,
     active: !(u.active===false||u.active==='false'||u.active==='FALSE'),
     updatedAt: u.updatedAt||undefined
   };
@@ -1385,7 +1393,7 @@ function initAuth(){
     // (Los cambios de rol/baja se refrescan en la sincronización normal tras el login.)
     const fresh=users.find(u=>u.id===stored.id && u.active!==false);
     if(fresh){
-      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[]};
+      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[],permissions:fresh.permissions};
       onLoginSuccess();
       return;
     }
@@ -1447,7 +1455,7 @@ function doLogin(){
   );
 }
 function completeLogin(user){
-  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[]};
+  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[],permissions:user.permissions};
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
@@ -1467,7 +1475,69 @@ function onLoginSuccess(){
   applyUserCtLock();
 }
 
-// ── Permisos por rol ──
+// Árbol de menús/pestañas configurables por usuario — única fuente de
+// verdad para Configuración → Usuarios y para la lógica que muestra u
+// oculta cada menú, submenú y pestaña. "key" debe coincidir con el id del
+// botón de pestaña/menú correspondiente, más el sufijo "-btn" (ej. la
+// pestaña con key 'reg-tab-programa' tiene el botón #reg-tab-programa-btn;
+// un elemento de página como 'dashboard' usa su nav-item en vez de un tab).
+const PERMISSIONS_TREE=[
+  {key:'dashboard', label:'Dashboard'},
+  {key:'registro', label:'Registrar turno', children:[
+    {key:'reg-tab-programa', label:'Programa del día'},
+    {key:'reg-tab-historial', label:'Historial'},
+  ]},
+  {key:'aprovechamiento', label:'Aprovechamiento', children:[
+    {key:'tab-tubular', label:'Tubular — Laser'},
+    {key:'tab-aprov-hist', label:'Historial'},
+  ]},
+  {key:'mantenimiento', label:'Mantenimiento', children:[
+    {key:'mant-registro', label:'Registrar'},
+    {key:'mant-historial', label:'Historial'},
+    {key:'mant-cumplimiento', label:'Cumplimiento'},
+  ]},
+  {key:'historial', label:'Historial OEE'},
+  {key:'config', label:'Configuración', children:[
+    {key:'cfg-laminas', label:'Calibres de lámina'},
+    {key:'cfg-tubulares', label:'Tipos de tubular'},
+    {key:'cfg-usuarios', label:'Usuarios'},
+    {key:'cfg-metas', label:'Metas por CT'},
+  ]},
+];
+const ALL_PERMISSION_KEYS=(()=>{ const ks=[]; PERMISSIONS_TREE.forEach(p=>{ ks.push(p.key); (p.children||[]).forEach(c=>ks.push(c.key)); }); return ks; })();
+// Permisos de partida según el rol — se pueden personalizar después por
+// cuenta desde Configuración → Usuarios, esto solo decide con qué empieza
+// una cuenta nueva.
+function defaultPermissions(role){
+  const perms={};
+  ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=true; });
+  if(role==='operador'){
+    ALL_PERMISSION_KEYS.forEach(k=>{
+      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial');
+    });
+  } else if(role==='lider'){
+    perms['cfg-usuarios']=false; // administrar cuentas queda para Ingeniero, salvo que se habilite a mano
+  }
+  return perms;
+}
+// Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
+// la mini-barra) las páginas sin acceso, y dentro de cada página, las
+// pestañas sin acceso.
+function applyUserPermissionsUI(){
+  if(!currentUser) return;
+  const perms=currentUser.permissions||defaultPermissions(currentUser.role);
+  document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
+    const m=(item.getAttribute('onclick')||'').match(/navigate\('(\w+)'/);
+    if(!m) return;
+    item.style.display = perms[m[1]]!==false ? '' : 'none';
+  });
+  PERMISSIONS_TREE.forEach(p=>{
+    (p.children||[]).forEach(c=>{
+      const btn=document.getElementById(c.key+'-btn');
+      if(btn) btn.style.display = perms[c.key]!==false ? '' : 'none';
+    });
+  });
+}
 // Si la cuenta tiene uno o más Centros de Trabajo asignados (Configuración
 // → Usuarios), ya no los selecciona manualmente uno por uno: el selector
 // en Registro queda limitado a esos CT (y bloqueado del todo si es solo
@@ -1521,27 +1591,23 @@ function applyRolePermissions(){
   if(nameEl) nameEl.textContent=currentUser.name;
   if(roleEl) roleEl.textContent=ROLE_LABEL[role]||role;
 
-  const allowedPages = role==='operador' ? ['registro'] : ['dashboard','registro','aprovechamiento','mantenimiento','historial','config'];
-  document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
-    const m=item.getAttribute('onclick').match(/navigate\('(\w+)'/);
-    if(!m) return;
-    item.style.display = allowedPages.includes(m[1]) ? '' : 'none';
-  });
+  if(!currentUser.permissions) currentUser.permissions=defaultPermissions(role);
+  applyUserPermissionsUI();
 
-  // Operador aterriza siempre en Registrar turno
-  if(role==='operador'){
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-    const target=document.getElementById('page-registro');
-    if(target) target.classList.add('active');
-    document.querySelectorAll('.nav-item[onclick]').forEach(item=>{
-      if(item.getAttribute('onclick').includes("navigate('registro'")) item.classList.add('active');
-    });
+  // Si la cuenta no tiene acceso al Dashboard (su destino normal al entrar),
+  // aterriza en el primer menú al que sí tenga acceso.
+  if(currentUser.permissions.dashboard===false){
+    const landing=PERMISSIONS_TREE.find(p=>currentUser.permissions[p.key]!==false);
+    if(landing){
+      document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+      document.querySelectorAll('.nav-item, .nav-item-mini').forEach(n=>n.classList.remove('active'));
+      const target=document.getElementById('page-'+landing.key);
+      if(target) target.classList.add('active');
+      document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
+        if((item.getAttribute('onclick')||'').includes(`navigate('${landing.key}'`)) item.classList.add('active');
+      });
+    }
   }
-
-  // Tabs de administración en Configuración — solo ingeniero
-  const cfgUsersTab=document.getElementById('cfg-usuarios-tab-btn');
-  if(cfgUsersTab) cfgUsersTab.style.display = role==='ingeniero' ? '' : 'none';
 
   applyUserCtLock();
   applyOperatorRegistroUI();
@@ -2178,9 +2244,10 @@ function renderUsersConfig(){
   wrap.innerHTML=users.map(u=>{
     const userCts=u.cts&&u.cts.length?u.cts:[];
     const ctSummary=userCts.length?userCts.map(ctLabel).join(', '):'Todos (sin restricción)';
+    const userPerms=u.permissions||defaultPermissions(u.role);
     return `
     <div style="padding:.6rem 0;border-bottom:0.5px solid var(--border)">
-      <div style="display:grid;grid-template-columns:1fr 120px 1fr 120px 90px 90px;gap:8px;align-items:center">
+      <div style="display:grid;grid-template-columns:1fr 110px 1fr 100px 100px 90px 85px;gap:8px;align-items:center">
         <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}</div></div>
         <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
           <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
@@ -2188,6 +2255,7 @@ function renderUsersConfig(){
           <option value="ingeniero" ${u.role==='ingeniero'?'selected':''}>Ingeniero</option>
         </select>
         <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo asignados" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
+        <button onclick="toggleUserPermEditor('${u.id}')" title="Click para elegir qué menús, submenús y pestañas puede ver esta cuenta" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer">Accesos ✎</button>
         <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
         <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
         <div style="display:flex;gap:4px;justify-content:flex-end">
@@ -2201,8 +2269,53 @@ function renderUsersConfig(){
         </div>
         <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="saveUserCts('${u.id}')">Guardar centros de trabajo</button>
       </div>
+      <div id="perm-editor-${u.id}" style="display:none;padding:.6rem 0 0">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
+          ${permissionsTreeHtml('edit-permchk-'+u.id, userPerms)}
+        </div>
+        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="saveUserPerms('${u.id}')">Guardar accesos</button>
+      </div>
     </div>`;
   }).join('');
+}
+// Igual que ctCheckboxesHtml, pero para el árbol de menús/pestañas —
+// cada página con sus pestañas anidadas debajo.
+function permissionsTreeHtml(groupClass, perms){
+  return PERMISSIONS_TREE.map(p=>{
+    const childrenHtml=(p.children||[]).map(c=>`
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;margin-left:20px;padding:2px 0">
+        <input type="checkbox" class="${groupClass}" value="${c.key}" ${perms[c.key]!==false?'checked':''} style="width:12px;height:12px;accent-color:var(--blue);cursor:pointer">
+        ${c.label}
+      </label>`).join('');
+    return `<div style="margin-bottom:2px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;font-weight:600;padding:2px 0">
+          <input type="checkbox" class="${groupClass}" value="${p.key}" ${perms[p.key]!==false?'checked':''} style="width:13px;height:13px;accent-color:var(--blue);cursor:pointer">
+          ${p.label}
+        </label>
+        ${childrenHtml}
+      </div>`;
+  }).join('');
+}
+function toggleUserPermEditor(id){
+  const el=document.getElementById('perm-editor-'+id);
+  if(!el) return;
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+function saveUserPerms(id){
+  const checked=new Set(Array.from(document.querySelectorAll('.edit-permchk-'+id+':checked')).map(el=>el.value));
+  const perms={};
+  ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=checked.has(k); });
+  changeUserPerms(id, perms);
+}
+function changeUserPerms(id, perms){
+  const u=users.find(x=>x.id===id); if(!u) return;
+  u.permissions=perms; u.updatedAt=new Date().toISOString();
+  localStorage.setItem(SK_USERS, JSON.stringify(users));
+  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(u.cts||[]), permissions:JSON.stringify(perms)});
+  renderUsersConfig();
+  // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
+  // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
+  if(currentUser && currentUser.id===id){ currentUser.permissions=perms; applyUserPermissionsUI(); }
 }
 function toggleUserCtEditor(id){
   const el=document.getElementById('ct-editor-'+id);
@@ -2241,16 +2354,17 @@ function addUser(){
   const password=document.getElementById('new-user-password').value.trim();
   const role=document.getElementById('new-user-role').value;
   const cts=Array.from(document.querySelectorAll('.new-user-ctchk:checked')).map(el=>el.value);
+  const permissions=defaultPermissions(role);
   const msg=document.getElementById('add-user-msg');
   if(!name||!username||!password){ msg.textContent='Completa todos los campos.'; msg.style.color='var(--amber)'; return; }
   if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())){ msg.textContent='Ese nombre de usuario ya existe.'; msg.style.color='var(--amber)'; return; }
-  const newUser={id:'u'+Date.now(), name, username, password, role, cts, active:true, updatedAt:new Date().toISOString()};
+  const newUser={id:'u'+Date.now(), name, username, password, role, cts, permissions, active:true, updatedAt:new Date().toISOString()};
   users.push(newUser);
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   // Se agrega/actualiza SOLO esta cuenta en la nube — nunca se reescribe la
   // hoja completa, así jamás se puede borrar otra cuenta por accidente al
   // agregar o editar esta.
-  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts)});
+  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions)});
   document.getElementById('new-user-name').value='';
   document.getElementById('new-user-username').value='';
   document.getElementById('new-user-password').value='';
@@ -3510,7 +3624,10 @@ function toggleCT(bodyId,headerEl){const body=document.getElementById(bodyId);co
 function toggleMantMachine(bodyId,headerEl){const body=document.getElementById(bodyId);const chv=headerEl.querySelector('.ct-chevron');if(body.style.display==='none'){body.style.display='';if(chv)chv.classList.remove('collapsed');}else{body.style.display='none';if(chv)chv.classList.add('collapsed');}}
 // ── NAV & TABS ──
 function navigate(page,el){
-  if(currentUser && currentUser.role==='operador' && page!=='registro'){ return; }
+  if(currentUser){
+    const perms=currentUser.permissions||defaultPermissions(currentUser.role);
+    if(perms[page]===false) return;
+  }
   if(page!=='registro' && regSplitActive) toggleRegSplit();
   // Hide all pages explicitly (class + inline style)
   document.querySelectorAll('.page').forEach(p=>{
@@ -3560,6 +3677,13 @@ function switchTabScoped(id, el, scopeClass){
 }
 
 function switchTab(id,el){
+  // Defensa adicional: si esta pestaña es una de las controladas por el
+  // árbol de permisos y la cuenta no tiene acceso, no hacer nada — aunque
+  // de alguna forma se le haga click (el botón ya debería estar oculto).
+  if(currentUser && ALL_PERMISSION_KEYS.includes(id)){
+    const perms=currentUser.permissions||defaultPermissions(currentUser.role);
+    if(perms[id]===false) return;
+  }
   const parent=el.closest('.content')||el.closest('.page');
   parent.querySelectorAll(':scope > .tab-content').forEach(t=>t.classList.remove('active'));
   const tabRow=el.closest('.tab-row');
