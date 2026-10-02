@@ -1633,6 +1633,8 @@ function applyAprovUI(){
     const el=document.getElementById(id);
     if(el && !el.value) el.value=currentUser.name||'';
   });
+  restoreLamDraft();
+  restoreTubDraft();
 }
 // Restringe la tarjeta de Registro para el rol Operador
 function applyOperatorRegistroUI(){
@@ -3274,6 +3276,28 @@ function updateMachineAndTurno(){
   updateInfoBox();calcOEE();
   checkHoraPanel();
 }
+// Al volver a "Registrar turno" desde otro menú, se restaura el
+// CT/máquina/turno que se tenía seleccionado antes de salir — antes,
+// updateMachineAndTurno() siempre reiniciaba a la primera máquina del CT,
+// obligando a volver a elegir la máquina correcta cada vez.
+function restoreOrDefaultMachineSelection(){
+  const ctx=_prevHoraContext;
+  const ctSel=document.getElementById('reg-ct');
+  if(ctx && ctx.ct && ctSel && !ctSel.disabled && Array.from(ctSel.options).some(o=>o.value===ctx.ct)){
+    ctSel.value=ctx.ct;
+  }
+  const ct=ctSel.value;
+  document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option>${m.name}</option>`).join('')||'<option>Sin máquinas</option>';
+  document.getElementById('reg-turno').innerHTML=TURNOS_CT[ct].map(t=>`<option>${t}</option>`).join('');
+  if(ctx && ct===ctx.ct){
+    const machSel=document.getElementById('reg-machine');
+    if(ctx.machine && Array.from(machSel.options).some(o=>o.value===ctx.machine)) machSel.value=ctx.machine;
+    const turnoSel=document.getElementById('reg-turno');
+    if(ctx.turno && Array.from(turnoSel.options).some(o=>o.value===ctx.turno)) turnoSel.value=ctx.turno;
+  }
+  updateInfoBox();calcOEE();
+  checkHoraPanel();
+}
 function checkHoraPanel(){
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
@@ -3420,6 +3444,67 @@ function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.
 function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
 function addLamHoja(){const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();}
 function addLamRecorte(){const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();}
+// ── BORRADOR DE LÁMINA (localStorage) ──
+// Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
+// página se recargaba antes de presionar "Guardar registro" — a
+// diferencia de Registrar turno, que ya guarda en vivo. Esto guarda un
+// borrador local cada vez que algo cambia, y lo restaura automáticamente
+// si la página se recarga el mismo día, antes de que el operador alcance
+// a guardar de verdad.
+const SK_LAM_DRAFT='oee_lam_draft_v1';
+function saveLamDraft(){
+  const draft={
+    fecha: document.getElementById('lam-fecha')?.value,
+    turno: document.getElementById('lam-turno')?.value,
+    op: document.getElementById('lam-op')?.value,
+    merma: document.getElementById('lam-merma')?.value,
+    hojas: Array.from(document.querySelectorAll('#lam-hojas-list .dynamic-row')).map(row=>{
+      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+      return {cal: sel?.value, hojas: ins[0]?.value};
+    }),
+    recortes: Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
+      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+      return {cal: sel?.value, ancho: ins[0]?.value, largo: ins[1]?.value};
+    }),
+  };
+  try{ localStorage.setItem(SK_LAM_DRAFT, JSON.stringify(draft)); }catch(e){}
+}
+function clearLamDraft(){ localStorage.removeItem(SK_LAM_DRAFT); }
+function restoreLamDraft(){
+  // No pisar nada si ya hay filas en pantalla (evita duplicar si esto se
+  // llama más de una vez en la misma sesión).
+  if(document.querySelectorAll('#lam-hojas-list .dynamic-row').length) return;
+  if(document.querySelectorAll('#lam-recortes-list .dynamic-row').length) return;
+  let draft;
+  try{ draft=JSON.parse(localStorage.getItem(SK_LAM_DRAFT)); }catch(e){ return; }
+  if(!draft) return;
+  // Solo se restaura si es del MISMO día — evita arrastrar sin querer un
+  // borrador de un turno de hace varios días.
+  if(draft.fecha && draft.fecha!==todayStr()){ clearLamDraft(); return; }
+  if(!(draft.hojas&&draft.hojas.length) && !(draft.recortes&&draft.recortes.length)) return;
+  if(draft.turno) document.getElementById('lam-turno').value=draft.turno;
+  if(draft.merma) document.getElementById('lam-merma').value=draft.merma;
+  (draft.hojas||[]).forEach(h=>{
+    addLamHoja();
+    const rows=document.querySelectorAll('#lam-hojas-list .dynamic-row');
+    const row=rows[rows.length-1];
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    if(sel && h.cal) sel.value=h.cal;
+    if(ins[0] && h.hojas) ins[0].value=h.hojas;
+  });
+  (draft.recortes||[]).forEach(r=>{
+    addLamRecorte();
+    const rows=document.querySelectorAll('#lam-recortes-list .dynamic-row');
+    const row=rows[rows.length-1];
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    if(sel && r.cal) sel.value=r.cal;
+    if(ins[0] && r.ancho) ins[0].value=r.ancho;
+    if(ins[1] && r.largo) ins[1].value=r.largo;
+  });
+  calcLamina();
+  const msg=document.getElementById('lam-save-msg');
+  if(msg){ msg.textContent='↺ Se recuperó lo que tenías capturado'; msg.style.color='var(--amber)'; setTimeout(()=>{msg.textContent='';msg.style.color='';},4000); }
+}
 function calcLamina(){
   let pt=0;document.querySelectorAll('#lam-hojas-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const lam=getLaminaByCal(sel?sel.value:'');const h=parseFloat(ins[0]?.value)||0;const pw=lam?lam.peso:0;const pr=fmtN(h*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
   document.getElementById('lam-peso-total').textContent=fmtN(pt,3);
@@ -3433,6 +3518,7 @@ function calcLamina(){
     if(ins[2])ins[2].value=pesoRec>0?pesoRec:'';if(ins[3])ins[3].value=ahR>0?ahR:'';ah+=ahR;});
   document.getElementById('lam-ahorro').textContent=fmtN(ah,2).toLocaleString('es-MX');
   renderAprovChart('lam-chart','lam-chart-legend',fmtN(pt-merma,3),merma,lamChart,(c)=>{lamChart=c;});
+  saveLamDraft();
 }
 function saveLamina(){
   const fecha=document.getElementById('lam-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('lam-turno').value;const op=document.getElementById('lam-op').value||'–';
@@ -3441,11 +3527,64 @@ function saveLamina(){
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
   const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah};
   aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',rec);
+  clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
   const msg=document.getElementById('lam-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
 }
 function addTubTramo(){const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();}
 function addTubRecorte(){const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();}
+// ── BORRADOR DE TUBULAR (localStorage) — mismo mecanismo que Lámina ──
+const SK_TUB_DRAFT='oee_tub_draft_v1';
+function saveTubDraft(){
+  const draft={
+    maquina: document.getElementById('tub-machine')?.value,
+    fecha: document.getElementById('tub-fecha')?.value,
+    turno: document.getElementById('tub-turno')?.value,
+    op: document.getElementById('tub-op')?.value,
+    merma: document.getElementById('tub-merma')?.value,
+    tramos: Array.from(document.querySelectorAll('#tub-tramos-list .dynamic-row')).map(row=>{
+      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+      return {tipo: sel?.value, cant: ins[0]?.value};
+    }),
+    recortes: Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
+      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+      return {tipo: sel?.value, peso: ins[0]?.value};
+    }),
+  };
+  try{ localStorage.setItem(SK_TUB_DRAFT, JSON.stringify(draft)); }catch(e){}
+}
+function clearTubDraft(){ localStorage.removeItem(SK_TUB_DRAFT); }
+function restoreTubDraft(){
+  if(document.querySelectorAll('#tub-tramos-list .dynamic-row').length) return;
+  if(document.querySelectorAll('#tub-recortes-list .dynamic-row').length) return;
+  let draft;
+  try{ draft=JSON.parse(localStorage.getItem(SK_TUB_DRAFT)); }catch(e){ return; }
+  if(!draft) return;
+  if(draft.fecha && draft.fecha!==todayStr()){ clearTubDraft(); return; }
+  if(!(draft.tramos&&draft.tramos.length) && !(draft.recortes&&draft.recortes.length)) return;
+  if(draft.maquina) document.getElementById('tub-machine').value=draft.maquina;
+  if(draft.turno) document.getElementById('tub-turno').value=draft.turno;
+  if(draft.merma) document.getElementById('tub-merma').value=draft.merma;
+  (draft.tramos||[]).forEach(t=>{
+    addTubTramo();
+    const rows=document.querySelectorAll('#tub-tramos-list .dynamic-row');
+    const row=rows[rows.length-1];
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    if(sel && t.tipo) sel.value=t.tipo;
+    if(ins[0] && t.cant) ins[0].value=t.cant;
+  });
+  (draft.recortes||[]).forEach(r=>{
+    addTubRecorte();
+    const rows=document.querySelectorAll('#tub-recortes-list .dynamic-row');
+    const row=rows[rows.length-1];
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    if(sel && r.tipo) sel.value=r.tipo;
+    if(ins[0] && r.peso) ins[0].value=r.peso;
+  });
+  calcTubular();
+  const msg=document.getElementById('tub-save-msg');
+  if(msg){ msg.textContent='↺ Se recuperó lo que tenías capturado'; msg.style.color='var(--amber)'; setTimeout(()=>{msg.textContent='';msg.style.color='';},4000); }
+}
 function calcTubular(){
   let pt=0;document.querySelectorAll('#tub-tramos-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const tub=getTubularByTipo(sel?sel.value:'');const t=parseFloat(ins[0]?.value)||0;const pw=tub?tub.peso:0;const pr=fmtN(t*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
   document.getElementById('tub-peso-total').textContent=fmtN(pt,3);
@@ -3454,6 +3593,7 @@ function calcTubular(){
   let ah=0;document.querySelectorAll('#tub-recortes-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const tub=getTubularByTipo(sel?sel.value:'');const pr=parseFloat(ins[0]?.value)||0;const rec=tub&&tub.peso>0?fmtN(pr/tub.peso,4):0;const ahR=tub?fmtN(rec*tub.costo,2):0;if(ins[1])ins[1].value=rec||'';if(ins[2])ins[2].value=ahR||'';ah+=ahR;});
   document.getElementById('tub-ahorro').textContent=fmtN(ah,2).toLocaleString('es-MX');
   renderAprovChart('tub-chart','tub-chart-legend',fmtN(pt-merma,3),merma,tubChart,(c)=>{tubChart=c;});
+  saveTubDraft();
 }
 function saveTubular(){
   const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
@@ -3462,6 +3602,7 @@ function saveTubular(){
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
   const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah};
   aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',rec);
+  clearTubDraft();
   document.getElementById('tub-tramos-list').innerHTML='';document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
   const msg=document.getElementById('tub-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
 }
@@ -3694,7 +3835,7 @@ function navigate(page,el){
   try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){}
   try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){}
   try{ if(page==='mantenimiento'){renderMantPlan();renderMantHist();renderCumplimiento();} }catch(e){}
-  try{ if(page==='registro'){updateMachineAndTurno();renderHoraHist();applyOperatorRegistroUI();} }catch(e){}
+  try{ if(page==='registro'){restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){}
   try{ if(page==='aprovechamiento'){applyAprovUI();} }catch(e){}
 }
 
