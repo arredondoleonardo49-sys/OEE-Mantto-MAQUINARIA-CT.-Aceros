@@ -613,8 +613,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="content" id="reg-content">
     <div class="tab-row" id="reg-tab-row">
       <div class="tab active" id="reg-tab-form-btn" onclick="switchTab('reg-tab-form',this)">Registro</div>
-      <div class="tab" id="reg-tab-programa-btn" onclick="switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
-      <div class="tab" id="reg-tab-historial-btn" onclick="switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
+      <div class="tab" id="reg-tab-programa-btn" onclick="flushLiveSyncNow();switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
+      <div class="tab" id="reg-tab-historial-btn" onclick="flushLiveSyncNow();switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
     </div>
 
     <!-- TAB: REGISTRO -->
@@ -724,7 +724,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div id="horas-extra-panel" style="margin-bottom:.75rem">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
               <span style="font-size:12px;font-weight:600;color:var(--text2)">Horas extra</span>
-              <button onclick="addHoraExtra()" class="btn-add-row" style="width:auto;padding:4px 12px;font-size:11px;margin:0">+ Agregar franja</button>
+              <button id="btn-agregar-franja" onclick="addHoraExtra()" class="btn-add-row" style="width:auto;padding:4px 12px;font-size:11px;margin:0">+ Agregar franja</button>
               <span style="font-size:11px;color:var(--text3);margin-left:auto">Se agregan al turno y afectan el OEE</span>
             </div>
             <div id="horas-extra-list"></div>
@@ -1486,6 +1486,7 @@ const PERMISSIONS_TREE=[
   {key:'registro', label:'Registrar turno', children:[
     {key:'reg-tab-programa', label:'Programa del día'},
     {key:'reg-tab-historial', label:'Historial'},
+    {key:'reg-hora-captura', label:'Capturar hora×hora (acción, no es una pestaña)'},
   ]},
   {key:'aprovechamiento', label:'Aprovechamiento', children:[
     {key:'tab-tubular', label:'Tubular — Laser'},
@@ -1513,12 +1514,22 @@ function defaultPermissions(role){
   ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=true; });
   if(role==='operador'){
     ALL_PERMISSION_KEYS.forEach(k=>{
-      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial');
+      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='reg-hora-captura');
     });
   } else if(role==='lider'){
     perms['cfg-usuarios']=false; // administrar cuentas queda para Ingeniero, salvo que se habilite a mano
+    perms['reg-hora-captura']=false; // capturar hora×hora es del Operador, salvo que se habilite a mano
+  } else if(role==='ingeniero'){
+    perms['reg-hora-captura']=false; // ni Ingeniería lo tiene de inicio — también necesita habilitarse a mano
   }
   return perms;
+}
+// Helper corto para el resto del código: ¿la cuenta activa puede capturar
+// (escribir/guardar) piezas fabricadas/dañadas por franja horaria?
+function canCaptureHora(){
+  if(!currentUser) return false;
+  const perms=currentUser.permissions||defaultPermissions(currentUser.role);
+  return perms['reg-hora-captura']!==false;
 }
 // Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
 // la mini-barra) las páginas sin acceso, y dentro de cada página, las
@@ -3159,12 +3170,19 @@ function renderDashboard(){
     if(ctx2d) ctx2d.clearRect(0,0,canvas.width,canvas.height);
     return;
   }
-  dashChart=new Chart(document.getElementById('dashChart'),{type:'bar',
-    data:{labels,datasets:[{label:'OEE %',data,backgroundColor:color+'bb',borderColor:color,borderWidth:1,borderRadius:4,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{family:'IBM Plex Mono',size:11}},
-        grid:{color:'rgba(255,255,255,0.05)'},border:{color:'transparent'}},
-        x:{ticks:{color:'#8b8fa8',font:{size:11}},grid:{display:false},border:{color:'transparent'}}}}});
+  // Si Chart.js falla por cualquier motivo (red lenta, bloqueador de
+  // anuncios, etc.), no debe tronar renderDashboard() completo — eso
+  // interrumpiría todo lo que depende de que termine normalmente, como el
+  // resto del proceso de inicio de sesión (armar el selector de máquinas,
+  // aplicar permisos, etc.).
+  try{
+    dashChart=new Chart(document.getElementById('dashChart'),{type:'bar',
+      data:{labels,datasets:[{label:'OEE %',data,backgroundColor:color+'bb',borderColor:color,borderWidth:1,borderRadius:4,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{family:'IBM Plex Mono',size:11}},
+          grid:{color:'rgba(255,255,255,0.05)'},border:{color:'transparent'}},
+          x:{ticks:{color:'#8b8fa8',font:{size:11}},grid:{display:false},border:{color:'transparent'}}}}});
+  }catch(e){ console.warn('Chart.js falló al dibujar OEE por máquina (no crítico):', e); }
 }
 
 // ── Panel hora × hora en tiempo real (Dashboard) ──────────
@@ -3259,6 +3277,15 @@ function updateMachineAndTurno(){
 function checkHoraPanel(){
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
+  // Cualquier máquina que se seleccione en Registro queda habilitada para
+  // hora×hora automáticamente — ya no hace falta entrar primero a
+  // Configuración a marcarla a mano. Si ya estaba habilitada, esto no
+  // cambia nada. Así, en cuanto se capture algo, aparece en tiempo real
+  // en el Dashboard (tabla de hora×hora y gráfica de OEE por máquina).
+  if(machine && !LASER_MAQUINAS_HORA.includes(machine)){
+    const m=getMachineByName(machine);
+    if(m) toggleHoraHora(m.id, m.name, true);
+  }
   // Force turno único for Newton/Muebles machines
   let turno=document.getElementById('reg-turno').value;
   if(MAQUINAS_TURNO_UNICO&&MAQUINAS_TURNO_UNICO.includes(machine)){
@@ -3444,8 +3471,10 @@ function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
   if(total===0){if(chartRef){chartRef.destroy();setRef(null);}const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);document.getElementById(legendId).innerHTML='<span style="color:var(--text3)">Sin datos</span>';return;}
   const pctA=total>0?((aprovechado/total)*100).toFixed(1):0;const pctM=total>0?((merma/total)*100).toFixed(1):0;
   if(chartRef)chartRef.destroy();
-  const nc=new Chart(canvas,{type:'doughnut',data:{labels:['Aprovechado','Merma'],datasets:[{data:[aprovechado,merma],backgroundColor:['#3ecf8e','#f06060'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
-  setRef(nc);
+  try{
+    const nc=new Chart(canvas,{type:'doughnut',data:{labels:['Aprovechado','Merma'],datasets:[{data:[aprovechado,merma],backgroundColor:['#3ecf8e','#f06060'],borderWidth:0,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+    setRef(nc);
+  }catch(e){ console.warn('Chart.js falló al dibujar la dona de aprovechamiento (no crítico):', e); }
   document.getElementById(legendId).innerHTML=`<div style="margin-bottom:6px;font-weight:600;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px">${total.toFixed(3)} kg</div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><div style="width:10px;height:10px;border-radius:2px;background:#3ecf8e;flex-shrink:0"></div><span>Aprovechado: ${aprovechado.toFixed(3)} kg <strong style="color:#3ecf8e">(${pctA}%)</strong></span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:2px;background:#f06060;flex-shrink:0"></div><span>Merma: ${merma.toFixed(3)} kg <strong style="color:#f06060">(${pctM}%)</strong></span></div>`;
 }
 function renderAprovHist(){
@@ -3628,6 +3657,12 @@ function navigate(page,el){
     const perms=currentUser.permissions||defaultPermissions(currentUser.role);
     if(perms[page]===false) return;
   }
+  // Si hay una captura de hora×hora/paros pendiente de guardar (el
+  // debounce de 1.5s aún no se disparó) y el usuario se va a OTRO menú,
+  // se guarda de inmediato — antes, esto solo pasaba al cambiar de
+  // máquina/turno DENTRO de Registro, así que salir del todo perdía lo
+  // que se acababa de escribir.
+  if(page!=='registro') flushLiveSyncNow();
   if(page!=='registro' && regSplitActive) toggleRegSplit();
   // Hide all pages explicitly (class + inline style)
   document.querySelectorAll('.page').forEach(p=>{
@@ -4148,7 +4183,10 @@ function renderCumplimiento(){
     </div>`;}).join('');}
   const last10=mantLogs.filter(r=>r.checkPct!=null).slice(-10);const canvas=document.getElementById('cumpl-chart');
   if(canvas&&last10.length){if(cumplChart)cumplChart.destroy();
-    cumplChart=new Chart(canvas,{type:'line',data:{labels:last10.map(r=>r.machine.substring(0,8)+' '+r.fecha.substring(5)),datasets:[{label:'Checklist %',data:last10.map(r=>r.checkPct),borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.1)',tension:.3,fill:true,pointRadius:5,pointBackgroundColor:last10.map(r=>r.checkPct===100?'#3ecf8e':r.checkPct>=60?'#f5a623':'#f06060')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}}}});}
+    try{
+      cumplChart=new Chart(canvas,{type:'line',data:{labels:last10.map(r=>r.machine.substring(0,8)+' '+r.fecha.substring(5)),datasets:[{label:'Checklist %',data:last10.map(r=>r.checkPct),borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.1)',tension:.3,fill:true,pointRadius:5,pointBackgroundColor:last10.map(r=>r.checkPct===100?'#3ecf8e':r.checkPct>=60?'#f5a623':'#f06060')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}}}});
+    }catch(e){ console.warn('Chart.js falló al dibujar la tendencia de cumplimiento (no crítico):', e); }
+  }
 }
 
 // ── PANTALLA COMPLETA (solo Dashboard) ──
@@ -4242,7 +4280,16 @@ function renderHoraFranjas(machine, turno){
   const franjas = LASER_FRANJAS[turno] || [];
   const mach = getMachineByName(machine);
   const capPorHora = mach ? Math.round(mach.cap / franjas.length) : 0;
+  const canCapture = canCaptureHora();
+  const dis = canCapture ? '' : 'disabled title="Tu cuenta no tiene permiso para capturar hora×hora — lo asigna un Ingeniero desde Configuración → Usuarios."';
   document.getElementById('reg-hora-maquina').textContent = machine + ' · ' + turno.split(' ')[0]+' '+turno.split(' ')[1];
+  const extraBtn=document.getElementById('btn-agregar-franja');
+  if(extraBtn){
+    extraBtn.disabled=!canCapture;
+    extraBtn.style.opacity=canCapture?'1':'.4';
+    extraBtn.style.cursor=canCapture?'pointer':'not-allowed';
+    extraBtn.title=canCapture?'':'Tu cuenta no tiene permiso para capturar hora×hora.';
+  }
   const list = document.getElementById('hora-franjas-list');
   list.innerHTML = franjas.map((f,i) => {
     const isBreak = f.includes('Comida');
@@ -4255,13 +4302,13 @@ function renderHoraFranjas(machine, turno){
       <div style="border-bottom:0.5px solid var(--border)">
         <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:5px 8px">
           <span style="font-size:12px;color:var(--text2);font-weight:500">${f}</span>
-          <input type="number" id="hora-fab-${i}" min="0" placeholder="0" oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
+          <input type="number" id="hora-fab-${i}" min="0" placeholder="0" ${dis} oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
-          <input type="number" id="hora-dan-${i}" min="0" placeholder="0" oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
+          <input type="number" id="hora-dan-${i}" min="0" placeholder="0" ${dis} oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:#f06060;text-align:center;width:100%">
         </div>
         <div id="hora-motivo-row-${i}" style="display:none;padding:3px 8px 6px;padding-left:118px">
-          <input type="text" id="hora-motivo-${i}" placeholder="Motivo del rechazo..."
+          <input type="text" id="hora-motivo-${i}" placeholder="Motivo del rechazo..." ${dis}
             style="font-size:12px;font-family:'IBM Plex Sans',monospace;padding:4px 8px;border:1px solid rgba(240,96,96,.3);border-radius:var(--radius);background:rgba(240,96,96,.06);color:var(--text);width:100%;transition:border-color .15s"
             onfocus="this.style.borderColor='#f06060'" onblur="this.style.borderColor='rgba(240,96,96,.3)'">
         </div>
@@ -4289,7 +4336,13 @@ function renderHoraFranjas(machine, turno){
       if(saved.danadas>0) toggleMotivoRow(i);
     });
   }
-  calcHoraTotales(machine, turno);
+  // calcHoraTotales() actualiza (entre otras cosas) una gráfica de
+  // Chart.js — si eso falla por cualquier motivo (red lenta, bloqueador
+  // de anuncios, etc.), NO debe interrumpir el resto de la cadena que
+  // llamó a renderHoraFranjas (ej. armar el selector de máquinas al
+  // iniciar sesión con un CT bloqueado).
+  try{ calcHoraTotales(machine, turno); }
+  catch(e){ console.warn('calcHoraTotales falló dentro de renderHoraFranjas (no crítico):', e); }
 }
 
 function toggleMotivoRow(i){
@@ -4368,7 +4421,8 @@ function liveSyncHoraAndParos(ctxOverride){
   if(!ct||!machine||!turno||!fecha) return;
 
   let totalFab=0, totalDan=0;
-  const isHoraMachine=LASER_MAQUINAS_HORA.includes(machine);
+  const isHoraMachineReal=LASER_MAQUINAS_HORA.includes(machine);
+  const isHoraMachine=isHoraMachineReal && canCaptureHora();
   const nowIso=new Date().toISOString();
 
   if(isHoraMachine){
@@ -4400,12 +4454,15 @@ function liveSyncHoraAndParos(ctxOverride){
     localStorage.setItem('oee_hora_laser_v1', JSON.stringify(horaRecords));
     const horaSheet=ctSheet(ct);
     cloudUpsertRow(horaSheet, horaRec);
-  } else {
+  } else if(!isHoraMachineReal){
     // Máquinas sin hora×hora: piezas producidas/rechazadas vienen de los
     // campos manuales de "Datos de producción".
     totalFab=parseInt(document.getElementById('reg-piezas')?.value)||0;
     totalDan=parseInt(document.getElementById('reg-rechazadas')?.value)||0;
   }
+  // else: es máquina de hora×hora pero la cuenta no tiene permiso de
+  // captura — no se reportan piezas (quedan en 0); los paros y demás
+  // campos del turno se siguen guardando con normalidad más abajo.
 
   // Paros — aplica a CUALQUIER máquina (con o sin hora×hora), mismo id
   // fijo, se actualiza en vivo (no solo al presionar Guardar).
@@ -4486,6 +4543,10 @@ function calcHoraTotales(machine, turno){
 }
 
 function saveHoraRecord(){
+  if(!canCaptureHora()){
+    console.warn('saveHoraRecord bloqueado: la cuenta no tiene permiso para capturar hora×hora.');
+    return;
+  }
   const ct = document.getElementById('reg-ct').value;
   const machine = document.getElementById('reg-machine').value;
   const turno = document.getElementById('reg-turno').value;
@@ -4554,7 +4615,8 @@ function saveHoraRecord(){
   clearDibujos();
   clearHorasExtra();
   document.getElementById('paros-list').innerHTML='';paroRows=[];updateParosTotal();
-  calcHoraTotales(machine, turno);
+  try{ calcHoraTotales(machine, turno); }
+  catch(e){ console.warn('calcHoraTotales falló tras Guardar (no crítico):', e); }
   renderHoraHist();
   renderAll();
   // Resincroniza en segundo plano para reflejar lo que otras máquinas/
@@ -4863,32 +4925,34 @@ function renderEvaluacion(){
     </div>`;
   }).join('');
 
-  // Comparative bar chart — avg eficiency per operator
+  // Comparative bar chart — avg eficiencia per operator
   const canvas = document.getElementById('eval-chart');
   if(canvas){
     if(evalChart) evalChart.destroy();
-    evalChart = new Chart(canvas,{
-      type:'bar',
-      data:{
-        labels: opMetrics.map(m=>m.op),
-        datasets:[{
-          label:'Eficiencia promedio %',
-          data: opMetrics.map(m=>m.avgEfic),
-          backgroundColor: opMetrics.map((_,i)=>EVAL_COLORS[i%EVAL_COLORS.length]+'bb'),
-          borderColor: opMetrics.map((_,i)=>EVAL_COLORS[i%EVAL_COLORS.length]),
-          borderWidth:1, borderRadius:4
-        }]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},
-          tooltip:{callbacks:{label:ctx=>`${ctx.raw}% eficiencia`}}},
-        scales:{
-          y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},
-          x:{ticks:{color:'#8b8fa8',font:{size:11}},grid:{display:false},border:{color:'transparent'}}
+    try{
+      evalChart = new Chart(canvas,{
+        type:'bar',
+        data:{
+          labels: opMetrics.map(m=>m.op),
+          datasets:[{
+            label:'Eficiencia promedio %',
+            data: opMetrics.map(m=>m.avgEfic),
+            backgroundColor: opMetrics.map((_,i)=>EVAL_COLORS[i%EVAL_COLORS.length]+'bb'),
+            borderColor: opMetrics.map((_,i)=>EVAL_COLORS[i%EVAL_COLORS.length]),
+            borderWidth:1, borderRadius:4
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false},
+            tooltip:{callbacks:{label:ctx=>`${ctx.raw}% eficiencia`}}},
+          scales:{
+            y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},
+            x:{ticks:{color:'#8b8fa8',font:{size:11}},grid:{display:false},border:{color:'transparent'}}
+          }
         }
-      }
-    });
+      });
+    }catch(e){ console.warn('Chart.js falló al dibujar la comparativa de operadores (no crítico):', e); }
   }
 
   // Trend line chart — last 10 records per operator
@@ -4909,18 +4973,20 @@ function renderEvaluacion(){
     // Use longest label set
     const maxLen = Math.max(...opMetrics.map(m=>Math.min(m.recs.length,10)));
     const labels = Array.from({length:maxLen},(_,i)=>`T${i+1}`);
-    evalTrendChart = new Chart(trendCanvas,{
-      type:'line',
-      data:{labels, datasets},
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:true,labels:{color:'#8b8fa8',font:{size:11},boxWidth:12}}},
-        scales:{
-          y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},
-          x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}
+    try{
+      evalTrendChart = new Chart(trendCanvas,{
+        type:'line',
+        data:{labels, datasets},
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:true,labels:{color:'#8b8fa8',font:{size:11},boxWidth:12}}},
+          scales:{
+            y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},
+            x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}
+          }
         }
-      }
-    });
+      });
+    }catch(e){ console.warn('Chart.js falló al dibujar la tendencia de operadores (no crítico):', e); }
   }
 }
 
@@ -4969,6 +5035,7 @@ function clearDibujos(){
 let horasExtraCount = 0;
 
 function addHoraExtra(){
+  if(!canCaptureHora()){ console.warn('addHoraExtra bloqueado: sin permiso de capturar hora×hora.'); return; }
   horasExtraCount++;
   const id = 'hex'+Date.now();
   const machine = document.getElementById('reg-machine').value;
