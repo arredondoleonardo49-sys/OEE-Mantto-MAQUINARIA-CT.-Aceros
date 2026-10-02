@@ -137,6 +137,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
    para no tener dos barras de scroll una dentro de la otra, y para que
    aproveche el espacio que libera ocultar la tarjeta de subida. */
 #reg-content.reg-split-mode .programa-table-wrap{max-height:none;border:none}
+/* Vista dividida Registro + Aprovechamiento: a diferencia de la anterior
+   (que divide dos pestañas DENTRO de la misma página), esta muestra dos
+   PÁGINAS completas lado a lado, cada una con su propio scroll. */
+#main-single.dual-split-mode{display:flex;gap:1rem;height:100vh;overflow:hidden;align-items:flex-start}
+#main-single.dual-split-mode>.page{display:none!important}
+#main-single.dual-split-mode>#page-registro,
+#main-single.dual-split-mode>#page-aprovechamiento{display:block!important;flex:1;min-width:0;height:100vh;overflow-y:auto;padding-right:4px}
 .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 .metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem}
 .metric-card.metric-card-flex{display:flex;align-items:center;gap:12px}
@@ -604,10 +611,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><div class="page-title">Registrar turno</div><div class="page-sub">Captura datos reales — OEE calculado automáticamente</div></div>
-      <button class="dash-ct-btn" id="reg-split-btn" onclick="toggleRegSplit()" title="Ver el registro y el programa del día uno junto al otro">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-        Vista dividida
-      </button>
+      <div style="display:flex;gap:8px">
+        <button class="dash-ct-btn" id="reg-split-btn" onclick="toggleRegSplit()" title="Ver el registro y el programa del día uno junto al otro">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          Vista dividida
+        </button>
+        <button class="dash-ct-btn" id="reg-aprov-split-btn" onclick="toggleRegAprovSplit()" title="Ver el registro y Aprovechamiento uno junto al otro, sin cambiar de menú">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          + Aprovechamiento
+        </button>
+      </div>
     </div>
   </div>
   <div class="content" id="reg-content">
@@ -872,7 +885,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas</div>
         <div class="dynamic-row-header dynamic-row-hojas"><span>Calibre</span><span>Hojas</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
         <div id="lam-hojas-list"></div>
-        <button class="btn-add-row" onclick="addLamHoja()">+ Agregar calibre</button>
+        <button class="btn-add-row" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button>
         <div class="row-total">Peso total procesado: <span id="lam-peso-total">0.000</span> kg</div>
       </div>
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Merma y recuperación de recortes</div>
@@ -889,14 +902,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <span></span>
         </div>
         <div id="lam-recortes-list"></div>
-        <button class="btn-add-row" onclick="addLamRecorte()">+ Agregar recorte recuperado</button>
+        <button class="btn-add-row" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte recuperado</button>
         <div class="row-total">Ahorro estimado: $<span id="lam-ahorro">0.00</span></div>
         <div style="display:grid;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
           <div style="position:relative;height:140px"><canvas id="lam-chart"></canvas></div>
           <div id="lam-chart-legend" style="font-size:12px;color:var(--text2)"></div>
         </div>
       </div>
-      <div class="btn-actions"><span class="save-msg" id="lam-save-msg"></span><button class="btn btn-primary" onclick="saveLamina()">Guardar registro</button></div>
+      <div class="btn-actions"><span class="save-msg" id="lam-save-msg"></span><button class="btn btn-primary" id="btn-save-lamina" onclick="saveLamina()">Guardar registro</button></div>
     </div>
     <div id="tab-tubular" class="tab-content">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Datos del registro</div>
@@ -910,7 +923,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Tramos utilizados</div>
         <div class="dynamic-row-header dynamic-row-tub" style="margin-bottom:4px"><span>Tipo de tubular</span><span>Tramos (6m)</span><span>Peso/tramo (kg)</span><span>Peso total (kg)</span><span></span></div>
         <div id="tub-tramos-list"></div>
-        <button class="btn-add-row" onclick="addTubTramo()">+ Agregar tubular</button>
+        <button class="btn-add-row" id="btn-add-tub-tramo" onclick="addTubTramo()">+ Agregar tubular</button>
         <div class="row-total">Peso total procesado: <span id="tub-peso-total">0.000</span> kg</div>
       </div>
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Merma y recuperación de recortes</div>
@@ -920,22 +933,22 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div class="dynamic-row-header dynamic-row-tub" style="margin-bottom:4px"><span>Tipo de tubular</span><span>Peso recorte (kg)</span><span>Tramos equiv.</span><span>Ahorro ($)</span><span></span></div>
         <div id="tub-recortes-list"></div>
-        <button class="btn-add-row" onclick="addTubRecorte()">+ Agregar recorte recuperado</button>
+        <button class="btn-add-row" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar recorte recuperado</button>
         <div class="row-total">Ahorro estimado: $<span id="tub-ahorro">0.00</span></div>
         <div style="display:grid;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
           <div style="position:relative;height:140px"><canvas id="tub-chart"></canvas></div>
           <div id="tub-chart-legend" style="font-size:12px;color:var(--text2)"></div>
         </div>
       </div>
-      <div class="btn-actions"><span class="save-msg" id="tub-save-msg"></span><button class="btn btn-primary" onclick="saveTubular()">Guardar registro</button></div>
+      <div class="btn-actions"><span class="save-msg" id="tub-save-msg"></span><button class="btn btn-primary" id="btn-save-tubular" onclick="saveTubular()">Guardar registro</button></div>
     </div>
     <div id="tab-aprov-hist" class="tab-content">
       <div class="filter-row">
         <select id="ah-tipo" onchange="renderAprovHist()"><option value="">Lámina y Tubular</option><option value="lamina">Lámina</option><option value="tubular">Tubular</option></select>
       </div>
       <div class="card">
-        <div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 90px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
-  <span>Fecha</span><span>Tipo</span><span>Máquina</span><span>Turno</span><span>Peso proc.</span><span>% Aprov / Merma</span><span>Distribución</span><span></span>
+        <div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 100px 110px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+  <span>Fecha</span><span>Tipo</span><span>Máquina</span><span>Turno</span><span>Peso proc.</span><span>% Aprov / Merma</span><span>Real vs. explosión</span><span>Distribución</span><span></span>
 </div>
 <div id="aprov-hist-body"></div>
         <div id="aprov-hist-empty" class="empty-state" style="display:none">Sin registros.</div>
@@ -1491,6 +1504,7 @@ const PERMISSIONS_TREE=[
   {key:'aprovechamiento', label:'Aprovechamiento', children:[
     {key:'tab-tubular', label:'Tubular — Laser'},
     {key:'tab-aprov-hist', label:'Historial'},
+    {key:'aprov-captura', label:'Capturar registros de aprovechamiento (acción, no es una pestaña)'},
   ]},
   {key:'mantenimiento', label:'Mantenimiento', children:[
     {key:'mant-registro', label:'Registrar'},
@@ -1514,13 +1528,15 @@ function defaultPermissions(role){
   ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=true; });
   if(role==='operador'){
     ALL_PERMISSION_KEYS.forEach(k=>{
-      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='reg-hora-captura');
+      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='reg-hora-captura'||k==='aprovechamiento'||k==='tab-tubular'||k==='tab-aprov-hist'||k==='aprov-captura');
     });
   } else if(role==='lider'){
     perms['cfg-usuarios']=false; // administrar cuentas queda para Ingeniero, salvo que se habilite a mano
     perms['reg-hora-captura']=false; // capturar hora×hora es del Operador, salvo que se habilite a mano
+    perms['aprov-captura']=false; // capturar aprovechamiento también es del Operador, salvo que se habilite a mano
   } else if(role==='ingeniero'){
     perms['reg-hora-captura']=false; // ni Ingeniería lo tiene de inicio — también necesita habilitarse a mano
+    perms['aprov-captura']=false;
   }
   return perms;
 }
@@ -1530,6 +1546,11 @@ function canCaptureHora(){
   if(!currentUser) return false;
   const perms=currentUser.permissions||defaultPermissions(currentUser.role);
   return perms['reg-hora-captura']!==false;
+}
+function canCaptureAprov(){
+  if(!currentUser) return false;
+  const perms=currentUser.permissions||defaultPermissions(currentUser.role);
+  return perms['aprov-captura']!==false;
 }
 // Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
 // la mini-barra) las páginas sin acceso, y dentro de cada página, las
@@ -1567,7 +1588,7 @@ function applyUserCtLock(){
         ? 'Tu cuenta ya tiene asignado este Centro de Trabajo — pide a tu ingeniero de procesos que lo cambie desde Configuración si hace falta.'
         : 'Tu cuenta tiene varios Centros de Trabajo asignados — elige entre ellos.';
     }
-    updateMachineAndTurno();
+    restoreOrDefaultMachineSelection();
     // Dashboard: solo quedan visibles los botones de grupo relevantes a
     // los CT asignados, y dentro de Estructura, solo los sub-CT asignados.
     document.querySelectorAll('.dash-group-btn').forEach(b=>{
@@ -1587,7 +1608,7 @@ function applyUserCtLock(){
       ctSel.innerHTML=ALL_CTS.map(ct=>`<option>${ct}</option>`).join('');
       ctSel.disabled=false; ctSel.title='';
     }
-    updateMachineAndTurno();
+    restoreOrDefaultMachineSelection();
     document.querySelectorAll('.dash-group-btn').forEach(b=>b.style.display='');
     document.querySelectorAll('.dash-ct-subbtn').forEach(b=>b.style.display='');
   }
@@ -1632,6 +1653,19 @@ function applyAprovUI(){
   ['lam-op','tub-op'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && !el.value) el.value=currentUser.name||'';
+  });
+  const canCapture=canCaptureAprov();
+  ['btn-add-lam-hoja','btn-add-lam-recorte','btn-add-tub-tramo','btn-add-tub-recorte','btn-save-lamina','btn-save-tubular'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.disabled=!canCapture;
+    el.style.opacity=canCapture?'1':'.4';
+    el.style.cursor=canCapture?'pointer':'not-allowed';
+    el.title=canCapture?'':'Tu cuenta no tiene permiso para capturar registros de aprovechamiento — lo asigna un Ingeniero desde Configuración → Usuarios.';
+  });
+  ['lam-merma','tub-merma'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled=!canCapture;
   });
   restoreLamDraft();
   restoreTubDraft();
@@ -2818,14 +2852,33 @@ function mergeRecordsById(existing, incoming){
 
 function loadFromCloud(){
   const isOperador=currentUser && currentUser.role==='operador';
+  // Aprovechamiento y Mantenimiento se omiten del sync solo si la cuenta
+  // realmente no tiene acceso a esos menús (según sus permisos
+  // personalizados) — ya no se asume por el rol, porque ahora Operador
+  // también puede tener acceso a Aprovechamiento.
+  const perms=currentUser?(currentUser.permissions||defaultPermissions(currentUser.role)):{};
+  const canSeeAprov=perms['aprovechamiento']!==false;
+  const canSeeMant=perms['mantenimiento']!==false;
   const sheets=[
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
-    // Aprovechamiento y Mantenimiento no aplican para Operador (no tiene
-    // acceso a esas páginas) — se omiten para aligerar y acelerar su sync.
-    ...(isOperador ? [] : [
-      {name:'Aprovechamiento', assign:(d)=>{ aprovRecords=mergeRecordsById(aprovRecords,d); save('aprovRecords'); }},
+    ...(canSeeAprov ? [
+      {name:'Aprovechamiento', assign:(d)=>{
+        // hojasDetalle/explosionDetalle viajan como texto JSON en la
+        // nube (las hojas de cálculo solo guardan texto) — se convierten
+        // de vuelta a arreglo antes de mezclarlos con lo local.
+        const normalized=(d||[]).map(r=>{
+          let hojasDetalle=r.hojasDetalle;
+          if(typeof hojasDetalle==='string'){ try{ hojasDetalle=JSON.parse(hojasDetalle||'[]'); }catch(e){ hojasDetalle=[]; } }
+          let explosionDetalle=r.explosionDetalle;
+          if(typeof explosionDetalle==='string'){ try{ explosionDetalle=JSON.parse(explosionDetalle||'[]'); }catch(e){ explosionDetalle=[]; } }
+          return {...r, hojasDetalle:hojasDetalle||[], explosionDetalle:explosionDetalle||[]};
+        });
+        aprovRecords=mergeRecordsById(aprovRecords,normalized); save('aprovRecords');
+      }},
+    ] : []),
+    ...(canSeeMant ? [
       {name:'Mantenimiento',   assign:(d)=>{ mantLogs=mergeRecordsById(mantLogs,d); save('mantLogs'); }},
-    ]),
+    ] : []),
     ...ALL_CTS.map(ct=>({
       name: ctSheet(ct),
       assign:(d)=>{
@@ -3348,7 +3401,14 @@ function updateInfoBox(){
   // restaurar/flush) — así la próxima vez que se cambie de máquina, se
   // sabe correctamente cuál era "la anterior", sin importar si tiene
   // hora×hora o no.
-  _prevHoraContext={ct, machine:mn, turno, fecha:document.getElementById('reg-fecha')?.value};
+  // Si "machines" todavía no termina de cargar (esto puede correr antes
+  // de loadData() durante el login), el selector de máquina solo tiene
+  // el placeholder "Sin máquinas" — guardar eso ahora mismo corrompería
+  // el contexto recién restaurado de localStorage antes de poder usarlo.
+  if(machines.length){
+    _prevHoraContext={ct, machine:mn, turno, fecha:document.getElementById('reg-fecha')?.value};
+    try{ localStorage.setItem(SK_REG_CONTEXT, JSON.stringify(_prevHoraContext)); }catch(e){}
+  }
 }
 // Los paros son propios de cada máquina — al cambiar de máquina/turno, se
 // limpia la tarjeta y se recarga SOLO lo que ya se había guardado para
@@ -3442,8 +3502,8 @@ function saveTurno(){
 // ── APROVECHAMIENTO ──
 function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.cal} (${l.peso}kg)</option>`).join('');}
 function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
-function addLamHoja(){const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();}
-function addLamRecorte(){const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();}
+function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();}
+function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();}
 // ── BORRADOR DE LÁMINA (localStorage) ──
 // Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
 // página se recargaba antes de presionar "Guardar registro" — a
@@ -3485,7 +3545,7 @@ function restoreLamDraft(){
   if(draft.turno) document.getElementById('lam-turno').value=draft.turno;
   if(draft.merma) document.getElementById('lam-merma').value=draft.merma;
   (draft.hojas||[]).forEach(h=>{
-    addLamHoja();
+    addLamHoja(true);
     const rows=document.querySelectorAll('#lam-hojas-list .dynamic-row');
     const row=rows[rows.length-1];
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
@@ -3493,7 +3553,7 @@ function restoreLamDraft(){
     if(ins[0] && h.hojas) ins[0].value=h.hojas;
   });
   (draft.recortes||[]).forEach(r=>{
-    addLamRecorte();
+    addLamRecorte(true);
     const rows=document.querySelectorAll('#lam-recortes-list .dynamic-row');
     const row=rows[rows.length-1];
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
@@ -3521,18 +3581,26 @@ function calcLamina(){
   saveLamDraft();
 }
 function saveLamina(){
+  if(!canCaptureAprov()){ console.warn('saveLamina bloqueado: sin permiso de capturar aprovechamiento.'); return; }
   const fecha=document.getElementById('lam-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('lam-turno').value;const op=document.getElementById('lam-op').value||'–';
   const pt=parseFloat(document.getElementById('lam-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('lam-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('lam-ahorro').textContent.replace(/,/g,''))||0;
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
-  const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah};
-  aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',rec);
+  // Desglose de hojas por calibre — se necesita para poder comparar
+  // después, calibre por calibre, contra lo explosionado y calcular el
+  // ahorro teórico (hojas de diferencia × costo de la lámina).
+  const hojasDetalle=Array.from(document.querySelectorAll('#lam-hojas-list .dynamic-row')).map(row=>{
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    return {cal: sel?.value, hojas: parseFloat(ins[0]?.value)||0};
+  }).filter(h=>h.cal && h.hojas>0);
+  const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle};
+  aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',{...rec,hojasDetalle:JSON.stringify(hojasDetalle)});
   clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
   const msg=document.getElementById('lam-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
 }
-function addTubTramo(){const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();}
-function addTubRecorte(){const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();}
+function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();}
+function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();}
 // ── BORRADOR DE TUBULAR (localStorage) — mismo mecanismo que Lámina ──
 const SK_TUB_DRAFT='oee_tub_draft_v1';
 function saveTubDraft(){
@@ -3566,7 +3634,7 @@ function restoreTubDraft(){
   if(draft.turno) document.getElementById('tub-turno').value=draft.turno;
   if(draft.merma) document.getElementById('tub-merma').value=draft.merma;
   (draft.tramos||[]).forEach(t=>{
-    addTubTramo();
+    addTubTramo(true);
     const rows=document.querySelectorAll('#tub-tramos-list .dynamic-row');
     const row=rows[rows.length-1];
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
@@ -3574,7 +3642,7 @@ function restoreTubDraft(){
     if(ins[0] && t.cant) ins[0].value=t.cant;
   });
   (draft.recortes||[]).forEach(r=>{
-    addTubRecorte();
+    addTubRecorte(true);
     const rows=document.querySelectorAll('#tub-recortes-list .dynamic-row');
     const row=rows[rows.length-1];
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
@@ -3596,6 +3664,7 @@ function calcTubular(){
   saveTubDraft();
 }
 function saveTubular(){
+  if(!canCaptureAprov()){ console.warn('saveTubular bloqueado: sin permiso de capturar aprovechamiento.'); return; }
   const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
   const pt=parseFloat(document.getElementById('tub-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('tub-ahorro').textContent.replace(/,/g,''))||0;
@@ -3618,6 +3687,20 @@ function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
   }catch(e){ console.warn('Chart.js falló al dibujar la dona de aprovechamiento (no crítico):', e); }
   document.getElementById(legendId).innerHTML=`<div style="margin-bottom:6px;font-weight:600;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px">${total.toFixed(3)} kg</div><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><div style="width:10px;height:10px;border-radius:2px;background:#3ecf8e;flex-shrink:0"></div><span>Aprovechado: ${aprovechado.toFixed(3)} kg <strong style="color:#3ecf8e">(${pctA}%)</strong></span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:2px;background:#f06060;flex-shrink:0"></div><span>Merma: ${merma.toFixed(3)} kg <strong style="color:#f06060">(${pctM}%)</strong></span></div>`;
 }
+// Devuelve el lunes y domingo de la semana que contiene esa fecha (para
+// la opción "esta merma es de toda la semana").
+function getWeekRange(dateStr){
+  const d=new Date(dateStr+'T00:00:00');
+  const day=d.getDay();
+  const diffToMonday=(day===0?-6:1-day);
+  const monday=new Date(d); monday.setDate(d.getDate()+diffToMonday);
+  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
+  return {start:monday.toISOString().slice(0,10), end:sunday.toISOString().slice(0,10)};
+}
+function getAprovRecordsSameWeek(rec){
+  const {start,end}=getWeekRange(rec.fecha);
+  return aprovRecords.filter(r=>r.tipo===rec.tipo && r.maquina===rec.maquina && r.fecha>=start && r.fecha<=end);
+}
 function renderAprovHist(){
   const tipo=document.getElementById('ah-tipo').value;
   let filtered=[...aprovRecords].reverse();
@@ -3634,12 +3717,53 @@ function renderAprovHist(){
     const pctMermaColor = !hasMerma?'var(--text3)':r.pctMerma>10?'#f06060':r.pctMerma>5?'#f5a623':'#3ecf8e';
     const pctAprov = hasMerma ? fmtN(100-r.pctMerma,1) : null;
     const pctAprovColor = !hasMerma?'var(--text3)':pctAprov>=90?'#3ecf8e':pctAprov>=75?'#f5a623':'#f06060';
+    const semanalTag = r.mermaSemanal?' <span style="color:var(--text3);font-weight:400">(semanal)</span>':'';
     const mermaCell = hasMerma
       ?`<div style="display:flex;flex-direction:column;gap:2px">
           <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${pctAprovColor};font-weight:700">▲ ${pctAprov}% aprovechado</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${pctMermaColor}">▼ ${r.pctMerma}% merma (${fmtN(r.merma,3)} kg)</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${pctMermaColor}">▼ ${r.pctMerma}% merma (${fmtN(r.merma,3)} kg)${semanalTag}</span>
+          <button onclick="openEditMerma(${r.id})" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
         </div>`
       :`<button onclick="openEditMerma(${r.id})" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma</button>`;
+    // Nueva columna: diferencia entre las láminas realmente usadas (por
+    // calibre) y las que se habían calculado por explosión de materiales
+    // — el ahorro teórico se calcula en láminas completas, no en peso,
+    // ya que así es como se explosiona el material.
+    const hasHojasDetalle = r.tipo==='lamina' && r.hojasDetalle && r.hojasDetalle.length>0;
+    const hasExplosion = r.explosionDetalle && r.explosionDetalle.length>0;
+    let explosionCell;
+    if(!hasHojasDetalle){
+      explosionCell=`<span style="color:var(--text3);font-size:11px">–</span>`;
+    } else if(hasExplosion){
+      let totalAhorroMaterial=0;
+      const detailLines=r.hojasDetalle.map(h=>{
+        const expEntry=r.explosionDetalle.find(e=>e.cal===h.cal);
+        if(!expEntry) return `<div style="font-size:10px;color:var(--text3)">${h.cal}: ${h.hojas} reales (sin explosión capturada)</div>`;
+        const dif=expEntry.hojas-h.hojas;
+        const lam=getLaminaByCal(h.cal);
+        const valorDif=lam?dif*lam.costo:0;
+        totalAhorroMaterial+=valorDif;
+        const difColor=dif>0?'#3ecf8e':dif<0?'#f06060':'var(--text2)';
+        return `<div style="font-size:10px;color:${difColor}">${h.cal}: ${h.hojas} reales vs ${expEntry.hojas} plan (${dif>0?'+':''}${dif} lám.)</div>`;
+      }).join('');
+      const ahorroTeorico=totalAhorroMaterial+(r.ahorro||0);
+      const ahorroColor=ahorroTeorico>=0?'#3ecf8e':'#f06060';
+      explosionCell=`<div style="display:flex;flex-direction:column;gap:2px">
+          ${detailLines}
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${ahorroColor};font-weight:700">Ahorro teórico: $${fmtN(ahorroTeorico,2)}</span>
+          <span style="font-size:9px;color:var(--text3)">(material + recortes recuperados)</span>
+          <button onclick="openEditExplosion(${r.id})" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
+        </div>`;
+    } else {
+      explosionCell=`<button onclick="openEditExplosion(${r.id})" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Agregar explosión</button>`;
+    }
+    const explosionInputsHtml=hasHojasDetalle ? r.hojasDetalle.map(h=>{
+      const existing=(r.explosionDetalle||[]).find(e=>e.cal===h.cal);
+      return `<div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:12px;color:var(--text2);width:130px">${h.cal} <span style="color:var(--text3)">(${h.hojas} reales)</span></span>
+        <input type="number" class="explosion-cal-input-${r.id}" data-cal="${h.cal}" min="0" value="${existing?existing.hojas:''}" placeholder="Hojas del plan" style="width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+      </div>`;
+    }).join('') : '<span style="font-size:11px;color:var(--text3)">Este registro no tiene desglose por calibre (es anterior a esta función, o es de tipo Tubular).</span>';
     // Mini donut chart using inline canvas
     const chartId='ahchart-'+r.id;
     const aprovVal=r.aprovechado!=null?r.aprovechado:(r.merma!=null?fmtN(r.pesoTotal-r.merma,3):null);
@@ -3653,22 +3777,35 @@ function renderAprovHist(){
           </div>
         </div>`
       :`<span style="color:var(--text3);font-size:11px">–</span>`;
-    return`<div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 90px 1fr 44px;gap:10px;align-items:center;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
+    return`<div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 100px 110px 1fr 44px;gap:10px;align-items:center;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
       <span>${r.fecha}</span>
       <span>${tipoBadge}</span>
       <span style="font-weight:500">${r.maquina}</span>
       <span style="color:var(--text2);font-size:11px">${r.turno.split(' ')[0]+' '+r.turno.split(' ')[1]}</span>
       <span style="font-family:'IBM Plex Mono',monospace">${fmtN(r.pesoTotal,3)} kg</span>
       <span>${mermaCell}</span>
+      <span>${explosionCell}</span>
       <span id="chart-cell-${r.id}">${chartHtml}</span>
       <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteAprov(${r.id})" title="Eliminar">×</button>
     </div>
     <div id="edit-merma-${r.id}" style="display:none;padding:10px 12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:var(--text2)">Merma total (kg):</span>
-        <input type="number" id="merma-input-${r.id}" min="0" step="0.001" placeholder="0.000" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+        <input type="number" id="merma-input-${r.id}" min="0" step="0.001" value="${r.merma!=null?r.merma:''}" placeholder="0.000" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="merma-semanal-${r.id}" ${r.mermaSemanal?'checked':''} style="width:13px;height:13px;accent-color:var(--amber);cursor:pointer">
+          Esta merma es de toda la semana (no solo de este día) — se calcula contra el peso total de la semana
+        </label>
         <button onclick="saveMermaEdit(${r.id})" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
         <button onclick="document.getElementById('edit-merma-${r.id}').style.display='none'" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
+      </div>
+    </div>
+    <div id="edit-explosion-${r.id}" style="display:none;padding:10px 12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Láminas explosionadas (planeadas) por calibre, según el plan de producción:</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${explosionInputsHtml}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="saveExplosionEdit(${r.id})" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
+        <button onclick="document.getElementById('edit-explosion-${r.id}').style.display='none'" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
       </div>
     </div>`;
   }).join('');
@@ -3700,7 +3837,7 @@ function renderAprovHist(){
 
 function openEditMerma(id){
   // Close any open editors first
-  document.querySelectorAll('[id^="edit-merma-"]').forEach(el=>el.style.display='none');
+  document.querySelectorAll('[id^="edit-merma-"], [id^="edit-explosion-"]').forEach(el=>el.style.display='none');
   document.getElementById('edit-merma-'+id).style.display='block';
   document.getElementById('merma-input-'+id).focus();
 }
@@ -3709,14 +3846,48 @@ function saveMermaEdit(id){
   const input=document.getElementById('merma-input-'+id);
   const merma=parseFloat(input.value)||0;
   if(merma<=0){input.style.borderColor='var(--red)';return;}
+  const esSemanal=document.getElementById('merma-semanal-'+id)?.checked||false;
   const rec=aprovRecords.find(r=>r.id===id);
   if(!rec) return;
   rec.merma=merma;
-  rec.pctMerma=rec.pesoTotal>0?fmtN((merma/rec.pesoTotal)*100,2):0;
-  rec.aprovechado=fmtN(rec.pesoTotal-merma,3);
+  rec.mermaSemanal=esSemanal;
+  // Si es semanal, el %merma y el aprovechado se calculan contra el peso
+  // total de TODA la semana (mismo tipo+máquina), no solo el de este día
+  // — así cuando la báscula solo pesa una vez por semana, el cálculo
+  // sigue siendo correcto.
+  const pesoBase = esSemanal ? getAprovRecordsSameWeek(rec).reduce((s,r2)=>s+(r2.pesoTotal||0),0) : rec.pesoTotal;
+  rec.pesoTotalSemana = esSemanal ? pesoBase : null;
+  rec.pctMerma=pesoBase>0?fmtN((merma/pesoBase)*100,2):0;
+  rec.aprovechado=fmtN(pesoBase-merma,3);
   save('aprovRecords');
-  cloudWriteRow('Aprovechamiento',{...rec,merma,pctMerma:rec.pctMerma,aprovechado:rec.aprovechado});
+  cloudWriteRow('Aprovechamiento',{...rec,merma,mermaSemanal:esSemanal,pesoTotalSemana:rec.pesoTotalSemana||'',pctMerma:rec.pctMerma,aprovechado:rec.aprovechado,hojasDetalle:JSON.stringify(rec.hojasDetalle||[]),explosionDetalle:JSON.stringify(rec.explosionDetalle||[])});
   document.getElementById('edit-merma-'+id).style.display='none';
+  renderAprovHist();
+}
+function openEditExplosion(id){
+  document.querySelectorAll('[id^="edit-merma-"], [id^="edit-explosion-"]').forEach(el=>el.style.display='none');
+  document.getElementById('edit-explosion-'+id).style.display='block';
+  document.querySelector('.explosion-cal-input-'+id)?.focus();
+}
+function saveExplosionEdit(id){
+  const rec=aprovRecords.find(r=>r.id===id);
+  if(!rec) return;
+  const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
+  const explosionDetalle=[];
+  let anyFilled=false;
+  inputs.forEach(inp=>{
+    const cal=inp.dataset.cal;
+    const hojas=parseFloat(inp.value)||0;
+    if(hojas>0){ explosionDetalle.push({cal,hojas}); anyFilled=true; }
+  });
+  if(!anyFilled){
+    inputs.forEach(inp=>inp.style.borderColor='var(--red)');
+    return;
+  }
+  rec.explosionDetalle=explosionDetalle;
+  save('aprovRecords');
+  cloudWriteRow('Aprovechamiento',{...rec,hojasDetalle:JSON.stringify(rec.hojasDetalle||[]),explosionDetalle:JSON.stringify(explosionDetalle)});
+  document.getElementById('edit-explosion-'+id).style.display='none';
   renderAprovHist();
 }
 // ── HISTORIAL OEE ──
@@ -3805,6 +3976,7 @@ function navigate(page,el){
   // que se acababa de escribir.
   if(page!=='registro') flushLiveSyncNow();
   if(page!=='registro' && regSplitActive) toggleRegSplit();
+  if(page!=='registro' && page!=='aprovechamiento' && dualSplitActive) toggleRegAprovSplit();
   // Hide all pages explicitly (class + inline style)
   document.querySelectorAll('.page').forEach(p=>{
     p.classList.remove('active');
@@ -3874,6 +4046,7 @@ function renderAll(){renderDashboard();renderHistory();updateFilterSelects();ren
 let regSplitActive=false;
 function toggleRegSplit(){
   regSplitActive=!regSplitActive;
+  if(regSplitActive && dualSplitActive) toggleRegAprovSplit();
   const content=document.getElementById('reg-content');
   const sidebar=document.getElementById('sidebar');
   const sidebarMini=document.getElementById('sidebar-mini');
@@ -3896,6 +4069,40 @@ function toggleRegSplit(){
     if(sidebarMini) sidebarMini.style.display='none';
     if(btn) btn.classList.remove('active');
     renderProgramaDia(); // para que la tarjeta de subida reaparezca si el rol la permite
+  }
+}
+// Vista dividida Registro + Aprovechamiento — pensada para que el
+// operador use ambos menús en simultáneo sin tener que alternar entre
+// ellos. A diferencia de toggleRegSplit() (que divide dos pestañas
+// DENTRO de Registro), esta muestra dos PÁGINAS completas lado a lado.
+let dualSplitActive=false;
+function toggleRegAprovSplit(){
+  dualSplitActive=!dualSplitActive;
+  const mainSingle=document.getElementById('main-single');
+  const sidebar=document.getElementById('sidebar');
+  const sidebarMini=document.getElementById('sidebar-mini');
+  const btn=document.getElementById('reg-aprov-split-btn');
+  if(dualSplitActive){
+    // No mezclar los dos modos de vista dividida a la vez.
+    if(regSplitActive) toggleRegSplit();
+    if(mainSingle) mainSingle.classList.add('dual-split-mode');
+    document.getElementById('page-registro')?.classList.add('active');
+    document.getElementById('page-aprovechamiento')?.classList.add('active');
+    if(sidebar) sidebar.style.display='none';
+    if(sidebarMini){
+      sidebarMini.style.display='flex';
+      sidebarMini.querySelectorAll('.nav-item-mini').forEach(item=>{
+        item.classList.toggle('active', (item.getAttribute('onclick')||'').includes("navigate('registro'"));
+      });
+    }
+    if(btn) btn.classList.add('active');
+    applyAprovUI();
+  } else {
+    if(mainSingle) mainSingle.classList.remove('dual-split-mode');
+    document.getElementById('page-aprovechamiento')?.classList.remove('active');
+    if(sidebar) sidebar.style.display='';
+    if(sidebarMini) sidebarMini.style.display='none';
+    if(btn) btn.classList.remove('active');
   }
 }
 // ── MANTENIMIENTO DATA ──
@@ -4528,8 +4735,15 @@ let _liveSyncTimer=null;
 // pintó la cuadrícula de hora×hora — se usa para "vaciar" cualquier
 // captura pendiente ANTES de cambiar de máquina/turno/CT, así los datos
 // que se estaban escribiendo nunca se pierden ni se guardan bajo la
-// máquina equivocada.
+// máquina equivocada. También se guarda en localStorage (si es de hoy)
+// para que la máquina seleccionada sobreviva una recarga completa de la
+// página, no solo cambiar de menú dentro de la misma sesión.
+const SK_REG_CONTEXT='oee_reg_context_v1';
 let _prevHoraContext=null;
+try{
+  const savedCtx=JSON.parse(localStorage.getItem(SK_REG_CONTEXT));
+  if(savedCtx && savedCtx.fecha===todayStr()) _prevHoraContext=savedCtx;
+}catch(e){}
 function scheduleLiveSync(){
   if(!currentUser) return;
   const ctx={
