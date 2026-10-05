@@ -1386,7 +1386,7 @@ function loadProgramaDiaLS(){
   try{
     programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).map(r=>({
       ...r,
-      rows: typeof r.rows==='string' ? JSON.parse(r.rows||'[]') : (r.rows||[])
+      rows: safeParse(r.rows,[])
     }));
   }catch(e){ programaDia=[]; }
 }
@@ -2124,7 +2124,7 @@ function refreshProgramaDiaFromCloud(){
       try{
         const rows=data.rows||[];
         if(rows.length){
-          const mapped=parseCloudRows(rows).map(r=>({...r, rows: typeof r.rows==='string'?JSON.parse(r.rows||'[]'):r.rows}));
+          const mapped=parseCloudRows(rows).map(r=>({...r, rows: safeParse(r.rows,[])}));
           programaDia=mergeRecordsById(programaDia, mapped);
           saveProgramaDiaLS();
           renderProgramaDia();
@@ -2510,8 +2510,18 @@ const ICONS={
   users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
 };
 function ic(name,size){size=size||14;const d=ICONS[name]||'';return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;}
-function pct(v){return parseFloat(v.toFixed(1));}
-function fmtN(v,d=2){return parseFloat(v.toFixed(d));}
+// Parseo/formato a prueba de datos raros: las celdas vacías del Sheet
+// llegan como '' (texto vacío), no como null — y un solo valor así no debe
+// romper pantallas completas.
+function safeParse(v,fallback){
+  if(v==null||v==='') return fallback;
+  let out=v;
+  if(typeof v==='string'){ try{ out=JSON.parse(v); }catch(e){ return fallback; } }
+  if(Array.isArray(fallback) && !Array.isArray(out)) return fallback;
+  return out;
+}
+function pct(v){const n=Number(v);return isNaN(n)?0:parseFloat(n.toFixed(1));}
+function fmtN(v,d=2){const n=Number(v);return isNaN(n)?0:parseFloat(n.toFixed(d));}
 function getMachinesByCT(ct){return machines.filter(m=>m.ct===ct);}
 function getMachineByName(n){return machines.find(m=>m.name===n);}
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
@@ -2850,6 +2860,26 @@ function mergeRecordsById(existing, incoming){
   return Object.values(byId);
 }
 
+// Convierte una fila de Aprovechamiento tal como viene del Sheet (celdas
+// vacías = '', JSON como texto, booleanos como texto) a la forma que usa la
+// app. Sin esto, un registro guardado sin merma (celda vacía) rompía todo
+// el historial al leerse desde la nube.
+function normalizeAprovRow(r){
+  const num=v=>{ if(v===''||v==null) return null; const n=parseFloat(v); return isNaN(n)?null:n; };
+  const o={...r};
+  o.pesoTotal=num(r.pesoTotal)||0;
+  o.merma=num(r.merma);
+  o.pctMerma=num(r.pctMerma);
+  o.aprovechado=num(r.aprovechado);
+  o.ahorro=num(r.ahorro)||0;
+  o.pesoTotalSemana=num(r.pesoTotalSemana);
+  o.mermaSemanal=(r.mermaSemanal===true||r.mermaSemanal==='true'||r.mermaSemanal==='TRUE');
+  o.hojasDetalle=safeParse(r.hojasDetalle,[]);
+  o.explosionDetalle=safeParse(r.explosionDetalle,[]);
+  if(!o.turno) o.turno='–';
+  if(!o.fecha) o.fecha='';
+  return o;
+}
 function loadFromCloud(){
   const isOperador=currentUser && currentUser.role==='operador';
   // Aprovechamiento y Mantenimiento se omiten del sync solo si la cuenta
@@ -2863,16 +2893,9 @@ function loadFromCloud(){
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
     ...(canSeeAprov ? [
       {name:'Aprovechamiento', assign:(d)=>{
-        // hojasDetalle/explosionDetalle viajan como texto JSON en la
-        // nube (las hojas de cálculo solo guardan texto) — se convierten
-        // de vuelta a arreglo antes de mezclarlos con lo local.
-        const normalized=(d||[]).map(r=>{
-          let hojasDetalle=r.hojasDetalle;
-          if(typeof hojasDetalle==='string'){ try{ hojasDetalle=JSON.parse(hojasDetalle||'[]'); }catch(e){ hojasDetalle=[]; } }
-          let explosionDetalle=r.explosionDetalle;
-          if(typeof explosionDetalle==='string'){ try{ explosionDetalle=JSON.parse(explosionDetalle||'[]'); }catch(e){ explosionDetalle=[]; } }
-          return {...r, hojasDetalle:hojasDetalle||[], explosionDetalle:explosionDetalle||[]};
-        });
+        // Las celdas vacías del Sheet llegan como '' y los campos JSON como
+        // texto — se normalizan antes de mezclarlos con lo local.
+        const normalized=(d||[]).map(normalizeAprovRow);
         aprovRecords=mergeRecordsById(aprovRecords,normalized); save('aprovRecords');
       }},
     ] : []),
@@ -2893,14 +2916,14 @@ function loadFromCloud(){
     }},
     {name:'Checklist_Arranque', assign:(d)=>{
       if(d && d.length){
-        const mapped=d.map(r=>({...r, allChecked: r.allChecked===true||r.allChecked==='true'||r.allChecked==='TRUE', items: typeof r.items==='string'?JSON.parse(r.items||'[]'):r.items}));
+        const mapped=d.map(r=>({...r, allChecked: r.allChecked===true||r.allChecked==='true'||r.allChecked==='TRUE', items: safeParse(r.items,[])}));
         checklistRecords=mergeRecordsById(checklistRecords,mapped);
         localStorage.setItem(SK_CHECKLIST_RECORDS,JSON.stringify(checklistRecords));
       }
     }},
     {name:'Programa_Dia', assign:(d)=>{
       if(d && d.length){
-        const mapped=d.map(r=>({...r, rows: typeof r.rows==='string'?JSON.parse(r.rows||'[]'):r.rows}));
+        const mapped=d.map(r=>({...r, rows: safeParse(r.rows,[])}));
         programaDia=mergeRecordsById(programaDia,mapped);
         saveProgramaDiaLS();
       }
@@ -3016,8 +3039,25 @@ function loadFromCloudPerSheet(sheets){
   });
 }
 
+// Cuando llegan los datos de la nube DESPUÉS de que la pantalla de Registro
+// ya se pintó (vacía, p. ej. en un dispositivo/navegador nuevo), se vuelve a
+// pintar con lo que acaba de llegar — pero SOLO si el operador todavía no ha
+// capturado nada en esta sesión, para no pisar lo que está escribiendo. Sin
+// esto, la cuadrícula se veía en blanco aunque el turno ya existiera en la
+// nube, y la siguiente captura sobrescribía lo anterior.
+function refreshRegistroAfterCloud(){
+  if(!currentUser || !document.getElementById('reg-ct')) return;
+  const ae=document.activeElement;
+  if(ae && ['INPUT','SELECT','TEXTAREA'].includes(ae.tagName) && document.getElementById('page-registro')?.contains(ae)) return;
+  const touched=Array.from(document.querySelectorAll('#hora-franjas-list input')).some(i=>i.value!=='')
+    || document.querySelectorAll('#paros-list .paro-row').length>0;
+  if(touched) return;
+  checkHoraPanel();
+  loadParosForContext();
+}
 function onCloudLoaded(hasError){
-  renderAll();
+  try{ renderAll(); }catch(e){ console.warn('onCloudLoaded: renderAll', e); }
+  try{ refreshRegistroAfterCloud(); }catch(e){ console.warn('onCloudLoaded: refreshRegistro', e); }
   cloudConnected=true;
   lastSyncHadErrors=!!hasError;
   if(!hasError) lastSyncTime=new Date();
@@ -3286,7 +3326,7 @@ function renderDashHoraPanel(ct){
     dataByMachine[m]={};
     const rec=lastByMachine[m];
     if(rec){
-      const franjas=typeof rec.franjas==='string'?JSON.parse(rec.franjas||'[]'):(rec.franjas||[]);
+      const franjas=safeParse(rec.franjas,[]);
       franjas.filter(f=>!f.isBreak).forEach(f=>{ dataByMachine[m][f.franja]=f.fabricadas||0; });
     }
   });
@@ -3426,7 +3466,7 @@ function loadParosForContext(){
   const matches=records.filter(r=>r.ct===ct && r.machine===machine && r.turno===turno && r.fecha===fecha);
   const rec=matches.reduce((best,r)=>(!best||isNewerRecord(r,best))?r:best, null);
   if(rec){
-    const savedParos=typeof rec.paros==='string'?JSON.parse(rec.paros||'[]'):(rec.paros||[]);
+    const savedParos=safeParse(rec.paros,[]);
     savedParos.forEach(p=>{
       addParoRow();
       const lastId=paroRows[paroRows.length-1];
@@ -3709,11 +3749,11 @@ function renderAprovHist(){
   const em=document.getElementById('aprov-hist-empty');
   if(!filtered.length){tb.innerHTML='';em.style.display='block';return;}
   em.style.display='none';
-  tb.innerHTML=filtered.map(r=>{
+  tb.innerHTML=filtered.map(r=>{ try{
     const tipoBadge=r.tipo==='lamina'
       ?'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff">LÁMINA</span>'
       :'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span>';
-    const hasMerma = r.merma!=null;
+    const hasMerma = r.merma!=null && r.merma!=='' && !isNaN(Number(r.merma));
     const pctMermaColor = !hasMerma?'var(--text3)':r.pctMerma>10?'#f06060':r.pctMerma>5?'#f5a623':'#3ecf8e';
     const pctAprov = hasMerma ? fmtN(100-r.pctMerma,1) : null;
     const pctAprovColor = !hasMerma?'var(--text3)':pctAprov>=90?'#3ecf8e':pctAprov>=75?'#f5a623':'#f06060';
@@ -3766,7 +3806,7 @@ function renderAprovHist(){
     }).join('') : '<span style="font-size:11px;color:var(--text3)">Este registro no tiene desglose por calibre (es anterior a esta función, o es de tipo Tubular).</span>';
     // Mini donut chart using inline canvas
     const chartId='ahchart-'+r.id;
-    const aprovVal=r.aprovechado!=null?r.aprovechado:(r.merma!=null?fmtN(r.pesoTotal-r.merma,3):null);
+    const aprovVal=(r.aprovechado!=null&&r.aprovechado!=='')?fmtN(r.aprovechado,3):(hasMerma?fmtN(r.pesoTotal-r.merma,3):null);
     const chartHtml=hasMerma&&aprovVal!=null
       ?`<div style="display:flex;align-items:center;gap:8px">
           <canvas id="${chartId}" width="44" height="44" style="flex-shrink:0"></canvas>
@@ -3808,11 +3848,14 @@ function renderAprovHist(){
         <button onclick="document.getElementById('edit-explosion-${r.id}').style.display='none'" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
       </div>
     </div>`;
-  }).join('');
+  }catch(err){
+    console.warn('Registro de aprovechamiento con datos inesperados:', r&&r.id, err);
+    return `<div style="padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text3)">${r&&r.fecha||''} · ${r&&r.maquina||''} — este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
+  } }).join('');
   // Render mini donut charts
   requestAnimationFrame(()=>{
     filtered.forEach(r=>{
-      if(r.merma==null||r.aprovechado==null) return;
+      if(r.merma==null||r.merma===''||r.aprovechado==null||r.aprovechado==='') return;
       const canvas=document.getElementById('ahchart-'+r.id);
       if(!canvas||!canvas.getContext) return;
       const ctx=canvas.getContext('2d');
@@ -4002,13 +4045,14 @@ function navigate(page,el){
   });
 
   updateFullscreenBtnVisibility(page);
-  try{ if(page==='dashboard')renderDashboard(); }catch(e){}
-  try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); } }catch(e){}
-  try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){}
-  try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){}
-  try{ if(page==='mantenimiento'){renderMantPlan();renderMantHist();renderCumplimiento();} }catch(e){}
-  try{ if(page==='registro'){restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){}
-  try{ if(page==='aprovechamiento'){applyAprovUI();} }catch(e){}
+  const _w=(tag)=>(e)=>console.warn('navigate('+page+') — '+tag+':', e);
+  try{ if(page==='dashboard')renderDashboard(); }catch(e){ _w('dashboard')(e); }
+  try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); } }catch(e){ _w('historial')(e); }
+  try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){ _w('config')(e); }
+  try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){ _w('aprovHist')(e); }
+  try{ if(page==='mantenimiento'){renderMantPlan();renderMantHist();renderCumplimiento();} }catch(e){ _w('mantenimiento')(e); }
+  try{ if(page==='registro'){restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){ _w('registro')(e); }
+  try{ if(page==='aprovechamiento'){applyAprovUI();} }catch(e){ _w('aprovUI')(e); }
 }
 
 function switchTabScoped(id, el, scopeClass){
@@ -4038,7 +4082,14 @@ function switchTab(id,el){
   if(tabRow) tabRow.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');el.classList.add('active');
 }
-function renderAll(){renderDashboard();renderHistory();updateFilterSelects();renderHoraHist();renderProgramaDia();updateFullscreenBtnVisibility();}
+// Cada pantalla se pinta por separado: si una falla por un dato raro, las
+// demás se siguen mostrando (antes, un error en una cortaba todas las
+// siguientes y dejaba la plataforma con datos "invisibles").
+function renderAll(){
+  [renderDashboard,renderHistory,updateFilterSelects,renderHoraHist,renderProgramaDia,updateFullscreenBtnVisibility,renderAprovHist].forEach(fn=>{
+    try{ fn(); }catch(e){ console.warn('renderAll: falló '+fn.name, e); }
+  });
+}
 // ── VISTA DIVIDIDA DE REGISTRAR TURNO (Registro + Programa del día) ──
 // Pensada para que el operador vea su registro de hora×hora y su programa
 // del día al mismo tiempo. Se oculta el menú lateral mientras está activa
@@ -4670,7 +4721,7 @@ function renderHoraFranjas(machine, turno){
   const fechaNow=document.getElementById('reg-fecha')?.value;
   const existing=horaRecords.find(r=>r.ct===ctNow && r.machine===machine && r.turno===turno && r.fecha===fechaNow);
   if(existing){
-    const savedFranjas=typeof existing.franjas==='string'?JSON.parse(existing.franjas||'[]'):(existing.franjas||[]);
+    const savedFranjas=safeParse(existing.franjas,[]);
     franjas.forEach((f,i)=>{
       if(f.includes('Comida')) return;
       const saved=savedFranjas[i];
@@ -5037,8 +5088,8 @@ function renderHoraHist(){
   if(!filtered.length){if(body)body.innerHTML='';if(empty)empty.style.display='block';return;}
   if(empty)empty.style.display='none';
 
-  body.innerHTML = filtered.map(r=>{
-    const franjas = typeof r.franjas==='string' ? JSON.parse(r.franjas||'[]') : (r.franjas||[]);
+  body.innerHTML = filtered.map(r=>{ try{
+    const franjas = safeParse(r.franjas,[]);
     const eficColor = r.eficiencia>=85?'#3ecf8e':r.eficiencia>=60?'#f5a623':'#f06060';
     const rechazadas = franjas.filter(f=>!f.isBreak&&f.danadas>0);
 
@@ -5051,7 +5102,7 @@ function renderHoraHist(){
         <span style="font-size:11px;color:${f.motivo?'var(--amber)':'var(--text3)'}">${f.motivo||''}</span>
       </div>`).join('');
     // Dibujos/nidos section
-    const dibujos = r.dibujos ? (typeof r.dibujos==='string'?JSON.parse(r.dibujos):r.dibujos) : [];
+    const dibujos = safeParse(r.dibujos,[]);
     const dibujoSection = dibujos.length>0 ? `
       <div style="padding:.5rem 1rem;background:rgba(74,158,255,.05);border-top:1px solid rgba(74,158,255,.15)">
         <div style="font-size:10px;font-weight:600;color:#4a9eff;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
@@ -5065,7 +5116,7 @@ function renderHoraHist(){
 
     // Paros no programados — se registran en el mismo turno (records/OEE_Registros)
     const oeeMatch = findMatchingOeeRecord(r);
-    const parosList = oeeMatch && oeeMatch.paros ? (typeof oeeMatch.paros==='string'?JSON.parse(oeeMatch.paros||'[]'):oeeMatch.paros) : [];
+    const parosList = oeeMatch ? safeParse(oeeMatch.paros,[]) : [];
     const parosSection = parosList.length>0 ? `
       <div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.15)">
         <div style="font-size:10px;font-weight:600;color:#f06060;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">
@@ -5125,7 +5176,10 @@ function renderHoraHist(){
         ▾ Ver detalle por franja
       </button>
     </div>`;
-  }).join('');
+  }catch(err){
+    console.warn('Registro hora×hora con datos inesperados:', r&&r.id, err);
+    return `<div style="background:var(--bg3);border-radius:var(--radius-lg);margin-bottom:.75rem;padding:.75rem 1rem;font-size:12px;color:var(--text3)">${r&&r.machine||''} — ${r&&r.fecha||''} · este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
+  } }).join('');
 }
 
 function toggleHoraDetail(id, btn){
