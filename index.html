@@ -888,8 +888,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <button class="btn-add-row" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button>
         <div class="row-total">Peso total procesado: <span id="lam-peso-total">0.000</span> kg</div>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Merma y recuperación de recortes</div>
-        <div class="form-grid" style="margin-bottom:1rem">
+      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes</div>
+        <div style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--radius);padding:8px 12px;margin-bottom:1rem">La <b>merma</b> ya no se captura aquí: se registra <b>una sola vez por semana</b> (5 días hábiles) desde la pestaña <b>Historial</b>.</div>
+        <div class="form-grid" style="display:none">
           <div class="form-group"><label>Merma total (kg)</label><input type="number" id="lam-merma" min="0" step="0.001" value="0" oninput="calcLamina()"></div>
           <div class="form-group"><label style="color:var(--text2)">% Merma</label><div style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:8px 0;color:var(--amber)" id="lam-pct-merma">–</div></div>
         </div>
@@ -904,7 +905,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div id="lam-recortes-list"></div>
         <button class="btn-add-row" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte recuperado</button>
         <div class="row-total">Ahorro estimado: $<span id="lam-ahorro">0.00</span></div>
-        <div style="display:grid;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
+        <div style="display:none;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
           <div style="position:relative;height:140px"><canvas id="lam-chart"></canvas></div>
           <div id="lam-chart-legend" style="font-size:12px;color:var(--text2)"></div>
         </div>
@@ -914,7 +915,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div id="tab-tubular" class="tab-content">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Datos del registro</div>
         <div class="form-grid">
-          <div class="form-group"><label>Máquina</label><select id="tub-machine"><option>Bimex</option><option>GW1</option><option>GW2</option></select></div>
+          <div class="form-group"><label>Máquina</label><select id="tub-machine"><option>GW1</option><option>GW2</option></select></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha"></div>
           <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
           <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
@@ -926,8 +927,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <button class="btn-add-row" id="btn-add-tub-tramo" onclick="addTubTramo()">+ Agregar tubular</button>
         <div class="row-total">Peso total procesado: <span id="tub-peso-total">0.000</span> kg</div>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Merma y recuperación de recortes</div>
-        <div class="form-grid" style="margin-bottom:1rem">
+      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes</div>
+        <div style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--radius);padding:8px 12px;margin-bottom:1rem">La <b>merma</b> ya no se captura aquí: se registra <b>una sola vez por semana</b> (5 días hábiles) desde la pestaña <b>Historial</b>.</div>
+        <div class="form-grid" style="display:none">
           <div class="form-group"><label>Merma total (kg)</label><input type="number" id="tub-merma" min="0" step="0.001" value="0" oninput="calcTubular()"></div>
           <div class="form-group"><label style="color:var(--text2)">% Merma</label><div style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:8px 0;color:var(--amber)" id="tub-pct-merma">–</div></div>
         </div>
@@ -935,7 +937,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div id="tub-recortes-list"></div>
         <button class="btn-add-row" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar recorte recuperado</button>
         <div class="row-total">Ahorro estimado: $<span id="tub-ahorro">0.00</span></div>
-        <div style="display:grid;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
+        <div style="display:none;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
           <div style="position:relative;height:140px"><canvas id="tub-chart"></canvas></div>
           <div id="tub-chart-legend" style="font-size:12px;color:var(--text2)"></div>
         </div>
@@ -947,8 +949,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <select id="ah-tipo" onchange="renderAprovHist(true)"><option value="">Lámina y Tubular</option><option value="lamina">Lámina</option><option value="tubular">Tubular</option></select>
       </div>
       <div class="card">
-        <div style="display:grid;grid-template-columns:118px 70px 100px 80px 90px 100px 130px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
-  <span>Fecha</span><span>Tipo</span><span>Máquina</span><span>Turno</span><span>Peso proc.</span><span>% Aprov / Merma</span><span>Real vs. explosión</span><span>Distribución</span><span></span>
+        <div style="display:grid;grid-template-columns:118px 80px 110px 90px 100px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+  <span>Fecha</span><span>Tipo</span><span>Máquina</span><span>Turno</span><span>Peso proc.</span><span>Ahorro teórico</span><span></span>
 </div>
 <div id="aprov-hist-body"></div>
         <div id="aprov-hist-empty" class="empty-state" style="display:none">Sin registros.</div>
@@ -1299,9 +1301,9 @@ const DEFAULT_TUBULARES=[
   {tipo:'Tubular 3 x 1 Cal 18',sku:'10509219',peso:11.029,costo:0}
 ];
 // ── STATE ──
-let machines=[],records=[],laminas=[],tubulares=[],aprovRecords=[],mantLogs=[],ctTargets={},atrasos=[];
+let machines=[],records=[],laminas=[],tubulares=[],aprovRecords=[],mermaSemanalRecs=[],mantLogs=[],ctTargets={},atrasos=[];
 let dashChart=null,lamChart=null,tubChart=null,cumplChart=null,currentPhotoId=null,paroRows=[];
-const SK={machines:'oee_machines_v5',records:'oee_records_v5',laminas:'oee_laminas_v2',tubulares:'oee_tubulares_v2',aprovRecords:'oee_aprov_v2',mantLogs:'oee_mant_v1',mantPlan:'oee_mant_plan_v1',ctTargets:'oee_ct_targets_v1',atrasos:'oee_atrasos_v1'};
+const SK={machines:'oee_machines_v5',records:'oee_records_v5',laminas:'oee_laminas_v2',tubulares:'oee_tubulares_v2',aprovRecords:'oee_aprov_v2',mermaSemanalRecs:'oee_merma_semanal_v1',mantLogs:'oee_mant_v1',mantPlan:'oee_mant_plan_v1',ctTargets:'oee_ct_targets_v1',atrasos:'oee_atrasos_v1'};
 
 // ── AUTH & ROLES ──────────────────────────────────────
 let users=[], currentUser=null, checklistRecords=[], programaDia=[];
@@ -1648,8 +1650,21 @@ function applyRolePermissions(){
 // Auto-llena "Operador" con el nombre de la cuenta que tiene la sesión
 // iniciada en Aprovechamiento (Lámina y Tubular) — igual que en Registro,
 // para que no haya que escribirlo cada vez.
+// El selector de máquina de Tubular sale de la configuración (antes tenía la
+// Bimex escrita fija y se seguía ofreciendo aunque ya estuviera eliminada).
+function populateTubMachines(){
+  const sel=document.getElementById('tub-machine'); if(!sel) return;
+  const names=getMachinesByCT('LASER').map(m=>m.name);
+  if(!names.length) return;
+  const have=Array.from(sel.options).map(o=>o.value);
+  if(names.join('|')===have.join('|')) return;
+  const cur=sel.value;
+  sel.innerHTML=names.map(n=>`<option>${n}</option>`).join('');
+  if(names.includes(cur)) sel.value=cur;
+}
 function applyAprovUI(){
   if(!currentUser) return;
+  try{ populateTubMachines(); }catch(e){}
   ['lam-op','tub-op'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && !el.value) el.value=currentUser.name||'';
@@ -2755,6 +2770,7 @@ function loadLocal(){
   try{const l=localStorage.getItem(SK.laminas);laminas=l?JSON.parse(l):JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}catch(e){laminas=JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}
   try{const t=localStorage.getItem(SK.tubulares);tubulares=t?JSON.parse(t):JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}catch(e){tubulares=JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}
   try{aprovRecords=JSON.parse(localStorage.getItem(SK.aprovRecords))||[];}catch(e){aprovRecords=[];}
+  try{mermaSemanalRecs=JSON.parse(localStorage.getItem(SK.mermaSemanalRecs))||[];}catch(e){mermaSemanalRecs=[];}
   try{mantLogs=JSON.parse(localStorage.getItem(SK.mantLogs))||[];}catch(e){mantLogs=[];}
   try{horaRecords=JSON.parse(localStorage.getItem('oee_hora_laser_v1'))||[];}catch(e){horaRecords=[];}
   // Restore horaHora machines from saved config
@@ -2923,6 +2939,7 @@ function applyMachineRoster(rows){
   machines.forEach(m=>{ if(m.horaHora && !LASER_MAQUINAS_HORA.includes(m.name)) LASER_MAQUINAS_HORA.push(m.name); });
   try{ renderConfig(); }catch(e){}
   try{ updateFilterSelects(); }catch(e){}
+  try{ populateTubMachines(); }catch(e){}
   // Si la lista de máquinas del selector de Registro ya no coincide con la
   // configuración, se ajusta (sin pisar lo que se esté capturando).
   try{
@@ -3013,6 +3030,11 @@ function loadFromCloud(){
         // texto — se normalizan antes de mezclarlos con lo local.
         const normalized=(d||[]).map(normalizeAprovRow);
         aprovRecords=mergeRecordsById(aprovRecords,normalized); save('aprovRecords');
+      }},
+      // La merma se captura una vez por semana (5 días hábiles), no por registro.
+      {name:'Merma_Semanal', assign:(d)=>{
+        const norm=(d||[]).filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}));
+        mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,norm); save('mermaSemanalRecs');
       }},
     ] : []),
     ...(canSeeMant ? [
@@ -3865,17 +3887,19 @@ function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
 // Devuelve el lunes y domingo de la semana que contiene esa fecha (para
 // la opción "esta merma es de toda la semana").
 function getWeekRange(dateStr){
-  const d=new Date(dateStr+'T00:00:00');
-  const day=d.getDay();
-  const diffToMonday=(day===0?-6:1-day);
-  const monday=new Date(d); monday.setDate(d.getDate()+diffToMonday);
-  const sunday=new Date(monday); sunday.setDate(monday.getDate()+6);
-  return {start:monday.toISOString().slice(0,10), end:sunday.toISOString().slice(0,10)};
+  const [y,m,d]=String(dateStr).split('-').map(Number);
+  const dow=new Date(Date.UTC(y,m-1,d)).getUTCDay();
+  const diff=(dow===0?-6:1-dow);
+  return {start:new Date(Date.UTC(y,m-1,d+diff)).toISOString().slice(0,10),
+          end:new Date(Date.UTC(y,m-1,d+diff+6)).toISOString().slice(0,10)};
 }
 function getAprovRecordsSameWeek(rec){
   const {start,end}=getWeekRange(rec.fecha);
   return aprovRecords.filter(r=>r.tipo===rec.tipo && r.maquina===rec.maquina && r.fecha>=start && r.fecha<=end);
 }
+// Máximo 2 decimales (y sin ruido de punto flotante como 0.3999999)
+function fmt2(n){ const v=Math.round((Number(n)||0)*100)/100; return Number.isInteger(v)?String(v):v.toFixed(2); }
+function sgn2(n){ const v=Math.round((Number(n)||0)*100)/100; return (v>0?'+':v<0?'-':'')+fmt2(Math.abs(v)); }
 function fmtMoney(n){ return (Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function shortTurno(t){ return String(t||'').split(' ').slice(0,2).join(' '); }
 // La explosión de material la captura Ingeniería/Líder; el Operador solo la consulta.
@@ -3909,15 +3933,16 @@ function aprovExplKey(e){ return e.cal||e.tipo; }
 // lo planeado = ahorro). Ahorro teórico = valor de esa diferencia + ahorro
 // por recuperación de recortes.
 function aprovTotals(r){
+  const r2=n=>Math.round(n*100)/100;
   const items=aprovItems(r);
   let any=false,totReal=0,totExpl=0,totDif=0,valor=0;
   items.forEach(it=>{
     totReal+=it.real;
     const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
-    if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=it.expl-it.real; it.valor=it.dif*it.costo; totExpl+=it.expl; totDif+=it.dif; valor+=it.valor; }
+    if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=r2(it.expl-it.real); it.valorRaw=it.dif*it.costo; it.valor=r2(it.valorRaw); totExpl+=it.expl; totDif+=it.dif; valor+=it.valorRaw; }
   });
   const ahorroRec=Number(r.ahorro)||0;
-  return {items,any,totReal,totExpl,totDif,valor,ahorroRec,ahorroTeorico:valor+ahorroRec};
+  return {items,any,totReal:r2(totReal),totExpl:r2(totExpl),totDif:r2(totDif),valor:r2(valor),ahorroRec,ahorroTeorico:r2(valor+ahorroRec)};
 }
 
 // Panel desplegable de un registro: láminas/tubulares registrados,
@@ -3938,8 +3963,8 @@ function aprovDetailHtml(r){
       const exVal=e?(Number(e.hojas)||0):'';
       return `<div style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
         <span style="font-weight:500">${it.key}</span>
-        <span style="${mono}">${it.real}</span>
-        <span><input type="number" min="0" step="1" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
+        <span style="${mono}">${fmt2(it.real)}</span>
+        <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
         <span id="dif-${id}-${i}" style="${mono}">–</span>
         <span id="val-${id}-${i}" style="${mono}">–</span>
       </div>`;
@@ -3947,10 +3972,10 @@ function aprovDetailHtml(r){
     consumo=`<div style="${grid};padding:0 0 5px;border-bottom:1px solid var(--border)"><span style="${th}">${keyLabel}</span><span style="${th}">${unitW} registradas</span><span style="${th}">Explosionadas</span><span style="${th}">Diferencia</span><span style="${th}">Valor ($)</span></div>
       ${rows}
       <div style="${grid};padding:7px 0;font-size:12px;font-weight:700">
-        <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${T.totReal}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
+        <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${fmt2(T.totReal)}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
       </div>`;
   } else {
-    consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmtN(r.pesoTotal,3)} kg</b>) para poder compararlo contra lo explosionado.</div>
+    consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmt2(r.pesoTotal)} kg</b>) para poder compararlo contra lo explosionado.</div>
       <div id="legacy-rows-${id}"></div>
       ${canEdit?`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <button onclick="addLegacyRow('${id}')" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">+ Agregar ${isLam?'calibre':'tubular'}</button>
@@ -3961,7 +3986,7 @@ function aprovDetailHtml(r){
   const rec=r.recortesDetalle||[];
   const recHtml=rec.length
     ? rec.map(x=>{
-        const medidas=isLam?`${x.ancho} × ${x.largo} cm · ${fmtN(x.peso,3)} kg`:`${fmtN(x.peso,3)} kg (${fmtN(x.rec,2)} tramo eq.)`;
+        const medidas=isLam?`${fmt2(x.ancho)} × ${fmt2(x.largo)} cm · ${fmt2(x.peso)} kg`:`${fmt2(x.peso)} kg (${fmt2(x.rec)} tramo eq.)`;
         return `<div style="display:grid;grid-template-columns:1.3fr 2fr 1.2fr;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="font-weight:500">${x.cal||x.tipo}</span><span style="${mono};color:var(--text2)">${medidas}</span><span style="${mono};color:#3ecf8e">$${fmtMoney(x.ahorro)}</span></div>`;
       }).join('')
     : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
@@ -3990,6 +4015,7 @@ function aprovDetailHtml(r){
 }
 // Recalcula en vivo diferencias, valores y ahorro teórico al escribir la explosión.
 function recalcAprovDetail(id){
+  const r2=n=>Math.round(n*100)/100;
   const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
   let totReal=0,totExpl=0,totDif=0,totVal=0,any=false;
   const set=(el,txt,col)=>{ if(el){ el.textContent=txt; el.style.color=col||''; } };
@@ -3999,22 +4025,23 @@ function recalcAprovDetail(id){
     const dif=document.getElementById(`dif-${id}-${i}`), val=document.getElementById(`val-${id}-${i}`);
     if(inp.value===''){ set(dif,'–','var(--text3)'); set(val,'–','var(--text3)'); return; }
     const ex=parseFloat(inp.value)||0; any=true;
-    const d=ex-real, v=d*costo; totExpl+=ex; totDif+=d; totVal+=v;
+    const d=r2(ex-real), vRaw=d*costo, v=r2(vRaw); totExpl+=ex; totDif+=d; totVal+=vRaw;
     const col=d>0?'#3ecf8e':d<0?'#f06060':'var(--text2)';
-    set(dif,(d>0?'+':'')+d,col);
+    set(dif,sgn2(d),col);
     set(val,(v<0?'-':'')+'$'+fmtMoney(Math.abs(v)),col);
   });
+  totDif=r2(totDif); totVal=r2(totVal);
   const colT=totDif>0?'#3ecf8e':totDif<0?'#f06060':'var(--text2)';
-  set(document.getElementById(`tot-${id}-real`),String(totReal));
-  set(document.getElementById(`tot-${id}-expl`),any?String(totExpl):'–');
-  set(document.getElementById(`tot-${id}-dif`),any?((totDif>0?'+':'')+totDif):'–',any?colT:'var(--text3)');
+  set(document.getElementById(`tot-${id}-real`),fmt2(totReal));
+  set(document.getElementById(`tot-${id}-expl`),any?fmt2(totExpl):'–');
+  set(document.getElementById(`tot-${id}-dif`),any?sgn2(totDif):'–',any?colT:'var(--text3)');
   set(document.getElementById(`tot-${id}-val`),any?((totVal<0?'-':'')+'$'+fmtMoney(Math.abs(totVal))):'–',any?colT:'var(--text3)');
   const sum=document.getElementById('sum-'+id);
   if(sum){
     const rec=parseFloat(sum.dataset.rec)||0;
     const mat=any?totVal:0;
     set(document.getElementById('sum-mat-'+id),any?((mat<0?'-':'')+'$'+fmtMoney(Math.abs(mat))):'–',any?colT:'var(--text3)');
-    const tot=mat+rec;
+    const tot=r2(mat+rec);
     set(document.getElementById('sum-tot-'+id),(tot<0?'-':'')+'$'+fmtMoney(Math.abs(tot)),tot>=0?'#3ecf8e':'#f06060');
   }
 }
@@ -4061,7 +4088,7 @@ function recalcLegacy(id){
   const keys=document.querySelectorAll('.legacy-key-'+id), qtys=document.querySelectorAll('.legacy-qty-'+id);
   let peso=0;
   keys.forEach((k,i)=>{ const q=parseFloat(qtys[i]?.value)||0; const cfg=rec.tipo==='lamina'?getLaminaByCal(k.value):getTubularByTipo(k.value); peso+=q*((cfg&&cfg.peso)||0); });
-  hint.textContent=keys.length?`Peso con este desglose: ${fmtN(peso,3)} kg (registrado: ${fmtN(rec.pesoTotal,3)} kg)`:'';
+  hint.textContent=keys.length?`Peso con este desglose: ${fmt2(peso)} kg (registrado: ${fmt2(rec.pesoTotal)} kg)`:'';
 }
 function saveLegacyBreakdown(id){
   if(!canEditAprovExplosion()) return;
@@ -4080,6 +4107,74 @@ function saveLegacyBreakdown(id){
   const m=document.getElementById('aprov-detail-msg-'+id); if(m){ m.textContent='✓ Desglose guardado'; setTimeout(()=>{m.textContent='';},3000); }
 }
 
+// ── SEMANAS Y MERMA SEMANAL ─────────────────────────────────────────
+// La merma se recolecta/pesa una sola vez por semana (5 días hábiles), así
+// que se captura por semana + tipo + máquina, no por registro diario.
+const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIAS_ES=['dom','lun','mar','mié','jue','vie','sáb'];
+function isoParts(iso){ const [y,m,d]=String(iso).split('-').map(Number); return {y,m,d}; }
+function isoAddDays(iso,n){ const {y,m,d}=isoParts(iso); return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10); }
+function isoDow(iso){ const {y,m,d}=isoParts(iso); return new Date(Date.UTC(y,m-1,d)).getUTCDay(); }
+function weekLabel(ws){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ws)) return 'Sin fecha';
+  const a=isoParts(ws), b=isoParts(isoAddDays(ws,4));
+  return a.m===b.m ? `${a.d} – ${b.d} de ${MESES_ES[b.m-1]} de ${b.y}`
+                   : `${a.d} de ${MESES_ES[a.m-1]} – ${b.d} de ${MESES_ES[b.m-1]} de ${b.y}`;
+}
+function weekLabelShort(ws){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ws)) return 'Sin fecha';
+  const a=isoParts(ws), b=isoParts(isoAddDays(ws,4));
+  return a.m===b.m ? `${a.d}–${b.d} ${MESES_ES[b.m-1].slice(0,3)} ${b.y}` : `${a.d} ${MESES_ES[a.m-1].slice(0,3)} – ${b.d} ${MESES_ES[b.m-1].slice(0,3)} ${b.y}`;
+}
+function dayLabel(iso){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return String(iso||'–'); const {m,d}=isoParts(iso); return `${DIAS_ES[isoDow(iso)]} ${d}/${String(m).padStart(2,'0')}`; }
+function aprovWeekStartOf(fecha){ return /^\d{4}-\d{2}-\d{2}$/.test(String(fecha||''))?getWeekRange(fecha).start:'0000-00-00'; }
+function aprovGid(ws,tipo,maq){ return ws+'_'+tipo+'_'+String(maq||'').replace(/[^A-Za-z0-9]/g,''); }
+function aprovVisibleRecords(){ return aprovRecords.filter(r=>machineInRoster(r.maquina)); }
+function aprovBuildGroups(recs){
+  const map={};
+  recs.forEach(r=>{
+    const ws=aprovWeekStartOf(r.fecha), gid=aprovGid(ws,r.tipo,r.maquina);
+    (map[gid]=map[gid]||{gid,weekStart:ws,tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r);
+  });
+  const groups=Object.values(map);
+  groups.forEach(g=>g.recs.sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||String(b.id).localeCompare(String(a.id))));
+  groups.sort((a,b)=>b.weekStart.localeCompare(a.weekStart)||(a.tipo===b.tipo?String(a.maquina).localeCompare(String(b.maquina)):(a.tipo==='lamina'?-1:1)));
+  return groups;
+}
+function findAprovGroup(gid){ return aprovBuildGroups(aprovVisibleRecords()).find(g=>g.gid===gid); }
+function canEditWeeklyMerma(){ return !!currentUser && (currentUser.role!=='operador' || canCaptureAprov()); }
+// Merma de la semana: la capturada por semana; si no hay, la que algún
+// registro marcó como semanal; si no, la suma de mermas diarias antiguas.
+function aprovWeeklyMerma(g){
+  const ex=mermaSemanalRecs.find(m=>m.id==='ms_'+g.gid);
+  if(ex && !isNaN(Number(ex.merma))) return {kg:Number(ex.merma),src:'semanal'};
+  const ok=r=>r.merma!=null&&r.merma!==''&&!isNaN(Number(r.merma));
+  const flagged=g.recs.find(r=>r.mermaSemanal&&ok(r));
+  if(flagged) return {kg:Number(flagged.merma),src:'registro'};
+  const sum=g.recs.reduce((s,r)=>s+(ok(r)?Number(r.merma):0),0);
+  return sum>0?{kg:sum,src:'diaria'}:null;
+}
+function aprovGroupStats(g){
+  const r2=n=>Math.round(n*100)/100;
+  let peso=0,ahorroRec=0,valorMat=0,noExpl=0; const map={}, order=[];
+  g.recs.forEach(r=>{
+    const T=aprovTotals(r);
+    peso+=Number(r.pesoTotal)||0; ahorroRec+=T.ahorroRec; valorMat+=T.valor;
+    if(T.items.length && !T.any) noExpl++;
+    T.items.forEach(it=>{
+      let m=map[it.key];
+      if(!m){ m=map[it.key]={key:it.key,real:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false}; order.push(m); }
+      m.real+=it.real;
+      if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.real; m.expl+=it.expl; m.dif+=it.dif; m.valor+=it.valorRaw; }
+    });
+  });
+  const merma=aprovWeeklyMerma(g);
+  const pctMerma=(merma&&peso>0)?merma.kg/peso*100:null;
+  return {peso:r2(peso),ahorroRec:r2(ahorroRec),valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
+          items:order.map(m=>({...m,real:r2(m.real),realCmp:r2(m.realCmp),expl:r2(m.expl),dif:r2(m.dif),valor:r2(m.valor)})),
+          merma,pctMerma,pctAprov:pctMerma==null?null:100-pctMerma,n:g.recs.length};
+}
+
 function renderAprovHist(force){
   const tbEl=document.getElementById('aprov-hist-body');
   // Si hay algo escrito sin guardar dentro del historial (explosión, merma,
@@ -4089,112 +4184,95 @@ function renderAprovHist(force){
     const dirty=Array.from(tbEl.querySelectorAll('input')).some(i=>i.type!=='checkbox' && i.value!==i.defaultValue);
     if(dirty) return;
   }
-  const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="edit-merma-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
+  const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="ms-edit-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
   const tipo=document.getElementById('ah-tipo').value;
-  let filtered=[...aprovRecords].reverse();
-  if(tipo)filtered=filtered.filter(r=>r.tipo===tipo);
+  let visible=aprovVisibleRecords();
+  if(tipo) visible=visible.filter(r=>r.tipo===tipo);
   const tb=document.getElementById('aprov-hist-body');
   const em=document.getElementById('aprov-hist-empty');
-  if(!filtered.length){tb.innerHTML='';em.style.display='block';return;}
+  if(!visible.length){tb.innerHTML='';em.style.display='block';return;}
   em.style.display='none';
-  tb.innerHTML=filtered.map(r=>{ try{
-    const tipoBadge=r.tipo==='lamina'
-      ?'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff">LÁMINA</span>'
-      :'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span>';
-    const hasMerma = r.merma!=null && r.merma!=='' && !isNaN(Number(r.merma));
-    const pctMermaColor = !hasMerma?'var(--text3)':r.pctMerma>10?'#f06060':r.pctMerma>5?'#f5a623':'#3ecf8e';
-    const pctAprov = hasMerma ? fmtN(100-r.pctMerma,1) : null;
-    const pctAprovColor = !hasMerma?'var(--text3)':pctAprov>=90?'#3ecf8e':pctAprov>=75?'#f5a623':'#f06060';
-    const semanalTag = r.mermaSemanal?' <span style="color:var(--text3);font-weight:400">(semanal)</span>':'';
-    const mermaCell = hasMerma
-      ?`<div style="display:flex;flex-direction:column;gap:2px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${pctAprovColor};font-weight:700">▲ ${pctAprov}% aprovechado</span>
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${pctMermaColor}">▼ ${r.pctMerma}% merma (${fmtN(r.merma,3)} kg)${semanalTag}</span>
-          <button onclick="openEditMerma('${r.id}')" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
-        </div>`
-      :`<button onclick="openEditMerma('${r.id}')" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma</button>`;
-    // Columna "Real vs. explosión": resumen por calibre/tipo + ahorro teórico
-    const T=aprovTotals(r);
-    const unitS=r.tipo==='lamina'?'lám.':'tram.';
-    let explosionCell;
-    if(!T.items.length){
-      explosionCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">Ver / capturar detalle</button>`;
-    } else if(T.any){
-      const lines=T.items.map(it=>{
-        if(it.expl==null) return `<div style="font-size:10px;color:var(--text3)">${it.key}: ${it.real} reales (sin explosión)</div>`;
-        const col=it.dif>0?'#3ecf8e':it.dif<0?'#f06060':'var(--text2)';
-        return `<div style="font-size:10px;color:${col}">${it.key}: ${it.real} reales vs ${it.expl} plan (${it.dif>0?'+':''}${it.dif} ${unitS})</div>`;
-      }).join('');
-      explosionCell=`<div style="display:flex;flex-direction:column;gap:2px">
-          ${lines}
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${T.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro teórico: $${fmtMoney(T.ahorroTeorico)}</span>
-          <span style="font-size:9px;color:var(--text3)">(material + recortes recuperados)</span>
+  const groups=aprovBuildGroups(visible);
+  const canMerma=canEditWeeklyMerma();
+  const mono="font-family:'IBM Plex Mono',monospace";
+  let html='', lastWeek=null;
+  groups.forEach(g=>{
+    try{
+      const st=aprovGroupStats(g);
+      if(g.weekStart!==lastWeek){
+        lastWeek=g.weekStart;
+        const wk=groups.filter(x=>x.weekStart===g.weekStart).map(aprovGroupStats);
+        const ahorroSem=Math.round(wk.reduce((s,x)=>s+x.ahorroTeorico,0)*100)/100;
+        html+=`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+          <span style="font-weight:700;font-size:13px">Semana ${weekLabel(g.weekStart)}</span>
+          <span style="font-size:11px;color:var(--text3)">lun – vie</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text3)">Ahorro teórico semanal</span>
+          <b style="${mono};font-size:14px;color:${ahorroSem>=0?'#3ecf8e':'#f06060'}">$${fmtMoney(ahorroSem)}</b>
+          <button onclick="printWeeklyReport('${g.weekStart}')" title="Abrir el reporte semanal para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal</button>
         </div>`;
-    } else {
-      explosionCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Agregar explosión</button>`;
-    }
-    // Mini donut chart using inline canvas
-    const chartId='ahchart-'+r.id;
-    const aprovVal=(r.aprovechado!=null&&r.aprovechado!=='')?fmtN(r.aprovechado,3):(hasMerma?fmtN(r.pesoTotal-r.merma,3):null);
-    const chartHtml=hasMerma&&aprovVal!=null
-      ?`<div style="display:flex;align-items:center;gap:8px">
-          <canvas id="${chartId}" width="44" height="44" style="flex-shrink:0"></canvas>
-          <div style="font-size:11px;line-height:1.7">
-            <div style="color:#3ecf8e;font-weight:600">${fmtN((aprovVal/(aprovVal+(r.merma||0)))*100,1)}%</div>
-            <div style="color:#3ecf8e;font-size:10px">${aprovVal} kg</div>
-            <div style="color:#f06060;font-size:10px">${fmtN(r.merma,3)} kg merma</div>
+      }
+      const tipoBadge=g.tipo==='lamina'
+        ?'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff">LÁMINA</span>'
+        :'<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span>';
+      let mermaHtml;
+      if(st.merma){
+        const pm=st.pctMerma, pa=st.pctAprov;
+        const cA=pa>=90?'#3ecf8e':pa>=75?'#f5a623':'#f06060', cM=pm>10?'#f06060':pm>5?'#f5a623':'#3ecf8e';
+        mermaHtml=`<span style="${mono};font-size:11px;color:${cA};font-weight:700">▲ ${fmt2(pa)}% aprovechado</span>
+          <span style="${mono};font-size:11px;color:${cM}">▼ ${fmt2(pm)}% merma (${fmt2(st.merma.kg)} kg)</span>
+          ${st.merma.src==='diaria'?'<span style="font-size:10px;color:var(--text3)">· suma de registros diarios</span>':''}
+          ${canMerma?`<button onclick="openWeeklyMerma('${g.gid}')" style="font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>`:''}`;
+      } else {
+        mermaHtml=canMerma
+          ?`<button onclick="openWeeklyMerma('${g.gid}')" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:3px 10px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma semanal</button>`
+          :`<span style="font-size:11px;color:var(--text3)">Merma semanal pendiente</span>`;
+      }
+      html+=`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 12px 8px 22px;background:rgba(255,255,255,.02);border-bottom:0.5px solid var(--border);font-size:12px">
+          ${tipoBadge}<b>${g.maquina}</b>
+          <span style="color:var(--text3);font-size:11px">${st.n} registro${st.n===1?'':'s'} · ${fmt2(st.peso)} kg</span>
+          <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto">${mermaHtml}</span>
+          <span style="${mono};font-size:11px;color:${st.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro $${fmtMoney(st.ahorroTeorico)}</span>
+        </div>
+        <div id="ms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.weekStart)} — ${g.tipo==='lamina'?'Lámina':'Tubular'} · ${g.maquina}. Peso procesado en la semana: <b style="${mono}">${fmt2(st.peso)} kg</b>. Se captura <b>una sola vez</b> por semana (5 días hábiles).</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:12px;color:var(--text2)">Merma de la semana (kg):</span>
+            <input type="number" id="ms-input-${g.gid}" min="0" step="any" value="${st.merma&&st.merma.src==='semanal'?st.merma.kg:''}" placeholder="0.00" style="width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+            <button onclick="saveWeeklyMerma('${g.gid}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
+            <button onclick="closeWeeklyMerma('${g.gid}')" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
           </div>
-        </div>`
-      :`<span style="color:var(--text3);font-size:11px">–</span>`;
-    return`<div style="display:grid;grid-template-columns:118px 70px 100px 80px 90px 100px 130px 1fr 44px;gap:10px;align-items:center;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
-      <span style="display:flex;align-items:center;gap:6px"><button id="aprov-exp-btn-${r.id}" onclick="toggleAprovDetail('${r.id}')" title="Ver detalle: láminas, recortes y explosión" style="width:20px;height:20px;flex-shrink:0;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;padding:0">▸</button>${r.fecha}</span>
-      <span>${tipoBadge}</span>
-      <span style="font-weight:500">${r.maquina}</span>
-      <span style="color:var(--text2);font-size:11px">${shortTurno(r.turno)}</span>
-      <span style="font-family:'IBM Plex Mono',monospace">${fmtN(r.pesoTotal,3)} kg</span>
-      <span>${mermaCell}</span>
-      <span>${explosionCell}</span>
-      <span id="chart-cell-${r.id}">${chartHtml}</span>
-      <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteAprov('${r.id}')" title="Eliminar">×</button>
-    </div>
-    <div id="edit-merma-${r.id}" style="display:none;padding:10px 12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--text2)">Merma total (kg):</span>
-        <input type="number" id="merma-input-${r.id}" min="0" step="0.001" value="${hasMerma?r.merma:''}" placeholder="0.000" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer">
-          <input type="checkbox" id="merma-semanal-${r.id}" ${r.mermaSemanal?'checked':''} style="width:13px;height:13px;accent-color:var(--amber);cursor:pointer">
-          Esta merma es de toda la semana (no solo de este día) — se calcula contra el peso total de la semana
-        </label>
-        <button onclick="saveMermaEdit('${r.id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
-        <button onclick="closeMermaEdit('${r.id}')" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
-      </div>
-    </div>
-    <div id="aprov-detail-${r.id}" style="display:none;padding:12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">${aprovDetailHtml(r)}</div>`;
-  }catch(err){
-    console.warn('Registro de aprovechamiento con datos inesperados:', r&&r.id, err);
-    return `<div style="padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text3)">${r&&r.fecha||''} · ${r&&r.maquina||''} — este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
-  } }).join('');
-  // Render mini donut charts
-  requestAnimationFrame(()=>{
-    filtered.forEach(r=>{
-      if(r.merma==null||r.merma===''||r.aprovechado==null||r.aprovechado==='') return;
-      const canvas=document.getElementById('ahchart-'+r.id);
-      if(!canvas||!canvas.getContext) return;
-      const ctx=canvas.getContext('2d');
-      const total=(r.aprovechado||0)+(r.merma||0);
-      if(total===0) return;
-      const aAngle=(r.aprovechado/total)*Math.PI*2;
-      const cx=22,cy=22,radius=18,inner=11;
-      ctx.clearRect(0,0,44,44);
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,-Math.PI/2,-Math.PI/2+aAngle);ctx.closePath();
-      ctx.fillStyle='#3ecf8e';ctx.fill();
-      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,-Math.PI/2+aAngle,-Math.PI/2+Math.PI*2);ctx.closePath();
-      ctx.fillStyle='#f06060';ctx.fill();
-      ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);
-      ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim()||'#181b24';
-      ctx.fill();
-    });
+        </div>`;
+      g.recs.forEach(r=>{
+        try{
+          const T=aprovTotals(r);
+          let ahorroCell;
+          if(!T.items.length){
+            ahorroCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">Ver / capturar detalle</button>`;
+          } else if(T.any){
+            const tip=T.items.map(it=>it.expl==null?`${it.key}: ${fmt2(it.real)} reales (sin explosión)`:`${it.key}: ${fmt2(it.real)} reales vs ${fmt2(it.expl)} plan (${sgn2(it.dif)})`).join('\n').replace(/"/g,'&quot;');
+            ahorroCell=`<button onclick="toggleAprovDetail('${r.id}',true)" title="${tip}" style="background:transparent;border:none;cursor:pointer;padding:0;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:${T.ahorroTeorico>=0?'#3ecf8e':'#f06060'}">$${fmtMoney(T.ahorroTeorico)}</button>`;
+          } else {
+            ahorroCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Agregar explosión</button>`;
+          }
+          const rowTipo=r.tipo==='lamina'?'<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff">LÁMINA</span>':'<span style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span>';
+          html+=`<div style="display:grid;grid-template-columns:118px 80px 110px 90px 100px 1fr 44px;gap:10px;align-items:center;padding:9px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
+            <span style="display:flex;align-items:center;gap:6px"><button id="aprov-exp-btn-${r.id}" onclick="toggleAprovDetail('${r.id}')" title="Ver detalle: láminas, recortes y explosión" style="width:20px;height:20px;flex-shrink:0;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;padding:0">▸</button>${dayLabel(r.fecha)}</span>
+            <span>${rowTipo}</span>
+            <span style="font-weight:500">${r.maquina}</span>
+            <span style="color:var(--text2);font-size:11px">${shortTurno(r.turno)}</span>
+            <span style="${mono}">${fmt2(r.pesoTotal)} kg</span>
+            <span>${ahorroCell}</span>
+            <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteAprov('${r.id}')" title="Eliminar">×</button>
+          </div>
+          <div id="aprov-detail-${r.id}" style="display:none;padding:12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">${aprovDetailHtml(r)}</div>`;
+        }catch(err){
+          console.warn('Registro de aprovechamiento con datos inesperados:', r&&r.id, err);
+          html+=`<div style="padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text3)">${r&&r.fecha||''} · ${r&&r.maquina||''} — este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
+        }
+      });
+    }catch(err){ console.warn('Grupo semanal de aprovechamiento con datos inesperados:', g&&g.gid, err); }
   });
+  tb.innerHTML=html;
   // Se vuelven a abrir los paneles que estaban abiertos antes de repintar
   openIds.forEach(pid=>{
     const el=document.getElementById(pid); if(!el) return;
@@ -4205,43 +4283,36 @@ function renderAprovHist(force){
       recalcAprovDetail(rid);
     }
   });
-  filtered.forEach(r=>recalcAprovDetail(r.id));
+  visible.forEach(r=>recalcAprovDetail(r.id));
 }
 
-function openEditMerma(id){
-  document.querySelectorAll('[id^="edit-merma-"]').forEach(el=>{ if(el.style.display==='block') closeMermaEdit(el.id.replace('edit-merma-','')); });
-  const el=document.getElementById('edit-merma-'+id); if(!el) return;
+function openWeeklyMerma(gid){
+  if(!canEditWeeklyMerma()) return;
+  document.querySelectorAll('[id^="ms-edit-"]').forEach(el=>{ if(el.style.display==='block') closeWeeklyMerma(el.id.replace('ms-edit-','')); });
+  const el=document.getElementById('ms-edit-'+gid); if(!el) return;
   el.style.display='block';
-  document.getElementById('merma-input-'+id)?.focus();
+  document.getElementById('ms-input-'+gid)?.focus();
 }
-function closeMermaEdit(id){
-  const el=document.getElementById('edit-merma-'+id); if(!el) return;
-  el.querySelectorAll('input').forEach(i=>{ if(i.type==='checkbox') i.checked=i.defaultChecked; else i.value=i.defaultValue; });
+function closeWeeklyMerma(gid){
+  const el=document.getElementById('ms-edit-'+gid); if(!el) return;
+  el.querySelectorAll('input').forEach(i=>{ i.value=i.defaultValue; i.style.borderColor=''; });
   el.style.display='none';
 }
-function saveMermaEdit(id){
-  const input=document.getElementById('merma-input-'+id);
-  const merma=parseFloat(input.value)||0;
-  if(merma<=0){input.style.borderColor='var(--red)';return;}
-  const esSemanal=document.getElementById('merma-semanal-'+id)?.checked||false;
-  const rec=findAprov(id);
-  if(!rec) return;
-  rec.merma=merma;
-  rec.mermaSemanal=esSemanal;
-  // Si es semanal, el %merma y el aprovechado se calculan contra el peso
-  // total de TODA la semana (mismo tipo+máquina), no solo el de este día
-  // — así cuando la báscula solo pesa una vez por semana, el cálculo
-  // sigue siendo correcto.
-  const pesoBase = esSemanal ? getAprovRecordsSameWeek(rec).reduce((s,r2)=>s+(r2.pesoTotal||0),0) : rec.pesoTotal;
-  rec.pesoTotalSemana = esSemanal ? pesoBase : null;
-  rec.pctMerma=pesoBase>0?fmtN((merma/pesoBase)*100,2):0;
-  rec.aprovechado=fmtN(pesoBase-merma,3);
-  rec.updatedAt=new Date().toISOString();
-  save('aprovRecords');
-  // upsert: actualiza la fila existente en vez de agregar otra duplicada
-  cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+function saveWeeklyMerma(gid){
+  if(!canEditWeeklyMerma()) return;
+  const g=findAprovGroup(gid); if(!g) return;
+  const input=document.getElementById('ms-input-'+gid);
+  const kg=parseFloat(input.value);
+  if(input.value===''||isNaN(kg)||kg<=0){ input.style.borderColor='var(--red)'; return; }
+  const rec={id:'ms_'+gid,tipo:g.tipo,maquina:g.maquina,weekStart:g.weekStart,merma:kg,op:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
+  const i=mermaSemanalRecs.findIndex(m=>m.id===rec.id);
+  if(i>=0) mermaSemanalRecs[i]=rec; else mermaSemanalRecs.push(rec);
+  save('mermaSemanalRecs');
+  // upsert: la merma de esa semana se actualiza en su misma fila
+  cloudUpsertRow('Merma_Semanal',rec);
   renderAprovHist(true);
 }
+
 function saveExplosionEdit(id){
   if(!canEditAprovExplosion()) return;
   const rec=findAprov(id);
@@ -4266,6 +4337,119 @@ function saveExplosionEdit(id){
   toggleAprovDetail(id,true);
   const m=document.getElementById('aprov-detail-msg-'+id); if(m){ m.textContent='✓ Explosión guardada'; setTimeout(()=>{m.textContent='';},3000); }
 }
+
+// ── REPORTE SEMANAL IMPRIMIBLE ──────────────────────────────────────
+function buildWeeklyReportHtml(ws){
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const r2=n=>Math.round(n*100)/100;
+  const money=n=>(n<0?'-':'')+'$'+fmtMoney(Math.abs(n));
+  const colr=n=>n>0?'pos':n<0?'neg':'';
+  const recs=aprovVisibleRecords().filter(r=>aprovWeekStartOf(r.fecha)===ws);
+  const groups=aprovBuildGroups(recs);
+  let totPeso=0,totMerma=0,pesoConMerma=0,totRec=0,totMat=0,hayFinde=false; const pendientes=[];
+  groups.forEach(g=>{
+    g.st=aprovGroupStats(g); totPeso+=g.st.peso; totRec+=g.st.ahorroRec; totMat+=g.st.valorMat;
+    if(g.st.merma){ totMerma+=g.st.merma.kg; pesoConMerma+=g.st.peso; } else pendientes.push(`${g.tipo==='lamina'?'Lámina':'Tubular'} ${g.maquina}`);
+    g.recs.forEach(r=>{ const d=isoDow(r.fecha); if(d===0||d===6) hayFinde=true; });
+  });
+  totPeso=r2(totPeso); totRec=r2(totRec); totMat=r2(totMat);
+  const ahorroTot=r2(totMat+totRec);
+  const pctMermaTot=pesoConMerma>0?totMerma/pesoConMerma*100:null;
+  const quien=currentUser?currentUser.name:'';
+  const ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const sections=groups.map(g=>{
+    const st=g.st, isLam=g.tipo==='lamina';
+    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
+      :`<tr><td colspan="5" class="muted">Registros sin desglose por ${isLam?'calibre':'tipo'}.</td></tr>`;
+    const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
+    const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
+    const mermaTxt=st.merma
+      ?`<b>${fmt2(st.merma.kg)} kg</b> de merma &nbsp;·&nbsp; <b>${fmt2(st.pctMerma)}%</b> del material procesado &nbsp;·&nbsp; Aprovechamiento: <b>${fmt2(st.pctAprov)}%</b>${st.merma.src==='diaria'?' <span class="muted">(suma de registros diarios)</span>':''}`
+      :`<span class="warn">Merma semanal pendiente de captura</span>`;
+    return `<section>
+      <h2><span class="tag ${isLam?'lam':'tub'}">${isLam?'LÁMINA':'TUBULAR'}</span> ${esc(g.maquina)} <small>${st.n} registro${st.n===1?'':'s'} · ${fmt2(st.peso)} kg procesados</small></h2>
+      <div class="cols">
+        <table><thead><tr><th>${isLam?'Calibre':'Tubular'}</th><th class="n">${isLam?'Láminas':'Tramos'} reg.</th><th class="n">Explosionadas</th><th class="n">Diferencia</th><th class="n">Valor</th></tr></thead><tbody>${itemRows}${totalRow}</tbody></table>
+        <table><thead><tr><th>Día</th><th>Turno</th><th class="n">Peso (kg)</th><th class="n">Recortes</th><th class="n">Ahorro teórico</th></tr></thead><tbody>${dayRows}</tbody></table>
+      </div>
+      <div class="line">${mermaTxt}</div>
+      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
+    </section>`;
+  }).join('') || '<p class="muted">Sin registros en esta semana.</p>';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de aprovechamiento — ${esc(weekLabelShort(ws))}</title>
+<style>
+@page{size:letter;margin:12mm}
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:#1b1f2a;font-size:11px;margin:0;background:#e9ebf0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{max-width:850px;margin:14px auto;background:#fff;padding:22px 26px;box-shadow:0 1px 6px rgba(0,0,0,.15)}
+.bar{max-width:850px;margin:12px auto 0;display:flex;justify-content:flex-end}
+.bar button{font-size:13px;padding:8px 18px;border:0;border-radius:6px;background:#2563eb;color:#fff;cursor:pointer}
+header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1b1f2a;padding-bottom:8px;margin-bottom:12px}
+header h1{font-size:17px;margin:0 0 2px}
+header .wk{font-size:13px;font-weight:600}
+header .meta{font-size:10px;color:#667}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.kpi{border:1px solid #cfd3dc;border-radius:6px;padding:7px 10px}
+.kpi .l{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:#667}
+.kpi .v{font-size:16px;font-weight:700;margin-top:2px}
+.kpi .s{font-size:9px;color:#667;margin-top:1px}
+.kpi.main{background:#eefaf3;border-color:#9ad8b3}
+section{margin-bottom:13px;page-break-inside:avoid}
+h2{font-size:12.5px;margin:0 0 6px;padding-bottom:4px;border-bottom:1px solid #cfd3dc}
+h2 small{font-weight:400;color:#667;font-size:10px;margin-left:6px}
+.tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;margin-right:4px;vertical-align:1px}
+.tag.lam{background:#dbeafe;color:#1d4ed8}.tag.tub{background:#d1fae5;color:#047857}
+.cols{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}
+table{width:100%;border-collapse:collapse;font-size:10.5px}
+th{background:#f1f3f7;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#556;padding:4px 6px;border-bottom:1px solid #cfd3dc}
+td{padding:3.5px 6px;border-bottom:1px solid #e6e8ee}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.tot td{font-weight:700;border-top:1px solid #8a90a0;background:#fafbfc}
+.pos{color:#047857}.neg{color:#b91c1c}
+.line{margin-top:6px;font-size:10.5px}
+.line.sub{color:#445}
+.muted{color:#778;font-size:9.5px}
+.warn{color:#b45309;font-weight:600}
+.sign{display:flex;gap:40px;margin-top:26px;font-size:10px;color:#556}
+.sign div{flex:1;border-top:1px solid #8a90a0;padding-top:4px;text-align:center}
+footer{margin-top:10px;font-size:9px;color:#889}
+@media print{body{background:#fff}.page{box-shadow:none;margin:0;padding:0;max-width:none}.bar{display:none}}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
+<div class="page">
+<header><div><h1>Reporte semanal de aprovechamiento de material</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi"><div class="l">Material procesado</div><div class="v">${fmt2(totPeso)} kg</div><div class="s">${groups.reduce((s,g)=>s+g.recs.length,0)} registros</div></div>
+  <div class="kpi"><div class="l">Merma semanal</div><div class="v">${pesoConMerma>0?fmt2(totMerma)+' kg':'—'}</div><div class="s">${pctMermaTot!=null?fmt2(pctMermaTot)+'% del procesado':'sin capturar'}</div></div>
+  <div class="kpi"><div class="l">Aprovechamiento</div><div class="v">${pctMermaTot!=null?fmt2(100-pctMermaTot)+'%':'—'}</div><div class="s">${pendientes.length?'falta merma: '+esc(pendientes.join(', ')):'material aprovechado'}</div></div>
+  <div class="kpi main"><div class="l">Ahorro teórico semanal</div><div class="v">${money(ahorroTot)}</div><div class="s">material ${money(totMat)} + recortes ${money(totRec)}</div></div>
+</div>
+${sections}
+${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a la semana en que ocurrieron.</p>':''}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.</footer>
+</div></body></html>`;
+}
+// Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
+function printWeeklyReport(ws){
+  const html=buildWeeklyReportHtml(ws);
+  let w=null;
+  try{ w=window.open('','_blank'); }catch(e){ w=null; }
+  if(w){
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} },500);
+    return;
+  }
+  // Si el navegador bloquea la ventana, se imprime desde un marco oculto
+  const f=document.createElement('iframe');
+  f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
+  setTimeout(()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){} setTimeout(()=>f.remove(),3000); },400);
+}
+
 // ── HISTORIAL OEE ──
 function renderHistory(){
   const fct=document.getElementById('filter-ct').value;const fm=document.getElementById('filter-machine').value;const ft=document.getElementById('filter-turno').value;
