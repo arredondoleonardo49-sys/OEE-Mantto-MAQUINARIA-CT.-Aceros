@@ -944,10 +944,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="tab-aprov-hist" class="tab-content">
       <div class="filter-row">
-        <select id="ah-tipo" onchange="renderAprovHist()"><option value="">Lámina y Tubular</option><option value="lamina">Lámina</option><option value="tubular">Tubular</option></select>
+        <select id="ah-tipo" onchange="renderAprovHist(true)"><option value="">Lámina y Tubular</option><option value="lamina">Lámina</option><option value="tubular">Tubular</option></select>
       </div>
       <div class="card">
-        <div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 100px 110px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+        <div style="display:grid;grid-template-columns:118px 70px 100px 80px 90px 100px 130px 1fr 44px;gap:10px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
   <span>Fecha</span><span>Tipo</span><span>Máquina</span><span>Turno</span><span>Peso proc.</span><span>% Aprov / Merma</span><span>Real vs. explosión</span><span>Distribución</span><span></span>
 </div>
 <div id="aprov-hist-body"></div>
@@ -2654,6 +2654,7 @@ function fastRefreshToday(){
   const today=todayStr();
   const todaySheets=[
     {name:'OEE_Registros', assign:(d)=>{ records=mergeRecordsById(records,d); }},
+    {name:'Maquinas_Config', assign:(d)=>applyMachineRoster(d)},
     ...ALL_CTS.map(ct=>({
       name: ctSheet(ct),
       assign:(d)=>{
@@ -2749,6 +2750,7 @@ function loadLocal(){
       if(hadObsolete) localStorage.setItem(SK.machines,JSON.stringify(machines));
     } else { machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
   }catch(e){ machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
+  machines=machines.filter(m=>!machineTombs.includes(m.id));
   try{records=JSON.parse(localStorage.getItem(SK.records))||[];}catch(e){records=[];}
   try{const l=localStorage.getItem(SK.laminas);laminas=l?JSON.parse(l):JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}catch(e){laminas=JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}
   try{const t=localStorage.getItem(SK.tubulares);tubulares=t?JSON.parse(t):JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}catch(e){tubulares=JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}
@@ -2860,6 +2862,117 @@ function mergeRecordsById(existing, incoming){
   return Object.values(byId);
 }
 
+// ── PLANTILLA DE MÁQUINAS COMPARTIDA ENTRE DISPOSITIVOS ──────────────
+// Antes, agregar/eliminar una máquina solo afectaba al navegador donde se
+// hacía (la lista vivía únicamente en localStorage). Por eso una máquina
+// eliminada (ej. la Bimex) seguía existiendo en los demás dispositivos, y
+// ahí seguían capturando registros. Ahora cada cambio explícito en
+// Configuración se publica en la hoja "Maquinas_Config" (con una "lápida"
+// para las eliminadas) y todos los dispositivos la aplican al sincronizar.
+const SK_MACHINE_TOMBS='oee_machine_tombs_v1';
+let machineTombs=[];
+try{ machineTombs=JSON.parse(localStorage.getItem(SK_MACHINE_TOMBS))||[]; }catch(e){ machineTombs=[]; }
+function saveMachineTombs(){ try{ localStorage.setItem(SK_MACHINE_TOMBS,JSON.stringify(machineTombs)); }catch(e){} }
+// ¿La máquina sigue existiendo en la configuración actual? Los registros
+// históricos de máquinas eliminadas se conservan en el Sheet, pero ya no se
+// muestran en la plataforma.
+function machineInRoster(name){ if(!machines.length) return true; return machines.some(x=>x.name===name); }
+function machineCloudRow(m,deleted){
+  return {id:m.id, name:m.name, ct:m.ct, cap:m.cap||0,
+    photo:(m.photo && !String(m.photo).startsWith('data:'))?m.photo:'',
+    horaHora:!!(m.horaHora||LASER_MAQUINAS_HORA.includes(m.name)),
+    deleted:!!deleted, updatedAt:new Date().toISOString()};
+}
+function syncMachineToCloud(m,deleted){
+  if(!m) return;
+  const row=machineCloudRow(m,deleted);
+  m.updatedAt=row.updatedAt;
+  try{ cloudUpsertRow('Maquinas_Config',row); }catch(e){ console.warn('syncMachineToCloud',e); }
+}
+// ids que ya existen en la plantilla compartida (para no pisarlos al publicar)
+let rosterRemoteIds=new Set();
+function applyMachineRoster(rows){
+  let changed=false;
+  (rows||[]).forEach(r=>{ if(r && r.id) rosterRemoteIds.add(r.id); });
+  (rows||[]).forEach(r=>{
+    if(!r || !r.id) return;
+    const del=(r.deleted===true||r.deleted==='true'||r.deleted==='TRUE');
+    const hora=(r.horaHora===true||r.horaHora==='true'||r.horaHora==='TRUE');
+    if(del){
+      if(!machineTombs.includes(r.id)){ machineTombs.push(r.id); changed=true; }
+      const before=machines.length;
+      machines=machines.filter(m=>m.id!==r.id);
+      if(machines.length!==before) changed=true;
+      return;
+    }
+    if(machineTombs.includes(r.id)){ machineTombs=machineTombs.filter(t=>t!==r.id); changed=true; }
+    const local=machines.find(m=>m.id===r.id);
+    if(!local){
+      if(!r.name || !r.ct) return;
+      machines.push({id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:r.photo||'',horaHora:hora,updatedAt:r.updatedAt});
+      changed=true;
+    } else if((r.updatedAt||'')>(local.updatedAt||'')){
+      local.name=r.name||local.name; local.ct=r.ct||local.ct; local.cap=parseInt(r.cap)||local.cap;
+      local.horaHora=hora||local.horaHora;
+      if(r.photo) local.photo=r.photo;
+      local.updatedAt=r.updatedAt; changed=true;
+    }
+  });
+  if(!changed) return;
+  saveMachineTombs(); save('machines');
+  machines.forEach(m=>{ if(m.horaHora && !LASER_MAQUINAS_HORA.includes(m.name)) LASER_MAQUINAS_HORA.push(m.name); });
+  try{ renderConfig(); }catch(e){}
+  try{ updateFilterSelects(); }catch(e){}
+  // Si la lista de máquinas del selector de Registro ya no coincide con la
+  // configuración, se ajusta (sin pisar lo que se esté capturando).
+  try{
+    const sel=document.getElementById('reg-machine'), ctSel=document.getElementById('reg-ct');
+    if(sel && ctSel && currentUser){
+      const expected=getMachinesByCT(ctSel.value).map(m=>m.name);
+      const have=Array.from(sel.options).map(o=>o.value);
+      if(expected.length && expected.join('|')!==have.join('|')){
+        const touched=Array.from(document.querySelectorAll('#hora-franjas-list input')).some(i=>i.value!=='');
+        if(touched){ const cur=sel.value; sel.innerHTML=expected.map(n=>`<option>${n}</option>`).join(''); if(expected.includes(cur)) sel.value=cur; }
+        else restoreOrDefaultMachineSelection();
+      }
+    }
+  }catch(e){ console.warn('applyMachineRoster: selector',e); }
+}
+// Publica en serie (una petición a la vez) para no crear la hoja dos veces.
+function upsertSequential(sheet,rows,done){
+  let i=0;
+  const next=()=>{
+    if(i>=rows.length){ if(done) done(); return; }
+    const row=rows[i++];
+    gasRequest({action:'upsert',sheet,data:JSON.stringify(row)},()=>next(),()=>next());
+  };
+  next();
+}
+// Una sola vez, en el equipo de Ingeniería: detecta máquinas que ya no
+// están en su configuración pero siguen activas en otros dispositivos (el
+// caso de la Bimex), pregunta si se eliminan en todos, y publica la
+// plantilla actual para que los demás dispositivos la reciban.
+function rosterMigration(){
+  if(!currentUser || currentUser.role!=='ingeniero') return;
+  if(localStorage.getItem('oee_roster_migrated_v1')) return;
+  try{
+    const rows=[];
+    const missing=DEFAULT_MACHINES.filter(d=>!machines.some(m=>m.id===d.id) && !machineTombs.includes(d.id));
+    if(missing.length){
+      const names=missing.map(m=>m.name).join(', ');
+      if(confirm('Estas máquinas ya no están en tu configuración, pero siguen activas en los demás dispositivos (por eso siguen apareciendo registros):\n\n'+names+'\n\n¿Eliminarlas también en TODOS los dispositivos?\n\nSus registros históricos se conservan en el Sheet, solo dejan de mostrarse en la plataforma.')){
+        missing.forEach(d=>{ machineTombs.push(d.id); if(!rosterRemoteIds.has(d.id)) rows.push(machineCloudRow(d,true)); });
+        saveMachineTombs();
+      }
+    }
+    // Solo se publican las máquinas que aún no están en la plantilla compartida: así otro
+    // equipo con datos más viejos nunca pisa lo que ya se configuró.
+    machines.forEach(m=>{ if(rosterRemoteIds.has(m.id)) return; const r=machineCloudRow(m,false); m.updatedAt=r.updatedAt; rows.push(r); });
+    save('machines');
+    localStorage.setItem('oee_roster_migrated_v1','1');
+    upsertSequential('Maquinas_Config',rows);
+  }catch(e){ console.warn('rosterMigration:',e); }
+}
 // Convierte una fila de Aprovechamiento tal como viene del Sheet (celdas
 // vacías = '', JSON como texto, booleanos como texto) a la forma que usa la
 // app. Sin esto, un registro guardado sin merma (celda vacía) rompía todo
@@ -2876,6 +2989,8 @@ function normalizeAprovRow(r){
   o.mermaSemanal=(r.mermaSemanal===true||r.mermaSemanal==='true'||r.mermaSemanal==='TRUE');
   o.hojasDetalle=safeParse(r.hojasDetalle,[]);
   o.explosionDetalle=safeParse(r.explosionDetalle,[]);
+  o.tramosDetalle=safeParse(r.tramosDetalle,[]);
+  o.recortesDetalle=safeParse(r.recortesDetalle,[]);
   if(!o.turno) o.turno='–';
   if(!o.fecha) o.fecha='';
   return o;
@@ -2890,6 +3005,7 @@ function loadFromCloud(){
   const canSeeAprov=perms['aprovechamiento']!==false;
   const canSeeMant=perms['mantenimiento']!==false;
   const sheets=[
+    {name:'Maquinas_Config',   assign:(d)=>applyMachineRoster(d)},
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
     ...(canSeeAprov ? [
       {name:'Aprovechamiento', assign:(d)=>{
@@ -3058,6 +3174,7 @@ function refreshRegistroAfterCloud(){
 function onCloudLoaded(hasError){
   try{ renderAll(); }catch(e){ console.warn('onCloudLoaded: renderAll', e); }
   try{ refreshRegistroAfterCloud(); }catch(e){ console.warn('onCloudLoaded: refreshRegistro', e); }
+  setTimeout(rosterMigration, 900);
   cloudConnected=true;
   lastSyncHadErrors=!!hasError;
   if(!hasError) lastSyncTime=new Date();
@@ -3081,12 +3198,12 @@ function calcIndicadores(turno,parosNoProg,piezasProg,piezasTotal,piezasRechazo,
   return{disp,rend,cal,oee,cumpl,tO,tP,dur,piezasBuenas,cap};
 }
 // ── DASHBOARD ──
-function lastPerMachine(){const map={};records.forEach(r=>{const k=r.ct+'|'+r.machine;if(!map[k]||r.fecha>map[k].fecha||(r.fecha===map[k].fecha&&isNewerRecord(r,map[k])))map[k]=r;});return map;}
+function lastPerMachine(){const map={};records.forEach(r=>{if(!machineInRoster(r.machine))return;const k=r.ct+'|'+r.machine;if(!map[k]||r.fecha>map[k].fecha||(r.fecha===map[k].fecha&&isNewerRecord(r,map[k])))map[k]=r;});return map;}
 // Igual que lastPerMachine() pero filtrado solo al día en curso (para el Dashboard)
 function lastPerMachineToday(){
   const today=todayStr();
   const map={};
-  records.filter(r=>r.fecha===today).forEach(r=>{
+  records.filter(r=>r.fecha===today && machineInRoster(r.machine)).forEach(r=>{
     const k=r.ct+'|'+r.machine;
     if(!map[k]||isNewerRecord(r,map[k])) map[k]=r;
   });
@@ -3098,7 +3215,7 @@ function lastPerMachineToday(){
 // muestra esa tabla, en tiempo real conforme los operadores van guardando.
 function getCTHoraGrandTotal(ct){
   const today=todayStr();
-  const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today);
+  const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine));
   const lastByMachine={};
   todays.forEach(r=>{
     if(!lastByMachine[r.machine]||isNewerRecord(r,lastByMachine[r.machine])) lastByMachine[r.machine]=r;
@@ -3302,7 +3419,7 @@ function renderDashHoraPanel(ct){
   const panel=document.getElementById('dash-hora-panel');
   if(!panel) return;
   const today=todayStr();
-  const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today);
+  const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine));
 
   // Último registro por máquina (el más reciente id), si existe
   const lastByMachine={};
@@ -3313,7 +3430,10 @@ function renderDashHoraPanel(ct){
   // Las máquinas del CT con hora×hora habilitada se muestran SIEMPRE (con
   // o sin registro hoy), para que la tabla nunca desaparezca del Dashboard.
   const ctMachines=machines.filter(m=>m.ct===ct && LASER_MAQUINAS_HORA.includes(m.name)).map(m=>m.name).sort();
-  const machineNames=ctMachines.length?ctMachines:Object.keys(lastByMachine).sort();
+  // Se suman las máquinas que ya tienen registro hoy aunque este dispositivo
+  // no las tenga marcadas con hora×hora (se habilitan solas en el equipo de
+  // quien las captura, no en todos).
+  const machineNames=Array.from(new Set([...ctMachines,...Object.keys(lastByMachine)])).sort();
 
   if(!machineNames.length){
     panel.innerHTML='<div class="empty-state" style="padding:1.5rem 0">Este centro de trabajo no tiene máquinas con hora por hora habilitada.</div>';
@@ -3401,7 +3521,7 @@ function checkHoraPanel(){
   // en el Dashboard (tabla de hora×hora y gráfica de OEE por máquina).
   if(machine && !LASER_MAQUINAS_HORA.includes(machine)){
     const m=getMachineByName(machine);
-    if(m) toggleHoraHora(m.id, m.name, true);
+    if(m) toggleHoraHora(m.id, m.name, true, true);
   }
   // Force turno único for Newton/Muebles machines
   let turno=document.getElementById('reg-turno').value;
@@ -3633,8 +3753,13 @@ function saveLamina(){
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
     return {cal: sel?.value, hojas: parseFloat(ins[0]?.value)||0};
   }).filter(h=>h.cal && h.hojas>0);
-  const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle};
-  aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',{...rec,hojasDetalle:JSON.stringify(hojasDetalle)});
+  // Recortes recuperados (calibre, medidas, peso y ahorro de cada uno)
+  const recortesDetalle=Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.value)||0};
+  }).filter(x=>x.cal && x.ancho>0 && x.largo>0);
+  const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
+  aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
   clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
   const msg=document.getElementById('lam-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
@@ -3709,8 +3834,18 @@ function saveTubular(){
   const pt=parseFloat(document.getElementById('tub-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('tub-ahorro').textContent.replace(/,/g,''))||0;
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
-  const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah};
-  aprovRecords.push(rec);save('aprovRecords');cloudWriteRow('Aprovechamiento',rec);
+  // Desglose por tipo de tubular y recortes recuperados — necesarios para
+  // comparar contra lo explosionado, igual que en lámina.
+  const tramosDetalle=Array.from(document.querySelectorAll('#tub-tramos-list .dynamic-row')).map(row=>{
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    return {tipo: sel?.value, cant: parseFloat(ins[0]?.value)||0, pesoTotal: parseFloat(ins[2]?.value)||0};
+  }).filter(t=>t.tipo && t.cant>0);
+  const recortesDetalle=Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
+    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
+    return {tipo: sel?.value, peso: parseFloat(ins[0]?.value)||0, rec: parseFloat(ins[1]?.value)||0, ahorro: parseFloat(ins[2]?.value)||0};
+  }).filter(x=>x.tipo && x.peso>0);
+  const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,tramosDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
+  aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
   clearTubDraft();
   document.getElementById('tub-tramos-list').innerHTML='';document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
   const msg=document.getElementById('tub-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
@@ -3741,7 +3876,220 @@ function getAprovRecordsSameWeek(rec){
   const {start,end}=getWeekRange(rec.fecha);
   return aprovRecords.filter(r=>r.tipo===rec.tipo && r.maquina===rec.maquina && r.fecha>=start && r.fecha<=end);
 }
-function renderAprovHist(){
+function fmtMoney(n){ return (Number(n)||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function shortTurno(t){ return String(t||'').split(' ').slice(0,2).join(' '); }
+// La explosión de material la captura Ingeniería/Líder; el Operador solo la consulta.
+function canEditAprovExplosion(){ return !!currentUser && currentUser.role!=='operador'; }
+function findAprov(id){ return aprovRecords.find(r=>String(r.id)===String(id)); }
+// Fila lista para el Sheet: los desgloses viajan como texto JSON.
+function aprovCloudRow(rec){
+  const o={...rec};
+  ['hojasDetalle','tramosDetalle','recortesDetalle','explosionDetalle'].forEach(k=>{ o[k]=JSON.stringify(rec[k]||[]); });
+  return o;
+}
+
+// Material consumido por registro, agrupado por calibre (lámina) o tipo
+// (tubular), con el costo unitario de la configuración.
+function aprovItems(r){
+  const raw = r.tipo==='lamina'
+    ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0}))
+    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0}));
+  const map={}, out=[];
+  raw.forEach(it=>{
+    if(!it.key) return;
+    if(map[it.key]){ map[it.key].real+=it.real; return; }
+    const cfg=it.kind==='cal'?getLaminaByCal(it.key):getTubularByTipo(it.key);
+    map[it.key]={...it,costo:(cfg&&cfg.costo)||0};
+    out.push(map[it.key]);
+  });
+  return out;
+}
+function aprovExplKey(e){ return e.cal||e.tipo; }
+// Diferencia = explosionado − registrado (positivo = se consumió menos de
+// lo planeado = ahorro). Ahorro teórico = valor de esa diferencia + ahorro
+// por recuperación de recortes.
+function aprovTotals(r){
+  const items=aprovItems(r);
+  let any=false,totReal=0,totExpl=0,totDif=0,valor=0;
+  items.forEach(it=>{
+    totReal+=it.real;
+    const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
+    if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=it.expl-it.real; it.valor=it.dif*it.costo; totExpl+=it.expl; totDif+=it.dif; valor+=it.valor; }
+  });
+  const ahorroRec=Number(r.ahorro)||0;
+  return {items,any,totReal,totExpl,totDif,valor,ahorroRec,ahorroTeorico:valor+ahorroRec};
+}
+
+// Panel desplegable de un registro: láminas/tubulares registrados,
+// explosión por calibre, diferencia, y recortes recuperados.
+function aprovDetailHtml(r){
+  const id=r.id, isLam=r.tipo==='lamina';
+  const unitW=isLam?'Láminas':'Tramos', keyLabel=isLam?'Calibre':'Tubular';
+  const canEdit=canEditAprovExplosion();
+  const T=aprovTotals(r);
+  const th="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase";
+  const grid="display:grid;grid-template-columns:1.3fr .9fr 1.1fr .9fr 1.2fr;gap:10px;align-items:center";
+  const mono="font-family:'IBM Plex Mono',monospace";
+  const inputCss="width:100%;max-width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)";
+  let consumo;
+  if(T.items.length){
+    const rows=T.items.map((it,i)=>{
+      const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
+      const exVal=e?(Number(e.hojas)||0):'';
+      return `<div style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+        <span style="font-weight:500">${it.key}</span>
+        <span style="${mono}">${it.real}</span>
+        <span><input type="number" min="0" step="1" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
+        <span id="dif-${id}-${i}" style="${mono}">–</span>
+        <span id="val-${id}-${i}" style="${mono}">–</span>
+      </div>`;
+    }).join('');
+    consumo=`<div style="${grid};padding:0 0 5px;border-bottom:1px solid var(--border)"><span style="${th}">${keyLabel}</span><span style="${th}">${unitW} registradas</span><span style="${th}">Explosionadas</span><span style="${th}">Diferencia</span><span style="${th}">Valor ($)</span></div>
+      ${rows}
+      <div style="${grid};padding:7px 0;font-size:12px;font-weight:700">
+        <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${T.totReal}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
+      </div>`;
+  } else {
+    consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmtN(r.pesoTotal,3)} kg</b>) para poder compararlo contra lo explosionado.</div>
+      <div id="legacy-rows-${id}"></div>
+      ${canEdit?`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button onclick="addLegacyRow('${id}')" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">+ Agregar ${isLam?'calibre':'tubular'}</button>
+        <button onclick="saveLegacyBreakdown('${id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar desglose</button>
+        <span id="legacy-hint-${id}" style="font-size:11px;color:var(--text3)"></span>
+      </div>`:`<div style="font-size:11px;color:var(--text3)">Solo Ingeniería o Líder pueden capturar este desglose.</div>`}`;
+  }
+  const rec=r.recortesDetalle||[];
+  const recHtml=rec.length
+    ? rec.map(x=>{
+        const medidas=isLam?`${x.ancho} × ${x.largo} cm · ${fmtN(x.peso,3)} kg`:`${fmtN(x.peso,3)} kg (${fmtN(x.rec,2)} tramo eq.)`;
+        return `<div style="display:grid;grid-template-columns:1.3fr 2fr 1.2fr;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="font-weight:500">${x.cal||x.tipo}</span><span style="${mono};color:var(--text2)">${medidas}</span><span style="${mono};color:#3ecf8e">$${fmtMoney(x.ahorro)}</span></div>`;
+      }).join('')
+    : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
+  const ahorroRec=Number(r.ahorro)||0;
+  return `<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">${isLam?'Láminas consumidas vs. explosionadas':'Tubulares consumidos vs. explosionados'}</div>
+        ${consumo}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Recortes de recuperación</div>
+        ${recHtml}
+      </div>
+    </div>
+    <div id="sum-${id}" data-rec="${ahorroRec}" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius)">
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Material no consumido (explosión − registrado)</div><div id="sum-mat-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Recortes recuperados</div><div style="${mono};font-size:14px;font-weight:700;color:#3ecf8e">$${fmtMoney(ahorroRec)}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Ahorro teórico</div><div id="sum-tot-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:6px">Diferencia = explosionado − registrado. En verde (+): se consumió menos de lo planeado. En rojo (−): se consumió de más.</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      ${(canEdit&&T.items.length)?`<button onclick="saveExplosionEdit('${id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar explosión</button>`:''}
+      <button onclick="closeAprovDetail('${id}')" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cerrar</button>
+      <span id="aprov-detail-msg-${id}" style="font-size:12px;color:var(--green)"></span>
+    </div>`;
+}
+// Recalcula en vivo diferencias, valores y ahorro teórico al escribir la explosión.
+function recalcAprovDetail(id){
+  const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
+  let totReal=0,totExpl=0,totDif=0,totVal=0,any=false;
+  const set=(el,txt,col)=>{ if(el){ el.textContent=txt; el.style.color=col||''; } };
+  inputs.forEach((inp,i)=>{
+    const real=parseFloat(inp.dataset.real)||0, costo=parseFloat(inp.dataset.costo)||0;
+    totReal+=real;
+    const dif=document.getElementById(`dif-${id}-${i}`), val=document.getElementById(`val-${id}-${i}`);
+    if(inp.value===''){ set(dif,'–','var(--text3)'); set(val,'–','var(--text3)'); return; }
+    const ex=parseFloat(inp.value)||0; any=true;
+    const d=ex-real, v=d*costo; totExpl+=ex; totDif+=d; totVal+=v;
+    const col=d>0?'#3ecf8e':d<0?'#f06060':'var(--text2)';
+    set(dif,(d>0?'+':'')+d,col);
+    set(val,(v<0?'-':'')+'$'+fmtMoney(Math.abs(v)),col);
+  });
+  const colT=totDif>0?'#3ecf8e':totDif<0?'#f06060':'var(--text2)';
+  set(document.getElementById(`tot-${id}-real`),String(totReal));
+  set(document.getElementById(`tot-${id}-expl`),any?String(totExpl):'–');
+  set(document.getElementById(`tot-${id}-dif`),any?((totDif>0?'+':'')+totDif):'–',any?colT:'var(--text3)');
+  set(document.getElementById(`tot-${id}-val`),any?((totVal<0?'-':'')+'$'+fmtMoney(Math.abs(totVal))):'–',any?colT:'var(--text3)');
+  const sum=document.getElementById('sum-'+id);
+  if(sum){
+    const rec=parseFloat(sum.dataset.rec)||0;
+    const mat=any?totVal:0;
+    set(document.getElementById('sum-mat-'+id),any?((mat<0?'-':'')+'$'+fmtMoney(Math.abs(mat))):'–',any?colT:'var(--text3)');
+    const tot=mat+rec;
+    set(document.getElementById('sum-tot-'+id),(tot<0?'-':'')+'$'+fmtMoney(Math.abs(tot)),tot>=0?'#3ecf8e':'#f06060');
+  }
+}
+function toggleAprovDetail(id,forceOpen){
+  const el=document.getElementById('aprov-detail-'+id); if(!el) return;
+  const open=el.style.display==='block';
+  if(open && !forceOpen){ closeAprovDetail(id); return; }
+  document.querySelectorAll('[id^="aprov-detail-"]').forEach(x=>{
+    if(x.id==='aprov-detail-'+id || x.id.startsWith('aprov-detail-msg-')) return;
+    if(x.style.display==='block') closeAprovDetail(x.id.replace('aprov-detail-',''));
+  });
+  el.style.display='block';
+  const b=document.getElementById('aprov-exp-btn-'+id); if(b) b.textContent='▾';
+  recalcAprovDetail(id);
+}
+function closeAprovDetail(id){
+  const el=document.getElementById('aprov-detail-'+id); if(!el) return;
+  // Se descarta lo que se haya escrito sin guardar
+  el.querySelectorAll('input').forEach(i=>{ if(i.type!=='checkbox') i.value=i.defaultValue; });
+  const lr=document.getElementById('legacy-rows-'+id); if(lr) lr.innerHTML='';
+  el.style.display='none';
+  const b=document.getElementById('aprov-exp-btn-'+id); if(b) b.textContent='▸';
+  recalcAprovDetail(id);
+}
+function openEditExplosion(id){ toggleAprovDetail(id,true); }
+
+// Registros anteriores a esta función no tienen desglose por calibre/tipo:
+// se puede capturar a mano para poder comparar contra la explosión.
+function addLegacyRow(id){
+  const rec=findAprov(id); if(!rec) return;
+  const wrap=document.getElementById('legacy-rows-'+id); if(!wrap) return;
+  const isLam=rec.tipo==='lamina';
+  const opts=(isLam?laminas.map(l=>l.cal):tubulares.map(t=>t.tipo)).map(v=>`<option value="${v}">${v}</option>`).join('');
+  const d=document.createElement('div');
+  d.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:6px';
+  d.innerHTML=`<select class="legacy-key-${id}" onchange="recalcLegacy('${id}')" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">${opts}</select>
+    <input type="number" min="0" step="1" class="legacy-qty-${id}" placeholder="${isLam?'Láminas':'Tramos'}" oninput="recalcLegacy('${id}')" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+    <button onclick="this.parentNode.remove();recalcLegacy('${id}')" class="btn-del" style="width:26px;height:26px;font-size:13px" title="Quitar">×</button>`;
+  wrap.appendChild(d);
+  recalcLegacy(id);
+}
+function recalcLegacy(id){
+  const rec=findAprov(id); const hint=document.getElementById('legacy-hint-'+id); if(!rec||!hint) return;
+  const keys=document.querySelectorAll('.legacy-key-'+id), qtys=document.querySelectorAll('.legacy-qty-'+id);
+  let peso=0;
+  keys.forEach((k,i)=>{ const q=parseFloat(qtys[i]?.value)||0; const cfg=rec.tipo==='lamina'?getLaminaByCal(k.value):getTubularByTipo(k.value); peso+=q*((cfg&&cfg.peso)||0); });
+  hint.textContent=keys.length?`Peso con este desglose: ${fmtN(peso,3)} kg (registrado: ${fmtN(rec.pesoTotal,3)} kg)`:'';
+}
+function saveLegacyBreakdown(id){
+  if(!canEditAprovExplosion()) return;
+  const rec=findAprov(id); if(!rec) return;
+  const keys=document.querySelectorAll('.legacy-key-'+id), qtys=document.querySelectorAll('.legacy-qty-'+id);
+  const acc={};
+  keys.forEach((k,i)=>{ const q=parseFloat(qtys[i]?.value)||0; if(q>0) acc[k.value]=(acc[k.value]||0)+q; });
+  const det=Object.keys(acc).map(k=>rec.tipo==='lamina'?{cal:k,hojas:acc[k]}:{tipo:k,cant:acc[k],pesoTotal:fmtN(acc[k]*((getTubularByTipo(k)||{}).peso||0),3)});
+  if(!det.length){ qtys.forEach(q=>q.style.borderColor='var(--red)'); return; }
+  if(rec.tipo==='lamina') rec.hojasDetalle=det; else rec.tramosDetalle=det;
+  rec.updatedAt=new Date().toISOString();
+  save('aprovRecords');
+  cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  renderAprovHist(true);
+  toggleAprovDetail(id,true);
+  const m=document.getElementById('aprov-detail-msg-'+id); if(m){ m.textContent='✓ Desglose guardado'; setTimeout(()=>{m.textContent='';},3000); }
+}
+
+function renderAprovHist(force){
+  const tbEl=document.getElementById('aprov-hist-body');
+  // Si hay algo escrito sin guardar dentro del historial (explosión, merma,
+  // desglose), no se repinta — una sincronización en segundo plano no debe
+  // borrar lo que se está capturando.
+  if(!force && tbEl){
+    const dirty=Array.from(tbEl.querySelectorAll('input')).some(i=>i.type!=='checkbox' && i.value!==i.defaultValue);
+    if(dirty) return;
+  }
+  const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="edit-merma-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
   const tipo=document.getElementById('ah-tipo').value;
   let filtered=[...aprovRecords].reverse();
   if(tipo)filtered=filtered.filter(r=>r.tipo===tipo);
@@ -3762,48 +4110,29 @@ function renderAprovHist(){
       ?`<div style="display:flex;flex-direction:column;gap:2px">
           <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${pctAprovColor};font-weight:700">▲ ${pctAprov}% aprovechado</span>
           <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:${pctMermaColor}">▼ ${r.pctMerma}% merma (${fmtN(r.merma,3)} kg)${semanalTag}</span>
-          <button onclick="openEditMerma(${r.id})" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
+          <button onclick="openEditMerma('${r.id}')" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
         </div>`
-      :`<button onclick="openEditMerma(${r.id})" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma</button>`;
-    // Nueva columna: diferencia entre las láminas realmente usadas (por
-    // calibre) y las que se habían calculado por explosión de materiales
-    // — el ahorro teórico se calcula en láminas completas, no en peso,
-    // ya que así es como se explosiona el material.
-    const hasHojasDetalle = r.tipo==='lamina' && r.hojasDetalle && r.hojasDetalle.length>0;
-    const hasExplosion = r.explosionDetalle && r.explosionDetalle.length>0;
+      :`<button onclick="openEditMerma('${r.id}')" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma</button>`;
+    // Columna "Real vs. explosión": resumen por calibre/tipo + ahorro teórico
+    const T=aprovTotals(r);
+    const unitS=r.tipo==='lamina'?'lám.':'tram.';
     let explosionCell;
-    if(!hasHojasDetalle){
-      explosionCell=`<span style="color:var(--text3);font-size:11px">–</span>`;
-    } else if(hasExplosion){
-      let totalAhorroMaterial=0;
-      const detailLines=r.hojasDetalle.map(h=>{
-        const expEntry=r.explosionDetalle.find(e=>e.cal===h.cal);
-        if(!expEntry) return `<div style="font-size:10px;color:var(--text3)">${h.cal}: ${h.hojas} reales (sin explosión capturada)</div>`;
-        const dif=expEntry.hojas-h.hojas;
-        const lam=getLaminaByCal(h.cal);
-        const valorDif=lam?dif*lam.costo:0;
-        totalAhorroMaterial+=valorDif;
-        const difColor=dif>0?'#3ecf8e':dif<0?'#f06060':'var(--text2)';
-        return `<div style="font-size:10px;color:${difColor}">${h.cal}: ${h.hojas} reales vs ${expEntry.hojas} plan (${dif>0?'+':''}${dif} lám.)</div>`;
+    if(!T.items.length){
+      explosionCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">Ver / capturar detalle</button>`;
+    } else if(T.any){
+      const lines=T.items.map(it=>{
+        if(it.expl==null) return `<div style="font-size:10px;color:var(--text3)">${it.key}: ${it.real} reales (sin explosión)</div>`;
+        const col=it.dif>0?'#3ecf8e':it.dif<0?'#f06060':'var(--text2)';
+        return `<div style="font-size:10px;color:${col}">${it.key}: ${it.real} reales vs ${it.expl} plan (${it.dif>0?'+':''}${it.dif} ${unitS})</div>`;
       }).join('');
-      const ahorroTeorico=totalAhorroMaterial+(r.ahorro||0);
-      const ahorroColor=ahorroTeorico>=0?'#3ecf8e':'#f06060';
       explosionCell=`<div style="display:flex;flex-direction:column;gap:2px">
-          ${detailLines}
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${ahorroColor};font-weight:700">Ahorro teórico: $${fmtN(ahorroTeorico,2)}</span>
+          ${lines}
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${T.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro teórico: $${fmtMoney(T.ahorroTeorico)}</span>
           <span style="font-size:9px;color:var(--text3)">(material + recortes recuperados)</span>
-          <button onclick="openEditExplosion(${r.id})" style="align-self:flex-start;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>
         </div>`;
     } else {
-      explosionCell=`<button onclick="openEditExplosion(${r.id})" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Agregar explosión</button>`;
+      explosionCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">+ Agregar explosión</button>`;
     }
-    const explosionInputsHtml=hasHojasDetalle ? r.hojasDetalle.map(h=>{
-      const existing=(r.explosionDetalle||[]).find(e=>e.cal===h.cal);
-      return `<div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:12px;color:var(--text2);width:130px">${h.cal} <span style="color:var(--text3)">(${h.hojas} reales)</span></span>
-        <input type="number" class="explosion-cal-input-${r.id}" data-cal="${h.cal}" min="0" value="${existing?existing.hojas:''}" placeholder="Hojas del plan" style="width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
-      </div>`;
-    }).join('') : '<span style="font-size:11px;color:var(--text3)">Este registro no tiene desglose por calibre (es anterior a esta función, o es de tipo Tubular).</span>';
     // Mini donut chart using inline canvas
     const chartId='ahchart-'+r.id;
     const aprovVal=(r.aprovechado!=null&&r.aprovechado!=='')?fmtN(r.aprovechado,3):(hasMerma?fmtN(r.pesoTotal-r.merma,3):null);
@@ -3817,37 +4146,30 @@ function renderAprovHist(){
           </div>
         </div>`
       :`<span style="color:var(--text3);font-size:11px">–</span>`;
-    return`<div style="display:grid;grid-template-columns:90px 70px 100px 80px 90px 100px 110px 1fr 44px;gap:10px;align-items:center;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
-      <span>${r.fecha}</span>
+    return`<div style="display:grid;grid-template-columns:118px 70px 100px 80px 90px 100px 130px 1fr 44px;gap:10px;align-items:center;padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px" class="aprov-hist-row">
+      <span style="display:flex;align-items:center;gap:6px"><button id="aprov-exp-btn-${r.id}" onclick="toggleAprovDetail('${r.id}')" title="Ver detalle: láminas, recortes y explosión" style="width:20px;height:20px;flex-shrink:0;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:4px;cursor:pointer;padding:0">▸</button>${r.fecha}</span>
       <span>${tipoBadge}</span>
       <span style="font-weight:500">${r.maquina}</span>
-      <span style="color:var(--text2);font-size:11px">${r.turno.split(' ')[0]+' '+r.turno.split(' ')[1]}</span>
+      <span style="color:var(--text2);font-size:11px">${shortTurno(r.turno)}</span>
       <span style="font-family:'IBM Plex Mono',monospace">${fmtN(r.pesoTotal,3)} kg</span>
       <span>${mermaCell}</span>
       <span>${explosionCell}</span>
       <span id="chart-cell-${r.id}">${chartHtml}</span>
-      <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteAprov(${r.id})" title="Eliminar">×</button>
+      <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteAprov('${r.id}')" title="Eliminar">×</button>
     </div>
     <div id="edit-merma-${r.id}" style="display:none;padding:10px 12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:var(--text2)">Merma total (kg):</span>
-        <input type="number" id="merma-input-${r.id}" min="0" step="0.001" value="${r.merma!=null?r.merma:''}" placeholder="0.000" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+        <input type="number" id="merma-input-${r.id}" min="0" step="0.001" value="${hasMerma?r.merma:''}" placeholder="0.000" style="width:100px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
         <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);cursor:pointer">
           <input type="checkbox" id="merma-semanal-${r.id}" ${r.mermaSemanal?'checked':''} style="width:13px;height:13px;accent-color:var(--amber);cursor:pointer">
           Esta merma es de toda la semana (no solo de este día) — se calcula contra el peso total de la semana
         </label>
-        <button onclick="saveMermaEdit(${r.id})" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
-        <button onclick="document.getElementById('edit-merma-${r.id}').style.display='none'" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
+        <button onclick="saveMermaEdit('${r.id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
+        <button onclick="closeMermaEdit('${r.id}')" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
       </div>
     </div>
-    <div id="edit-explosion-${r.id}" style="display:none;padding:10px 12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
-      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Láminas explosionadas (planeadas) por calibre, según el plan de producción:</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">${explosionInputsHtml}</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="saveExplosionEdit(${r.id})" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
-        <button onclick="document.getElementById('edit-explosion-${r.id}').style.display='none'" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
-      </div>
-    </div>`;
+    <div id="aprov-detail-${r.id}" style="display:none;padding:12px;background:var(--bg3);border-bottom:0.5px solid var(--border)">${aprovDetailHtml(r)}</div>`;
   }catch(err){
     console.warn('Registro de aprovechamiento con datos inesperados:', r&&r.id, err);
     return `<div style="padding:10px 12px;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text3)">${r&&r.fecha||''} · ${r&&r.maquina||''} — este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
@@ -3864,33 +4186,45 @@ function renderAprovHist(){
       const aAngle=(r.aprovechado/total)*Math.PI*2;
       const cx=22,cy=22,radius=18,inner=11;
       ctx.clearRect(0,0,44,44);
-      // Aprovechado arc
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,-Math.PI/2,-Math.PI/2+aAngle);ctx.closePath();
       ctx.fillStyle='#3ecf8e';ctx.fill();
-      // Merma arc
       ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,radius,-Math.PI/2+aAngle,-Math.PI/2+Math.PI*2);ctx.closePath();
       ctx.fillStyle='#f06060';ctx.fill();
-      // Inner circle (donut hole)
       ctx.beginPath();ctx.arc(cx,cy,inner,0,Math.PI*2);
       ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bg2').trim()||'#181b24';
       ctx.fill();
     });
   });
+  // Se vuelven a abrir los paneles que estaban abiertos antes de repintar
+  openIds.forEach(pid=>{
+    const el=document.getElementById(pid); if(!el) return;
+    el.style.display='block';
+    if(pid.startsWith('aprov-detail-')){
+      const rid=pid.replace('aprov-detail-','');
+      const b=document.getElementById('aprov-exp-btn-'+rid); if(b) b.textContent='▾';
+      recalcAprovDetail(rid);
+    }
+  });
+  filtered.forEach(r=>recalcAprovDetail(r.id));
 }
 
 function openEditMerma(id){
-  // Close any open editors first
-  document.querySelectorAll('[id^="edit-merma-"], [id^="edit-explosion-"]').forEach(el=>el.style.display='none');
-  document.getElementById('edit-merma-'+id).style.display='block';
-  document.getElementById('merma-input-'+id).focus();
+  document.querySelectorAll('[id^="edit-merma-"]').forEach(el=>{ if(el.style.display==='block') closeMermaEdit(el.id.replace('edit-merma-','')); });
+  const el=document.getElementById('edit-merma-'+id); if(!el) return;
+  el.style.display='block';
+  document.getElementById('merma-input-'+id)?.focus();
 }
-
+function closeMermaEdit(id){
+  const el=document.getElementById('edit-merma-'+id); if(!el) return;
+  el.querySelectorAll('input').forEach(i=>{ if(i.type==='checkbox') i.checked=i.defaultChecked; else i.value=i.defaultValue; });
+  el.style.display='none';
+}
 function saveMermaEdit(id){
   const input=document.getElementById('merma-input-'+id);
   const merma=parseFloat(input.value)||0;
   if(merma<=0){input.style.borderColor='var(--red)';return;}
   const esSemanal=document.getElementById('merma-semanal-'+id)?.checked||false;
-  const rec=aprovRecords.find(r=>r.id===id);
+  const rec=findAprov(id);
   if(!rec) return;
   rec.merma=merma;
   rec.mermaSemanal=esSemanal;
@@ -3902,41 +4236,40 @@ function saveMermaEdit(id){
   rec.pesoTotalSemana = esSemanal ? pesoBase : null;
   rec.pctMerma=pesoBase>0?fmtN((merma/pesoBase)*100,2):0;
   rec.aprovechado=fmtN(pesoBase-merma,3);
+  rec.updatedAt=new Date().toISOString();
   save('aprovRecords');
-  cloudWriteRow('Aprovechamiento',{...rec,merma,mermaSemanal:esSemanal,pesoTotalSemana:rec.pesoTotalSemana||'',pctMerma:rec.pctMerma,aprovechado:rec.aprovechado,hojasDetalle:JSON.stringify(rec.hojasDetalle||[]),explosionDetalle:JSON.stringify(rec.explosionDetalle||[])});
-  document.getElementById('edit-merma-'+id).style.display='none';
-  renderAprovHist();
-}
-function openEditExplosion(id){
-  document.querySelectorAll('[id^="edit-merma-"], [id^="edit-explosion-"]').forEach(el=>el.style.display='none');
-  document.getElementById('edit-explosion-'+id).style.display='block';
-  document.querySelector('.explosion-cal-input-'+id)?.focus();
+  // upsert: actualiza la fila existente en vez de agregar otra duplicada
+  cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  renderAprovHist(true);
 }
 function saveExplosionEdit(id){
-  const rec=aprovRecords.find(r=>r.id===id);
+  if(!canEditAprovExplosion()) return;
+  const rec=findAprov(id);
   if(!rec) return;
   const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
   const explosionDetalle=[];
-  let anyFilled=false;
   inputs.forEach(inp=>{
-    const cal=inp.dataset.cal;
-    const hojas=parseFloat(inp.value)||0;
-    if(hojas>0){ explosionDetalle.push({cal,hojas}); anyFilled=true; }
+    if(inp.value==='') return;
+    const q=parseFloat(inp.value);
+    if(isNaN(q)||q<0) return;
+    explosionDetalle.push(inp.dataset.kind==='tipo'?{tipo:inp.dataset.key,hojas:q}:{cal:inp.dataset.key,hojas:q});
   });
-  if(!anyFilled){
+  if(!explosionDetalle.length && !(rec.explosionDetalle&&rec.explosionDetalle.length)){
     inputs.forEach(inp=>inp.style.borderColor='var(--red)');
     return;
   }
   rec.explosionDetalle=explosionDetalle;
+  rec.updatedAt=new Date().toISOString();
   save('aprovRecords');
-  cloudWriteRow('Aprovechamiento',{...rec,hojasDetalle:JSON.stringify(rec.hojasDetalle||[]),explosionDetalle:JSON.stringify(explosionDetalle)});
-  document.getElementById('edit-explosion-'+id).style.display='none';
-  renderAprovHist();
+  cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  renderAprovHist(true);
+  toggleAprovDetail(id,true);
+  const m=document.getElementById('aprov-detail-msg-'+id); if(m){ m.textContent='✓ Explosión guardada'; setTimeout(()=>{m.textContent='';},3000); }
 }
 // ── HISTORIAL OEE ──
 function renderHistory(){
   const fct=document.getElementById('filter-ct').value;const fm=document.getElementById('filter-machine').value;const ft=document.getElementById('filter-turno').value;
-  let filtered=[...records].reverse();if(fct)filtered=filtered.filter(r=>r.ct===fct);if(fm)filtered=filtered.filter(r=>r.machine===fm);if(ft)filtered=filtered.filter(r=>r.turno===ft);
+  let filtered=[...records].reverse().filter(r=>machineInRoster(r.machine));if(fct)filtered=filtered.filter(r=>r.ct===fct);if(fm)filtered=filtered.filter(r=>r.machine===fm);if(ft)filtered=filtered.filter(r=>r.turno===ft);
   const tb=document.getElementById('history-body');const em=document.getElementById('history-empty');
   if(!filtered.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';
   tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${r.machine}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord('${r.id}')" title="Eliminar registro">×</button></td></tr>`).join('');
@@ -3985,7 +4318,10 @@ function addMachine(){
   if(!name){msg.textContent='⚠ Ingresa un nombre.';msg.style.color='var(--amber)';return;}
   if(machines.find(m=>m.name===name)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}
   if(cap<1){msg.textContent='⚠ Capacidad inválida.';msg.style.color='var(--amber)';return;}
-  machines.push({id:'m'+Date.now(),name,ct,cap,photo:'',horaHora});
+  const newM={id:'m'+Date.now(),name,ct,cap,photo:'',horaHora};
+  machines.push(newM);
+  machineTombs=machineTombs.filter(t=>t!==newM.id); saveMachineTombs();
+  syncMachineToCloud(newM,false);
   save('machines');
   // Add to LASER_MAQUINAS_HORA if checked
   if(horaHora && !LASER_MAQUINAS_HORA.includes(name)){
@@ -3999,8 +4335,17 @@ function addMachine(){
   setTimeout(()=>msg.textContent='',3000);
   renderConfig();updateMachineAndTurno();updateFilterSelects();renderDashboard();
 }
-function deleteMachine(id){if(!confirm('¿Eliminar esta máquina?'))return;machines=machines.filter(m=>m.id!==id);save('machines');renderConfig();updateMachineAndTurno();updateFilterSelects();renderDashboard();}
-function saveConfig(){machines.forEach(m=>{const ni=document.getElementById('mname-'+m.id);const ci=document.getElementById('mcap-'+m.id);if(ni&&ni.value.trim())m.name=ni.value.trim();if(ci&&parseInt(ci.value)>0)m.cap=parseInt(ci.value);});save('machines');const msg=document.getElementById('config-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);updateMachineAndTurno();updateFilterSelects();renderDashboard();}
+function deleteMachine(id){
+  const m=machines.find(x=>x.id===id); if(!m) return;
+  if(!confirm('¿Eliminar la máquina "'+m.name+'"?\n\nSe elimina en TODOS los dispositivos. Sus registros históricos se conservan en el Sheet, pero dejan de mostrarse en la plataforma.')) return;
+  if(!machineTombs.includes(id)){ machineTombs.push(id); saveMachineTombs(); }
+  machines=machines.filter(x=>x.id!==id);
+  save('machines');
+  syncMachineToCloud(m,true);
+  renderConfig();updateMachineAndTurno();updateFilterSelects();renderDashboard();
+  try{ renderAll(); }catch(e){}
+}
+function saveConfig(){machines.forEach(m=>{const ni=document.getElementById('mname-'+m.id);const ci=document.getElementById('mcap-'+m.id);const oldName=m.name,oldCap=m.cap;if(ni&&ni.value.trim())m.name=ni.value.trim();if(ci&&parseInt(ci.value)>0)m.cap=parseInt(ci.value);if(m.name!==oldName||m.cap!==oldCap)syncMachineToCloud(m,false);});save('machines');const msg=document.getElementById('config-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);updateMachineAndTurno();updateFilterSelects();renderDashboard();}
 function triggerPhotoUpload(id){currentPhotoId=id;document.getElementById('photo-file-input').click();}
 function handlePhotoUpload(e){const file=e.target.files[0];if(!file||!currentPhotoId)return;const reader=new FileReader();reader.onload=function(ev){const m=machines.find(x=>x.id===currentPhotoId);if(m){m.photo=ev.target.result;save('machines');renderConfig();renderDashboard();}};reader.readAsDataURL(file);e.target.value='';}
 // ── COLLAPSIBLE ──
@@ -4638,9 +4983,9 @@ function deleteRecord(id){
 }
 function deleteAprov(id){
   if(!confirm('¿Eliminar este registro de aprovechamiento?')) return;
-  aprovRecords = aprovRecords.filter(r => r.id !== id);
+  aprovRecords = aprovRecords.filter(r => String(r.id) !== String(id));
   save('aprovRecords');
-  renderAprovHist();
+  renderAprovHist(true);
   cloudDeleteRow('Aprovechamiento', id);
 }
 function deleteMantLog(id){
@@ -4652,9 +4997,13 @@ function deleteMantLog(id){
   cloudDeleteRow('Mantenimiento', id);
 }
 
-function toggleHoraHora(machineId, machineName, enabled){
+function toggleHoraHora(machineId, machineName, enabled, auto){
   const m = machines.find(x=>x.id===machineId);
   if(m) m.horaHora = enabled;
+  // El cambio manual desde Configuración se publica; la habilitación
+  // automática al seleccionar una máquina en Registro es local (así un
+  // dispositivo con datos viejos nunca pisa la configuración compartida).
+  if(m && !auto) syncMachineToCloud(m,false);
   save('machines');
   if(enabled){
     if(!LASER_MAQUINAS_HORA.includes(machineName)) LASER_MAQUINAS_HORA.push(machineName);
@@ -4667,7 +5016,7 @@ function toggleHoraHora(machineId, machineName, enabled){
 function deletePhoto(machineId){
   if(!confirm('¿Eliminar la foto de esta máquina?')) return;
   const m = machines.find(x => x.id === machineId);
-  if(m){ m.photo = ''; save('machines'); renderConfig(); renderDashboard(); }
+  if(m){ m.photo = ''; syncMachineToCloud(m,false); save('machines'); renderConfig(); renderDashboard(); }
 }
 
 
@@ -5074,7 +5423,7 @@ function renderHoraHist(){
   const fmachine = document.getElementById('hora-hist-machine')?.value||'';
   const fturno = document.getElementById('hora-hist-turno')?.value||'';
   const fstatus = document.getElementById('hora-hist-status')?.value||'';
-  let filtered = [...horaRecords].reverse();
+  let filtered = [...horaRecords].reverse().filter(r=>machineInRoster(r.machine));
   if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
@@ -5230,7 +5579,7 @@ function renderEvaluacion(){
   const fturno = document.getElementById('eval-turno')?.value||'';
   const fstatus = document.getElementById('eval-status')?.value||'';
 
-  let filtered = [...horaRecords];
+  let filtered = [...horaRecords].filter(r=>machineInRoster(r.machine));
   if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
