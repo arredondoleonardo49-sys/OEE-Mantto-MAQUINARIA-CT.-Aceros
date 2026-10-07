@@ -245,6 +245,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .checklist-split .paros-card{display:flex;flex-direction:column;border-right:1px solid var(--border);padding-right:1.5rem}
 .checklist-split .paros-card .paros-list{flex:1}
 .checklist-split .checklist-card-inner{display:flex;flex-direction:column}
+.checklist-split.solo{grid-template-columns:1fr}
+.checklist-split.solo .paros-card{border-right:none;padding-right:0}
 .form-full{grid-column:1/-1}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase}
@@ -351,7 +353,26 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .dynamic-row{display:grid;gap:8px;align-items:center;margin-bottom:8px}
 .dynamic-row-hojas{grid-template-columns:1.3fr 0.8fr 1fr 1fr 32px}
 .dynamic-row-lam{grid-template-columns:1.1fr 0.75fr 0.75fr 0.9fr 0.9fr 32px}
-.dynamic-row-tub{grid-template-columns:160px 90px 90px 90px 36px}
+.dynamic-row-tub{grid-template-columns:minmax(0,2.2fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,.9fr) 32px}
+/* ── Aprovechamiento: formulario compacto y dinámico ── */
+.ap-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.6rem .85rem;margin-bottom:.7rem}
+.ap-top .form-group{margin:0}
+.ap-top input,.ap-top select{height:34px;padding:0 8px;box-sizing:border-box}
+.ap-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:.7rem;align-items:start}
+.ap-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.7rem .85rem;min-width:0}
+.ap-card-h{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:.5rem}
+.ap-badge{font-size:10px;font-weight:500;font-family:'IBM Plex Mono',monospace;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:10px}
+.ap-add{margin-left:auto;font-size:11px;font-family:'IBM Plex Sans',sans-serif;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:4px 11px;white-space:nowrap}
+.ap-add:hover{background:rgba(74,158,255,.18)}
+.ap-empty{font-size:12px;color:var(--text3);padding:2px 2px 0}
+.ap-card .dynamic-row{margin-bottom:5px}
+.ap-bar{position:sticky;bottom:0;z-index:6;display:flex;align-items:center;gap:22px;flex-wrap:wrap;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.55rem .85rem;margin-top:.7rem;box-shadow:0 -8px 16px rgba(0,0,0,.28)}
+.ap-stat{display:flex;flex-direction:column;gap:1px}
+.ap-stat-l{font-size:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text3)}
+.ap-stat-v{font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:700;color:var(--text)}
+.ap-green{color:#3ecf8e}
+.ap-bar .save-msg{margin-left:auto}
+.ap-bad{border-color:var(--red)!important;background:rgba(240,96,96,.08)!important}
 .dynamic-row input,.dynamic-row select{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%}
 .dynamic-row input:focus,.dynamic-row select:focus{outline:none;border-color:var(--blue)}
 .dynamic-row select option{background:var(--bg2)}
@@ -423,16 +444,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .mat-header.tub{grid-template-columns:1fr 110px 90px 120px 36px}
 .mant-machine-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:1rem}
 .mant-machine-title{font-size:13px;font-weight:600;color:var(--text);padding:.75rem 1rem;display:flex;align-items:center;gap:8px;background:var(--bg3);border-bottom:0.5px solid var(--border)}
+.chk-row{display:grid;grid-template-columns:1fr 150px 36px;gap:8px;align-items:center;padding:7px 12px;border-bottom:0.5px solid var(--border);font-size:12px}
+.chk-row:last-child{border-bottom:none}
+.chk-row input[type=text]{font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:4px 7px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text);width:100%}
+.chk-row input[type=text]:hover{border-color:var(--border)}
+.chk-row input[type=text]:focus{outline:none;border-color:var(--blue);background:var(--bg3)}
+.chk-head{background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase}
 .mant-machine-sub{font-size:11px;color:var(--text3);margin-left:auto;font-weight:400}
-.mant-header{display:grid;grid-template-columns:1fr 100px 100px 70px 36px;gap:8px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:0.5px solid var(--border)}
-.mant-comp-row-edit{display:grid;grid-template-columns:1fr 100px 100px 70px 36px;gap:8px;align-items:center;padding:7px 12px;border-bottom:0.5px solid var(--border);font-size:12px}
-.mant-comp-row-edit:last-child{border-bottom:none}.mant-comp-row-edit:hover{background:var(--bg3)}
-.mant-comp-row-edit input[type=text]{font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:4px 7px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text);width:100%;transition:border-color .15s}
-.mant-comp-row-edit input[type=text]:hover{border-color:var(--border)}
-.mant-comp-row-edit input[type=text]:focus{outline:none;border-color:var(--blue);background:var(--bg3)}
-.mant-comp-row-edit select{font-size:11px;font-family:'IBM Plex Sans',sans-serif;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%}
-.mant-comp-row-edit select:focus{outline:none;border-color:var(--blue)}
-.mant-comp-row-edit select option{background:var(--bg2)}
 .btn-add-comp{background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;font-size:12px;padding:6px 14px;font-family:'IBM Plex Sans',sans-serif;width:100%;transition:all .15s;margin:6px 0}
 .btn-add-comp:hover{border-color:var(--blue);color:var(--text)}
 .who-op{background:rgba(74,158,255,.12);color:#4a9eff;border:1px solid rgba(74,158,255,.25);padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
@@ -443,10 +461,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .risk-title{font-size:11px;font-weight:600;color:#f06060;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px}
 .risk-item{font-size:12px;color:var(--text2);padding:2px 0;display:flex;gap:6px}
 .risk-item::before{content:"⚠";font-size:11px;flex-shrink:0}
-.mant-log-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px}
-.mant-hist-header{display:grid;grid-template-columns:100px 110px 1fr 80px 70px 60px 80px;gap:8px;padding:7px 12px;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase}
-.mant-hist-row{display:grid;grid-template-columns:100px 110px 1fr 80px 70px 60px 80px;gap:8px;padding:7px 12px;border-bottom:0.5px solid var(--border);font-size:12px;color:var(--text);align-items:center}
-.mant-hist-row:last-child{border-bottom:none}.mant-hist-row:hover{background:var(--bg3)}
 .check-item:hover{background:var(--bg3);border-radius:var(--radius)}
 </style>
 </head>
@@ -499,10 +513,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       <span>Aprovechamiento</span>
     </div>
-    <div class="nav-item" onclick="navigate('mantenimiento',this)" data-label="Mantenimiento">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-      <span>Mantenimiento</span>
-    </div>
     <div class="nav-item" onclick="navigate('historial',this)" data-label="Historial">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>Historial</span>
@@ -538,9 +548,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <div class="nav-item-mini" onclick="navigate('aprovechamiento',this)" data-label="Aprovechamiento" title="Aprovechamiento">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-  </div>
-  <div class="nav-item-mini" onclick="navigate('mantenimiento',this)" data-label="Mantenimiento" title="Mantenimiento">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
   </div>
   <div class="nav-item-mini" onclick="navigate('historial',this)" data-label="Historial" title="Historial">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -640,7 +647,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
           <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
-          <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha" onchange="renderChecklist();renderProgramaDia()"></div>
+          <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha" onchange="onFechaChange()"></div>
         </div>
         <div class="info-box" style="margin:1rem 0 0">
           <div class="info-box-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Referencia del turno</div>
@@ -655,8 +662,21 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
+      <!-- Cierre del día: solo piezas totales (máquinas sin hora por hora) -->
+      <div class="form-card" id="reg-dia-card" style="display:none">
+        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Cierre del día — piezas totales <span id="reg-dia-maquina" style="color:var(--text3);font-weight:400;margin-left:6px"></span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:.9rem;line-height:1.5">Esta máquina no se registra hora por hora. Captura aquí el <b>total de piezas producidas en el día</b>, al terminar.</div>
+        <div class="form-grid-3">
+          <div class="form-group"><label>Piezas totales del día</label><input type="number" id="dia-piezas" min="0" step="1" placeholder="0" oninput="onDiaInput()" onblur="setTimeout(flushDiaSave,350)" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:center"></div>
+          <div class="form-group"><label>Estado</label><div id="dia-estado" style="font-size:13px;padding:10px 0;color:var(--text3)">–</div></div>
+          <div class="form-group"><label>&nbsp;</label><div class="btn-actions" style="margin:0;justify-content:flex-start"><button class="btn btn-primary" id="btn-guardar-dia" onclick="saveDiaTotal()">Guardar piezas del día</button></div></div>
+        </div>
+        <div class="save-msg" id="dia-save-msg" style="margin-top:6px"></div>
+        <div id="dia-hist" style="margin-top:.75rem"></div>
+      </div>
+
       <!-- Datos de producción (ancho completo) -->
-      <div class="form-card">
+      <div class="form-card" id="reg-produccion-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Datos de producción</div>
         <div class="form-grid-3">
           <div class="form-group"><label>Piezas programadas</label><input type="number" id="reg-programadas" min="0" value="0" oninput="delete this.dataset.autofilled;calcOEE()" style="font-size:19px;font-weight:700;color:#4a9eff"><div class="input-hint">Meta del turno</div></div>
@@ -682,7 +702,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <!-- Paros no programados + Checklist de arranque, divididos en la misma tarjeta -->
       <div class="form-card" id="arranque-checklist-card" style="display:none">
         <div class="checklist-split">
-          <div class="paros-card">
+          <div class="paros-card" id="paros-card">
             <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Paros no programados</div>
             <div style="display:grid;grid-template-columns:minmax(0,1fr) 100px 32px;gap:6px;margin-bottom:6px"><span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase">Motivo</span><span style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase">Min.</span><span></span></div>
             <div class="paros-list" id="paros-list"></div>
@@ -766,7 +786,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div><!-- end reg-hora-panel -->
 
       <!-- Guardar único: OEE + hora por hora simultáneamente -->
-      <div class="form-card">
+      <div class="form-card" id="reg-guardar-card">
         <div class="btn-actions" style="margin-top:0">
           <span class="save-msg" id="save-msg"></span>
           <span id="cloud-status" style="font-size:11px;font-family:'IBM Plex Mono',monospace"></span>
@@ -875,74 +895,63 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="tab" id="tab-aprov-hist-btn" onclick="switchTab('tab-aprov-hist',this)">Historial</div>
     </div>
     <div id="tab-lamina" class="tab-content active">
-      <div class="form-card" style="padding:.85rem 1rem"><div class="form-card-title" style="margin-bottom:.5rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Datos del registro</div>
-        <div class="form-grid" style="gap:.6rem">
-          <div class="form-group"><label>Fecha</label><input type="date" id="lam-fecha" style="padding:6px 8px"></div>
-          <div class="form-group"><label>Turno</label><select id="lam-turno" style="padding:6px 8px"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
-          <div class="form-group form-full"><label>Operador</label><input type="text" id="lam-op" placeholder="Nombre del operador" style="padding:6px 8px"></div>
+      <div class="ap-top">
+        <div class="form-group"><label>Fecha</label><input type="date" id="lam-fecha"></div>
+        <div class="form-group"><label>Turno</label><select id="lam-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
+        <div class="form-group"><label>Operador</label><input type="text" id="lam-op" placeholder="Nombre del operador"></div>
+      </div>
+      <div class="ap-cols">
+        <div class="ap-card">
+          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas<span class="ap-badge" id="lam-hojas-count">0 hojas</span><button class="ap-add" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button></div>
+          <div class="dynamic-row-header dynamic-row-hojas" id="lam-hojas-head" style="display:none"><span>Calibre</span><span>Hojas</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
+          <div id="lam-hojas-list"></div>
+          <div class="ap-empty" id="lam-hojas-empty">Aún no hay calibres. Toca «+ Agregar calibre».</div>
+        </div>
+        <div class="ap-card">
+          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-recortes-count">0 recortes</span><button class="ap-add" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte</button></div>
+          <div class="dynamic-row-header dynamic-row-lam" id="lam-recortes-head" style="display:none"><span>Calibre</span><span>Ancho cm</span><span>Largo cm</span><span>Peso (kg)</span><span>Ahorro ($)</span><span></span></div>
+          <div id="lam-recortes-list"></div>
+          <div class="ap-empty" id="lam-recortes-empty">Sin recortes recuperados. Es opcional.</div>
         </div>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas</div>
-        <div class="dynamic-row-header dynamic-row-hojas"><span>Calibre</span><span>Hojas</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
-        <div id="lam-hojas-list"></div>
-        <button class="btn-add-row" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button>
-        <div class="row-total">Peso total procesado: <span id="lam-peso-total">0.000</span> kg</div>
+      <input type="hidden" id="lam-merma" value="0"><span id="lam-pct-merma" hidden>–</span>
+      <div style="display:none"><canvas id="lam-chart"></canvas><div id="lam-chart-legend"></div></div>
+      <div class="ap-bar">
+        <div class="ap-stat"><span class="ap-stat-l">Peso procesado</span><span class="ap-stat-v"><span id="lam-peso-total">0.000</span> kg</span></div>
+        <div class="ap-stat"><span class="ap-stat-l">Ahorro por recortes</span><span class="ap-stat-v ap-green">$<span id="lam-ahorro">0.00</span></span></div>
+        <span class="save-msg" id="lam-save-msg"></span>
+        <button class="btn btn-primary" id="btn-save-lamina" onclick="saveLamina()">Guardar registro</button>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes</div>
-        <div style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--radius);padding:8px 12px;margin-bottom:1rem">La <b>merma</b> ya no se captura aquí: se registra <b>una sola vez por semana</b> (5 días hábiles) desde la pestaña <b>Historial</b>.</div>
-        <div class="form-grid" style="display:none">
-          <div class="form-group"><label>Merma total (kg)</label><input type="number" id="lam-merma" min="0" step="0.001" value="0" oninput="calcLamina()"></div>
-          <div class="form-group"><label style="color:var(--text2)">% Merma</label><div style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:8px 0;color:var(--amber)" id="lam-pct-merma">–</div></div>
-        </div>
-        <div class="dynamic-row-header dynamic-row-lam" style="margin-bottom:4px">
-          <span>Calibre</span>
-          <span>Ancho cm</span>
-          <span>Largo cm</span>
-          <span>Peso (kg)</span>
-          <span>Ahorro ($)</span>
-          <span></span>
-        </div>
-        <div id="lam-recortes-list"></div>
-        <button class="btn-add-row" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte recuperado</button>
-        <div class="row-total">Ahorro estimado: $<span id="lam-ahorro">0.00</span></div>
-        <div style="display:none;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
-          <div style="position:relative;height:140px"><canvas id="lam-chart"></canvas></div>
-          <div id="lam-chart-legend" style="font-size:12px;color:var(--text2)"></div>
-        </div>
-      </div>
-      <div class="btn-actions"><span class="save-msg" id="lam-save-msg"></span><button class="btn btn-primary" id="btn-save-lamina" onclick="saveLamina()">Guardar registro</button></div>
     </div>
     <div id="tab-tubular" class="tab-content">
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Datos del registro</div>
-        <div class="form-grid">
-          <div class="form-group"><label>Máquina</label><select id="tub-machine"><option>GW1</option><option>GW2</option></select></div>
-          <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha"></div>
-          <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
-          <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
+      <div class="ap-top">
+        <div class="form-group"><label>Máquina</label><select id="tub-machine"><option>GW1</option><option>GW2</option></select></div>
+        <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha"></div>
+        <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
+        <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
+      </div>
+      <div class="ap-cols">
+        <div class="ap-card">
+          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Tramos utilizados<span class="ap-badge" id="tub-tramos-count">0 tramos</span><button class="ap-add" id="btn-add-tub-tramo" onclick="addTubTramo()">+ Agregar tubular</button></div>
+          <div class="dynamic-row-header dynamic-row-tub" id="tub-tramos-head" style="display:none"><span>Tipo de tubular</span><span>Tramos (6m)</span><span>Peso/tramo (kg)</span><span>Peso total (kg)</span><span></span></div>
+          <div id="tub-tramos-list"></div>
+          <div class="ap-empty" id="tub-tramos-empty">Aún no hay tubulares. Toca «+ Agregar tubular».</div>
+        </div>
+        <div class="ap-card">
+          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="tub-recortes-count">0 recortes</span><button class="ap-add" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar recorte</button></div>
+          <div class="dynamic-row-header dynamic-row-tub" id="tub-recortes-head" style="display:none"><span>Tipo de tubular</span><span>Peso (kg)</span><span>Tramos equiv.</span><span>Ahorro ($)</span><span></span></div>
+          <div id="tub-recortes-list"></div>
+          <div class="ap-empty" id="tub-recortes-empty">Sin recortes recuperados. Es opcional.</div>
         </div>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Tramos utilizados</div>
-        <div class="dynamic-row-header dynamic-row-tub" style="margin-bottom:4px"><span>Tipo de tubular</span><span>Tramos (6m)</span><span>Peso/tramo (kg)</span><span>Peso total (kg)</span><span></span></div>
-        <div id="tub-tramos-list"></div>
-        <button class="btn-add-row" id="btn-add-tub-tramo" onclick="addTubTramo()">+ Agregar tubular</button>
-        <div class="row-total">Peso total procesado: <span id="tub-peso-total">0.000</span> kg</div>
+      <input type="hidden" id="tub-merma" value="0"><span id="tub-pct-merma" hidden>–</span>
+      <div style="display:none"><canvas id="tub-chart"></canvas><div id="tub-chart-legend"></div></div>
+      <div class="ap-bar">
+        <div class="ap-stat"><span class="ap-stat-l">Peso procesado</span><span class="ap-stat-v"><span id="tub-peso-total">0.000</span> kg</span></div>
+        <div class="ap-stat"><span class="ap-stat-l">Ahorro por recortes</span><span class="ap-stat-v ap-green">$<span id="tub-ahorro">0.00</span></span></div>
+        <span class="save-msg" id="tub-save-msg"></span>
+        <button class="btn btn-primary" id="btn-save-tubular" onclick="saveTubular()">Guardar registro</button>
       </div>
-      <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes</div>
-        <div style="font-size:12px;color:var(--text2);background:var(--bg3);border-radius:var(--radius);padding:8px 12px;margin-bottom:1rem">La <b>merma</b> ya no se captura aquí: se registra <b>una sola vez por semana</b> (5 días hábiles) desde la pestaña <b>Historial</b>.</div>
-        <div class="form-grid" style="display:none">
-          <div class="form-group"><label>Merma total (kg)</label><input type="number" id="tub-merma" min="0" step="0.001" value="0" oninput="calcTubular()"></div>
-          <div class="form-group"><label style="color:var(--text2)">% Merma</label><div style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding:8px 0;color:var(--amber)" id="tub-pct-merma">–</div></div>
-        </div>
-        <div class="dynamic-row-header dynamic-row-tub" style="margin-bottom:4px"><span>Tipo de tubular</span><span>Peso recorte (kg)</span><span>Tramos equiv.</span><span>Ahorro ($)</span><span></span></div>
-        <div id="tub-recortes-list"></div>
-        <button class="btn-add-row" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar recorte recuperado</button>
-        <div class="row-total">Ahorro estimado: $<span id="tub-ahorro">0.00</span></div>
-        <div style="display:none;grid-template-columns:1fr 180px;gap:1rem;margin-top:1rem;align-items:center">
-          <div style="position:relative;height:140px"><canvas id="tub-chart"></canvas></div>
-          <div id="tub-chart-legend" style="font-size:12px;color:var(--text2)"></div>
-        </div>
-      </div>
-      <div class="btn-actions"><span class="save-msg" id="tub-save-msg"></span><button class="btn btn-primary" id="btn-save-tubular" onclick="saveTubular()">Guardar registro</button></div>
     </div>
     <div id="tab-aprov-hist" class="tab-content">
       <div class="filter-row">
@@ -958,120 +967,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
   </div>
 </div>
-<!-- MANTENIMIENTO -->
-<div id="page-mantenimiento" class="page">
-  <div class="topbar"><div class="page-title">Mantenimiento preventivo</div><div class="page-sub">Componentes críticos · Operador y Técnico</div></div>
-  <div class="content">
-    <div class="tab-row">
-      <div class="tab active" id="mant-plan-btn" onclick="switchTab('mant-plan',this)">Plan</div>
-      <div class="tab" id="mant-registro-btn" onclick="switchTab('mant-registro',this)">Registrar</div>
-      <div class="tab" id="mant-historial-btn" onclick="switchTab('mant-historial',this)">Historial</div>
-      <div class="tab" id="mant-cumplimiento-btn" onclick="switchTab('mant-cumplimiento',this)">Cumplimiento</div>
-    </div>
-    <div id="mant-plan" class="tab-content active">
-      <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-laser',this)"><span class="ct-badge-icon laser"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/></svg></span><span class="ct-badge laser">LASER</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
-        <div id="mant-body-laser"><div id="mant-plan-laser"></div></div>
-      </div>
-      <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-troqueles',this)"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
-        <div id="mant-body-troqueles"><div id="mant-plan-troqueles"></div></div>
-      </div>
-      <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-muebles',this)"><span class="ct-badge-icon muebles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg></span><span class="ct-badge muebles">EST. MUEBLES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
-        <div id="mant-body-muebles"><div id="mant-plan-muebles"></div></div>
-      </div>
-      <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-sillas',this)"><span class="ct-badge-icon sillas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="10" rx="1"/><path d="M6 13v6"/><path d="M18 13v6"/><path d="M8 19h8"/></svg></span><span class="ct-badge sillas">EST. SILLAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
-        <div id="mant-body-sillas"><div id="mant-plan-sillas"></div></div>
-      </div>
-      <div class="ct-section">
-        <div class="ct-header ct-collapsible" onclick="toggleCT('mant-body-mamparas',this)"><span class="ct-badge-icon mamparas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg></span><span class="ct-badge mamparas">EST. MAMPARAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
-        <div id="mant-body-mamparas"><div id="mant-plan-mamparas"></div></div>
-      </div>
-      <div style="display:flex;gap:16px;margin-top:.5rem;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span class="who-op">Operador</span> Verificación diaria</div>
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)"><span class="who-tec">Técnico</span> Intervención especializada</div>
-      </div>
-    </div>
-    <div id="mant-registro" class="tab-content">
-      <div class="form-card">
-        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Seleccionar intervención</div>
-        <div class="mant-log-grid">
-          <div class="form-group"><label>Fecha</label><input type="date" id="mlog-fecha"></div>
-          <div class="form-group"><label>Centro de trabajo</label><select id="mlog-ct" onchange="updateMantMachine()"><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
-          <div class="form-group"><label>Máquina</label><select id="mlog-machine" onchange="updateMantComp()"></select></div>
-          <div class="form-group"><label>Componente</label><select id="mlog-comp" onchange="loadChecklist()"></select></div>
-          <div class="form-group"><label>Tipo</label><select id="mlog-tipo"><option value="Operador">Operador</option><option value="Técnico">Técnico</option></select></div>
-          <div class="form-group"><label>Nombre</label><input type="text" id="mlog-tecnico" placeholder="Quién realiza"></div>
-        </div>
-      </div>
-      <div id="checklist-card" style="display:none">
-        <div class="form-card">
-          <div class="form-card-title" id="checklist-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Checklist</div>
-          <div id="checklist-items"></div>
-          <div style="margin-top:1rem;padding:1rem;background:var(--bg3);border-radius:var(--radius-lg)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-              <span style="font-size:12px;color:var(--text2)">Progreso</span>
-              <span style="font-size:20px;font-weight:600;font-family:'IBM Plex Mono',monospace" id="check-pct">0%</span>
-            </div>
-            <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;margin-bottom:.75rem">
-              <div id="check-bar" style="height:100%;border-radius:5px;width:0%;transition:width .25s,background .25s"></div>
-            </div>
-            <div style="text-align:center;font-size:13px;font-weight:600" id="check-badge"></div>
-          </div>
-        </div>
-        <div class="form-card">
-          <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Observaciones y cierre</div>
-          <div class="form-group" style="margin-bottom:1rem"><label>Observaciones</label><input type="text" id="mlog-obs" placeholder="Estado encontrado, acciones realizadas..."></div>
-          <div class="btn-actions"><span class="save-msg" id="mlog-msg"></span><button class="btn btn-primary" onclick="saveMantLog()">Guardar registro</button></div>
-        </div>
-      </div>
-    </div>
-    <div id="mant-historial" class="tab-content">
-      <div class="filter-row">
-        <select id="mh-ct" onchange="updateMantHistMachineFilter();renderMantHist()"><option value="">Todos los centros</option><option>LASER</option><option>TROQUELES</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
-        <select id="mh-machine" onchange="renderMantHist()"><option value="">Todas las máquinas</option></select>
-        <select id="mh-tipo" onchange="renderMantHist()"><option value="">Operador y Técnico</option><option>Operador</option><option>Técnico</option></select>
-        <select id="mh-res" onchange="renderMantHist()"><option value="">Todos los resultados</option><option value="ok">Correcto</option><option value="obs">Con observaciones</option><option value="falla">Falla encontrada</option></select>
-        <button class="btn" style="margin-left:auto;border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearAllMantLogs()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
-      </div>
-      <div class="card">
-        <div class="mant-hist-header" style="grid-template-columns:100px 110px 1fr 80px 70px 60px 80px 36px"><span>Fecha</span><span>Máquina</span><span>Componente</span><span>Responsable</span><span>Tipo</span><span>Check%</span><span>Resultado</span><span></span></div>
-        <div id="mant-hist-body"></div>
-        <div id="mant-hist-empty" class="empty-state" style="display:none">Sin registros.</div>
-      </div>
-    </div>
-    <div id="mant-cumplimiento" class="tab-content">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
-        <div class="metric-card metric-card-flex">
-          <div class="metric-card-icon" style="color:var(--blue)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-          <div class="metric-card-text"><div class="metric-label">Cumplimiento general</div><div class="metric-value" id="cm-pct" style="color:var(--text2)">–</div></div>
-        </div>
-        <div class="metric-card metric-card-flex">
-          <div class="metric-card-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-          <div class="metric-card-text"><div class="metric-label">Total intervenciones</div><div class="metric-value" id="cm-total" style="color:var(--text2)">–</div></div>
-        </div>
-        <div class="metric-card metric-card-flex">
-          <div class="metric-card-icon" style="color:#3ecf8e;background:rgba(62,207,142,.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-          <div class="metric-card-text"><div class="metric-label">Checklist completo</div><div class="metric-value" id="cm-ok" style="color:#3ecf8e">–</div></div>
-        </div>
-        <div class="metric-card metric-card-flex">
-          <div class="metric-card-icon" style="color:#f06060;background:rgba(240,96,96,.12)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
-          <div class="metric-card-text"><div class="metric-label">Fallas encontradas</div><div class="metric-value" id="cm-fallas" style="color:#f06060">–</div></div>
-        </div>
-      </div>
-      <div class="card" style="margin-bottom:1rem">
-        <div style="padding:.75rem 1rem;font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.4px;text-transform:uppercase;background:var(--bg3);border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Semáforo por máquina</div>
-        <div id="cumpl-semaforo" style="padding:.75rem"></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Tendencia — últimas 10 intervenciones</div>
-        <div style="position:relative;height:180px"><canvas id="cumpl-chart"></canvas></div>
-      </div>
-    </div>
-  </div>
-</div>
 <!-- HISTORIAL OEE -->
 <div id="page-historial" class="page">
   <div class="topbar"><div class="page-title">Historial OEE</div><div class="page-sub">Todos los turnos capturados</div></div>
@@ -1080,7 +975,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <select id="filter-ct" onchange="filterChanged()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
       <select id="filter-machine" onchange="renderHistory()"><option value="">Todas las máquinas</option></select>
       <select id="filter-turno" onchange="renderHistory()"><option value="">Todos los turnos</option></select>
-      <button class="btn" style="margin-left:auto;border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearAllRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
+      <button class="btn" id="btn-quitar-vacios" style="margin-left:auto;border:1px solid var(--border);color:var(--text2);background:var(--bg3);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearEmptyRecords()" title="Quita los registros en cero (sin piezas ni paros)">🧹 Quitar vacíos</button>
+      <button class="btn" style="border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearAllRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
     </div>
     <div class="card"><div class="tbl-wrap">
       <table class="tbl"><thead><tr><th>Fecha</th><th>Centro</th><th>Máquina</th><th>Turno</th><th>Operador</th><th>Prog.</th><th>Prod.</th><th>Rechazo</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th></th></tr></thead><tbody id="history-body"></tbody></table>
@@ -1097,6 +993,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="tab" id="cfg-tubulares-btn" onclick="switchTab('cfg-tubulares',this)">Tipos de tubular</div>
       <div class="tab" id="cfg-usuarios-btn" onclick="switchTab('cfg-usuarios',this);renderUsersConfig()">Usuarios</div>
       <div class="tab" id="cfg-metas-btn" onclick="switchTab('cfg-metas',this);renderCtTargetsConfig()">Metas por CT</div>
+      <div class="tab" id="cfg-checklist-btn" onclick="switchTab('cfg-checklist',this);renderChecklistEditor()">Checklist de arranque</div>
     </div>
     <div id="cfg-maquinas" class="tab-content active">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Agregar nueva máquina</div>
@@ -1108,7 +1005,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:.5rem;padding:.5rem .75rem;background:var(--bg3);border-radius:var(--radius)">
           <input type="checkbox" id="new-machine-hora" style="width:16px;height:16px;accent-color:var(--blue);cursor:pointer">
-          <label for="new-machine-hora" style="font-size:13px;color:var(--text);cursor:pointer">Habilitar registro hora por hora para esta máquina</label>
+          <label for="new-machine-hora" style="font-size:13px;color:var(--text);cursor:pointer">Registro hora por hora (si no se marca, solo se captura el total de piezas al final del día)</label>
         </div>
         <div class="save-msg" id="add-machine-msg"></div>
       </div>
@@ -1171,9 +1068,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Cuentas registradas</div>
         <div id="users-list"></div>
       </div>
+    </div>
+    <div id="cfg-checklist" class="tab-content">
       <div class="form-card">
-        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/></svg>Checklist de arranque</div>
-        <div style="font-size:12px;color:var(--text3)">Las actividades del checklist de arranque son los componentes de mantenimiento con responsable <strong>Operador</strong>, definidos por máquina en <strong>Mantenimiento → Plan</strong>. Para agregar, quitar o reasignar una actividad del checklist, edita el componente correspondiente ahí (columna "responsable").</div>
+        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="m9 12 2 2 4-4"/></svg>Checklist de arranque — actividades por máquina</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:.9rem;line-height:1.5">Son las actividades que el operador confirma al iniciar su turno en cada máquina. Los cambios se guardan en la nube y los reciben todos los dispositivos.</div>
+        <div id="chk-editor"></div>
+        <datalist id="chk-freq-list"><option value="Inicio de turno"><option value="Diario"><option value="Semanal"><option value="Mensual"></datalist>
       </div>
     </div>
     <div id="cfg-metas" class="tab-content">
@@ -1227,7 +1128,8 @@ function ctClass(ct){ return (CT_CONFIG[ct]&&CT_CONFIG[ct].cls) || ''; }
 const TURNOS_CT={}; ALL_CTS.forEach(ct=>{ TURNOS_CT[ct]=CT_CONFIG[ct].turnos; });
 const TURNO_MIN={'Turno único (8:00–17:00)':540,'Turno 1 (8:00–17:00)':540,'Turno 2 (17:00–01:40)':520,'Turno 3 (23:00–07:00)':480};
 const PAROS_PROG=57;
-const LASER_MAQUINAS_HORA = ['GW1','GW2','Laser de Cama','Área General','Punteadora','Newton 1','Newton 2'];
+// Se reconstruye según la política de captura (ver machineUsesHora)
+const LASER_MAQUINAS_HORA = ['GW1','GW2','Laser de Cama','Newton 1','Newton 2'];
 const LASER_FRANJAS = {
   'Turno 1 (8:00–17:00)': ['8AM–9AM','9AM–10AM','10AM–11AM','11AM–12PM','12PM–12:30PM ⏸ Comida','12:30PM–1:30PM','1:30PM–2:30PM','2:30PM–3:30PM','3:30PM–4:30PM','4:30PM–5PM'],
   'Turno 2 (17:00–01:40)': ['5PM–6PM','6PM–7PM','7PM–8PM','8PM–9PM','9PM–10PM','10PM–11PM','11PM–12AM','12AM–1AM'],
@@ -1236,7 +1138,7 @@ const LASER_FRANJAS = {
 };
 
 // Machines that only have turno único
-const MAQUINAS_TURNO_UNICO = ['Newton 1','Newton 2','Área General','Punteadora'];
+const MAQUINAS_TURNO_UNICO = ['Newton 1','Newton 2','Área General','Punteadora','Soldadora Láser'];
 
 // Machines that support dibujo/nido programming time tracking
 const MAQUINAS_DIBUJO = ['GW1','GW2','Laser de Cama'];
@@ -1258,7 +1160,10 @@ const DEFAULT_MACHINES=[
   {id:'m8',name:'GW1',ct:'LASER',cap:215,photo:'assets/maquina-gw1.jpg'},
   {id:'m9',name:'GW2',ct:'LASER',cap:350,photo:'assets/maquina-gw2.jpg'},
   {id:'m10',name:'Área General',ct:'EST. MUEBLES',cap:768,photo:''},
-  {id:'m15',name:'Punteadora',ct:'EST. MUEBLES',cap:313,photo:'assets/maquina-punteadora.jpg'}
+  {id:'m15',name:'Punteadora',ct:'EST. MUEBLES',cap:313,photo:'assets/maquina-punteadora.jpg'},
+  // Capacidades provisionales — ajustarlas en Configuración → Máquinas
+  {id:'m16',name:'Dobladora G-Weike',ct:'TROQUELES',cap:1000,photo:''},
+  {id:'m17',name:'Soldadora Láser',ct:'EST. MUEBLES',cap:500,photo:''}
 ];
 const DEFAULT_LAMINAS=[
   {cal:'Cal. 11',sku:'',esp:0.304,peso:88.8,costo:1640.14},
@@ -1301,8 +1206,8 @@ const DEFAULT_TUBULARES=[
   {tipo:'Tubular 3 x 1 Cal 18',sku:'10509219',peso:11.029,costo:0}
 ];
 // ── STATE ──
-let machines=[],records=[],laminas=[],tubulares=[],aprovRecords=[],mermaSemanalRecs=[],mantLogs=[],ctTargets={},atrasos=[];
-let dashChart=null,lamChart=null,tubChart=null,cumplChart=null,currentPhotoId=null,paroRows=[];
+let machines=[],records=[],laminas=[],tubulares=[],aprovRecords=[],mermaSemanalRecs=[],ctTargets={},atrasos=[];
+let dashChart=null,lamChart=null,tubChart=null,currentPhotoId=null,paroRows=[];
 const SK={machines:'oee_machines_v5',records:'oee_records_v5',laminas:'oee_laminas_v2',tubulares:'oee_tubulares_v2',aprovRecords:'oee_aprov_v2',mermaSemanalRecs:'oee_merma_semanal_v1',mantLogs:'oee_mant_v1',mantPlan:'oee_mant_plan_v1',ctTargets:'oee_ct_targets_v1',atrasos:'oee_atrasos_v1'};
 
 // ── AUTH & ROLES ──────────────────────────────────────
@@ -1356,6 +1261,11 @@ function normalizeUserRow(u){
   if(u.permissions && typeof u.permissions==='object' && !Array.isArray(u.permissions)) permissions=u.permissions;
   else if(typeof u.permissions==='string' && u.permissions){ try{ permissions=JSON.parse(u.permissions); }catch(e){ permissions=null; } }
   if(!permissions) permissions=defaultPermissions(role);
+  // captura: permisos de captura otorgados a mano (arreglo, o JSON en texto desde la nube)
+  let captura=[];
+  if(Array.isArray(u.captura)) captura=u.captura;
+  else if(typeof u.captura==='string' && u.captura){ try{ const x=JSON.parse(u.captura); if(Array.isArray(x)) captura=x; }catch(e){ captura=[]; } }
+  captura=captura.filter(k=>['hora','dia','aprov'].includes(k));
   return {
     id:(u.id||('u'+Date.now()+Math.random().toString(36).slice(2))).toString(),
     name:(u.name||u.username||'Usuario').toString(),
@@ -1364,6 +1274,7 @@ function normalizeUserRow(u){
     role,
     cts,
     permissions,
+    captura,
     active: !(u.active===false||u.active==='false'||u.active==='FALSE'),
     updatedAt: u.updatedAt||undefined
   };
@@ -1408,7 +1319,7 @@ function initAuth(){
     // (Los cambios de rol/baja se refrescan en la sincronización normal tras el login.)
     const fresh=users.find(u=>u.id===stored.id && u.active!==false);
     if(fresh){
-      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[],permissions:fresh.permissions};
+      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[],permissions:fresh.permissions,captura:fresh.captura||[]};
       onLoginSuccess();
       return;
     }
@@ -1470,7 +1381,7 @@ function doLogin(){
   );
 }
 function completeLogin(user){
-  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[],permissions:user.permissions};
+  currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[],permissions:user.permissions,captura:user.captura||[]};
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
@@ -1501,17 +1412,10 @@ const PERMISSIONS_TREE=[
   {key:'registro', label:'Registrar turno', children:[
     {key:'reg-tab-programa', label:'Programa del día'},
     {key:'reg-tab-historial', label:'Historial'},
-    {key:'reg-hora-captura', label:'Capturar hora×hora (acción, no es una pestaña)'},
   ]},
   {key:'aprovechamiento', label:'Aprovechamiento', children:[
     {key:'tab-tubular', label:'Tubular — Laser'},
     {key:'tab-aprov-hist', label:'Historial'},
-    {key:'aprov-captura', label:'Capturar registros de aprovechamiento (acción, no es una pestaña)'},
-  ]},
-  {key:'mantenimiento', label:'Mantenimiento', children:[
-    {key:'mant-registro', label:'Registrar'},
-    {key:'mant-historial', label:'Historial'},
-    {key:'mant-cumplimiento', label:'Cumplimiento'},
   ]},
   {key:'historial', label:'Historial OEE'},
   {key:'config', label:'Configuración', children:[
@@ -1519,6 +1423,7 @@ const PERMISSIONS_TREE=[
     {key:'cfg-tubulares', label:'Tipos de tubular'},
     {key:'cfg-usuarios', label:'Usuarios'},
     {key:'cfg-metas', label:'Metas por CT'},
+    {key:'cfg-checklist', label:'Checklist de arranque'},
   ]},
 ];
 const ALL_PERMISSION_KEYS=(()=>{ const ks=[]; PERMISSIONS_TREE.forEach(p=>{ ks.push(p.key); (p.children||[]).forEach(c=>ks.push(c.key)); }); return ks; })();
@@ -1530,29 +1435,33 @@ function defaultPermissions(role){
   ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=true; });
   if(role==='operador'){
     ALL_PERMISSION_KEYS.forEach(k=>{
-      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='reg-hora-captura'||k==='aprovechamiento'||k==='tab-tubular'||k==='tab-aprov-hist'||k==='aprov-captura');
+      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='aprovechamiento'||k==='tab-tubular'||k==='tab-aprov-hist'||k==='aprov-captura');
     });
   } else if(role==='lider'){
     perms['cfg-usuarios']=false; // administrar cuentas queda para Ingeniero, salvo que se habilite a mano
-    perms['reg-hora-captura']=false; // capturar hora×hora es del Operador, salvo que se habilite a mano
-    perms['aprov-captura']=false; // capturar aprovechamiento también es del Operador, salvo que se habilite a mano
   } else if(role==='ingeniero'){
-    perms['reg-hora-captura']=false; // ni Ingeniería lo tiene de inicio — también necesita habilitarse a mano
-    perms['aprov-captura']=false;
   }
   return perms;
 }
 // Helper corto para el resto del código: ¿la cuenta activa puede capturar
 // (escribir/guardar) piezas fabricadas/dañadas por franja horaria?
-function canCaptureHora(){
+// ── PERMISO DE CAPTURA ────────────────────────────────────────────────
+// Capturar registros (hora por hora, piezas del día, paros, aprovechamiento) es
+// del OPERADOR. A Líder o Ingeniería solo se les permite si se activa a mano en
+// Configuración → Usuarios → Accesos → "Permisos de captura" (u.captura). A
+// propósito NO depende de los permisos de menú guardados: así una cuenta vieja
+// (sin esa clave guardada) nunca queda autorizada por omisión.
+function hasCaptureGrant(kind){
   if(!currentUser) return false;
-  const perms=currentUser.permissions||defaultPermissions(currentUser.role);
-  return perms['reg-hora-captura']!==false;
+  if(currentUser.role==='operador') return true;
+  return Array.isArray(currentUser.captura) && currentUser.captura.includes(kind);
 }
-function canCaptureAprov(){
-  if(!currentUser) return false;
-  const perms=currentUser.permissions||defaultPermissions(currentUser.role);
-  return perms['aprov-captura']!==false;
+function canCaptureHora(){ return hasCaptureGrant('hora'); }
+function canCaptureDia(){ return hasCaptureGrant('dia'); }
+function canCaptureAprov(){ return hasCaptureGrant('aprov'); }
+// ¿Esta cuenta puede registrar en esta máquina? (hora por hora o cierre del día)
+function canRegisterMachine(machine){
+  return LASER_MAQUINAS_HORA.includes(machine) ? canCaptureHora() : canCaptureDia();
 }
 // Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
 // la mini-barra) las páginas sin acceso, y dentro de cada página, las
@@ -1676,7 +1585,7 @@ function applyAprovUI(){
     el.disabled=!canCapture;
     el.style.opacity=canCapture?'1':'.4';
     el.style.cursor=canCapture?'pointer':'not-allowed';
-    el.title=canCapture?'':'Tu cuenta no tiene permiso para capturar registros de aprovechamiento — lo asigna un Ingeniero desde Configuración → Usuarios.';
+    el.title=canCapture?'':'Tu cuenta no tiene permiso para capturar registros de aprovechamiento — se otorga en Configuración → Usuarios → Accesos → Permisos de captura.';
   });
   ['lam-merma','tub-merma'].forEach(id=>{
     const el=document.getElementById(id);
@@ -1707,8 +1616,8 @@ function applyOperatorRegistroUI(){
 
 // ── CHECKLIST DE ARRANQUE ──────────────────────────────
 // Las actividades del checklist son los componentes de mantenimiento de la
-// máquina cuyo responsable ("who") es el Operador, definidos en el módulo
-// Mantenimiento → Plan (MANT_DATA). No hay una lista genérica separada.
+// máquina cuyo responsable ("who") es el Operador, definidos en
+// Configuración → Checklist de arranque (MANT_DATA). No hay una lista genérica separada.
 function getOperatorComponents(ct,machine){
   const m=MANT_DATA[ct] && MANT_DATA[ct][machine];
   if(!m || !m.componentes) return [];
@@ -1746,8 +1655,12 @@ function renderChecklist(){
 
   if(!compItems.length){
     // Esta máquina no tiene componentes de mantenimiento a cargo del operador.
-    card.style.display=isOperador?'none':'';
-    if(!isOperador){
+    // La tarjeta se queda (ahí están los paros); solo se oculta el checklist del operador
+    card.style.display='';
+    const inner0=card.querySelector('.checklist-card-inner'), split0=card.querySelector('.checklist-split');
+    if(isOperador){ if(inner0) inner0.style.display='none'; split0?.classList.add('solo'); }
+    else {
+      if(inner0) inner0.style.display=''; split0?.classList.remove('solo');
       banner.innerHTML=`<div class="checklist-banner ok">${ic('target',13)} Esta máquina no tiene actividades de mantenimiento asignadas al operador.</div>`;
       itemsWrap.innerHTML='';
       actions.style.display='none';
@@ -1756,6 +1669,7 @@ function renderChecklist(){
     return;
   }
   card.style.display='';
+  { const inner1=card.querySelector('.checklist-card-inner'); if(inner1) inner1.style.display=''; card.querySelector('.checklist-split')?.classList.remove('solo'); }
   const rec=getChecklistRecord(ct,machine,turno,fecha);
 
   if(rec && rec.allChecked){
@@ -1765,7 +1679,7 @@ function renderChecklist(){
     itemsWrap.innerHTML=rec.items.map(it=>checklistItemRowHtml(it.label,it.freq,true,true)).join('');
     actions.style.display='none';
   } else if(isOperador){
-    banner.innerHTML=`<div class="checklist-banner warn">${ic('alertTriangle',13)} Complete el checklist de arranque (componentes a cargo del operador) para habilitar el registro de hora por hora y piezas programadas.</div>`;
+    banner.innerHTML=`<div class="checklist-banner warn">${ic('alertTriangle',13)} ${LASER_MAQUINAS_HORA.includes(machine)?'Complete el checklist de arranque (componentes a cargo del operador) para habilitar el registro de hora por hora y piezas programadas.':'Complete el checklist de arranque (componentes a cargo del operador).'}</div>`;
     itemsWrap.innerHTML=compItems.map((it,i)=>checklistItemRowHtml(it.label,it.freq,false,false,i)).join('');
     actions.style.display='flex';
   } else {
@@ -1812,25 +1726,32 @@ function saveChecklist(){
   if(msg){ msg.textContent='✓ Checklist confirmado'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',3000); }
 }
 // Aplica/quita el bloqueo visual de hora×hora y piezas programadas para Operador
+function setParosEnabled(can){
+  const why=can?'':'Tu cuenta no puede registrar paros: la captura es del Operador (o un permiso otorgado en Accesos).';
+  document.querySelectorAll('#paros-list input, #paros-list .btn-del, #paros-card .btn-add-row').forEach(el=>{ el.disabled=!can; el.title=why; });
+}
+function refreshParosEnabled(){ setParosEnabled(canRegisterMachine(document.getElementById('reg-machine')?.value)); }
 function applyOperatorGate(){
   const horaPanel=document.getElementById('reg-hora-panel');
   const piezasProg=document.getElementById('reg-programadas');
   const guardarBtn=document.getElementById('btn-guardar-turno');
-  if(!currentUser || currentUser.role!=='operador'){
-    if(horaPanel) horaPanel.classList.remove('locked');
-    if(piezasProg) piezasProg.disabled=false;
-    if(guardarBtn) guardarBtn.disabled=false;
-    return;
+  const machine=document.getElementById('reg-machine')?.value;
+  const can=canRegisterMachine(machine);                       // permiso de captura
+  let unlocked=true;                                           // candado del checklist (solo Operador)
+  const isOp=!!currentUser && currentUser.role==='operador';
+  if(isOp){
+    const ct=document.getElementById('reg-ct').value;
+    const turno=document.getElementById('reg-turno').value;
+    const fecha=document.getElementById('reg-fecha').value;
+    unlocked=isChecklistComplete(ct,machine,turno,fecha);
   }
-  const ct=document.getElementById('reg-ct').value;
-  const machine=document.getElementById('reg-machine').value;
-  const turno=document.getElementById('reg-turno').value;
-  const fecha=document.getElementById('reg-fecha').value;
-  const unlocked=isChecklistComplete(ct,machine,turno,fecha);
-  if(horaPanel) horaPanel.classList.toggle('locked', !unlocked);
-  if(piezasProg) piezasProg.disabled=!unlocked;
-  if(guardarBtn) guardarBtn.disabled=!unlocked;
+  const enabled=can && unlocked;
+  if(horaPanel) horaPanel.classList.toggle('locked', isOp && !unlocked);
+  if(piezasProg) piezasProg.disabled=!enabled;
+  if(guardarBtn) guardarBtn.disabled=!enabled;
+  setParosEnabled(can);
 }
+
 // Badge de cumplimiento de checklist (para vista de líderes/ingenieros en historial)
 function checklistBadgeHtml(ct,machine,turno,fecha){
   if(getOperatorComponents(ct,machine).length===0) return '';
@@ -1935,7 +1856,7 @@ function handleProgramaUpload(event){
     msg.style.color='var(--amber)';
     return;
   }
-  const fecha=document.getElementById('reg-fecha').value || new Date().toISOString().slice(0,10);
+  const fecha=document.getElementById('reg-fecha').value || todayStr();
   msg.textContent='Procesando archivo…'; msg.style.color='var(--text3)';
   const reader=new FileReader();
   reader.onload=(e)=>{
@@ -2310,7 +2231,7 @@ function renderUsersConfig(){
     return `
     <div style="padding:.6rem 0;border-bottom:0.5px solid var(--border)">
       <div style="display:grid;grid-template-columns:1fr 110px 1fr 100px 100px 90px 85px;gap:8px;align-items:center">
-        <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}</div></div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}${(u.role!=='operador'&&(u.captura||[]).length)?' <span title="Esta cuenta tiene permiso de captura" style="color:var(--amber)">· ⚠ captura habilitada</span>':''}</div></div>
         <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
           <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
           <option value="lider" ${u.role==='lider'?'selected':''}>Líder</option>
@@ -2334,6 +2255,13 @@ function renderUsersConfig(){
       <div id="perm-editor-${u.id}" style="display:none;padding:.6rem 0 0">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
           ${permissionsTreeHtml('edit-permchk-'+u.id, userPerms)}
+        </div>
+        <div style="margin-top:8px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px">Permisos de captura</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;line-height:1.5">Capturar registros es del <b>Operador</b>. A Líder o Ingeniería solo se les permite si lo activas aquí; por defecto ninguna cuenta que no sea de operador puede.</div>
+          ${u.role==='operador'
+            ? '<div style="font-size:11px;color:var(--green)">✓ Los operadores siempre pueden capturar.</div>'
+            : [['hora','Hora por hora (y sus paros)'],['dia','Piezas totales del día (y sus paros)'],['aprov','Aprovechamiento (láminas y tubulares)']].map(([k,l])=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer;padding:2px 0"><input type="checkbox" class="edit-capchk-${u.id}" value="${k}" ${(u.captura||[]).includes(k)?'checked':''} style="width:13px;height:13px;accent-color:var(--amber);cursor:pointer">${l}</label>`).join('')}
         </div>
         <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="saveUserPerms('${u.id}')">Guardar accesos</button>
       </div>
@@ -2367,17 +2295,19 @@ function saveUserPerms(id){
   const checked=new Set(Array.from(document.querySelectorAll('.edit-permchk-'+id+':checked')).map(el=>el.value));
   const perms={};
   ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=checked.has(k); });
-  changeUserPerms(id, perms);
+  const captura=Array.from(document.querySelectorAll('.edit-capchk-'+id+':checked')).map(el=>el.value);
+  changeUserPerms(id, perms, captura);
 }
-function changeUserPerms(id, perms){
+function changeUserPerms(id, perms, captura){
   const u=users.find(x=>x.id===id); if(!u) return;
   u.permissions=perms; u.updatedAt=new Date().toISOString();
+  if(Array.isArray(captura)) u.captura=(u.role==='operador')?[]:captura;
   localStorage.setItem(SK_USERS, JSON.stringify(users));
-  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(u.cts||[]), permissions:JSON.stringify(perms)});
+  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(u.cts||[]), permissions:JSON.stringify(perms), captura:JSON.stringify(u.captura||[])});
   renderUsersConfig();
   // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
   // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
-  if(currentUser && currentUser.id===id){ currentUser.permissions=perms; applyUserPermissionsUI(); }
+  if(currentUser && currentUser.id===id){ currentUser.permissions=perms; currentUser.captura=u.captura||[]; applyUserPermissionsUI(); try{ checkHoraPanel(); }catch(e){} }
 }
 function toggleUserCtEditor(id){
   const el=document.getElementById('ct-editor-'+id);
@@ -2392,7 +2322,7 @@ function changeUserCts(id, cts){
   const u=users.find(x=>x.id===id); if(!u) return;
   u.cts=cts; delete u.ct; u.updatedAt=new Date().toISOString();
   localStorage.setItem(SK_USERS, JSON.stringify(users));
-  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(cts)});
+  cloudUpsertRow('Usuarios', {...u, cts:JSON.stringify(cts), captura:JSON.stringify(u.captura||[])});
   renderUsersConfig();
   // Si es la cuenta con la que se tiene sesión iniciada ahora mismo,
   // aplicar el cambio de inmediato sin tener que volver a iniciar sesión.
@@ -2420,13 +2350,13 @@ function addUser(){
   const msg=document.getElementById('add-user-msg');
   if(!name||!username||!password){ msg.textContent='Completa todos los campos.'; msg.style.color='var(--amber)'; return; }
   if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())){ msg.textContent='Ese nombre de usuario ya existe.'; msg.style.color='var(--amber)'; return; }
-  const newUser={id:'u'+Date.now(), name, username, password, role, cts, permissions, active:true, updatedAt:new Date().toISOString()};
+  const newUser={id:'u'+Date.now(), name, username, password, role, cts, permissions, captura:[], active:true, updatedAt:new Date().toISOString()};
   users.push(newUser);
   localStorage.setItem(SK_USERS, JSON.stringify(users));
   // Se agrega/actualiza SOLO esta cuenta en la nube — nunca se reescribe la
   // hoja completa, así jamás se puede borrar otra cuenta por accidente al
   // agregar o editar esta.
-  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions)});
+  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions), captura:JSON.stringify([])});
   document.getElementById('new-user-name').value='';
   document.getElementById('new-user-username').value='';
   document.getElementById('new-user-password').value='';
@@ -2438,8 +2368,10 @@ function addUser(){
 function changeUserRole(id,role){
   const u=users.find(x=>x.id===id); if(!u) return;
   u.role=role; u.updatedAt=new Date().toISOString();
+  if(role==='operador') u.captura=[];   // el Operador captura siempre; no necesita permisos extra
   localStorage.setItem(SK_USERS, JSON.stringify(users));
-  cloudUpsertRow('Usuarios', u);
+  cloudUpsertRow('Usuarios', {...u, captura:JSON.stringify(u.captura||[])});
+  if(currentUser && currentUser.id===id){ currentUser.role=role; currentUser.captura=u.captura||[]; }
   renderUsersConfig();
 }
 function changeUserPassword(id,pw){
@@ -2498,7 +2430,10 @@ function dashCTVisible(ct){
 }
 
 // ── Fecha de hoy (para filtros "día en curso") ──
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+// Fecha de HOY en hora LOCAL (YYYY-MM-DD). Antes se calculaba en UTC: en México, después
+// de las 6 p.m., la plataforma creía que ya era el día siguiente y los registros de la
+// tarde-noche (segundo turno, tiempo extra) quedaban con la fecha de mañana.
+function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 // ── HELPERS ──
 function oeeColor(v){return v>=85?'#3ecf8e':v>=60?'#f5a623':'#f06060';}
@@ -2539,6 +2474,35 @@ function pct(v){const n=Number(v);return isNaN(n)?0:parseFloat(n.toFixed(1));}
 function fmtN(v,d=2){const n=Number(v);return isNaN(n)?0:parseFloat(n.toFixed(d));}
 function getMachinesByCT(ct){return machines.filter(m=>m.ct===ct);}
 function getMachineByName(n){return machines.find(m=>m.name===n);}
+// ── MODO DE CAPTURA POR MÁQUINA ───────────────────────────────────────
+// 'hora' = registro hora por hora · 'dia' = solo piezas totales al final del día.
+//  • LASER: sin cambios (todas hora por hora).
+//  • TROQUELES: hora por hora solo en Laser de Cama, Newton 1, Newton 2 y la
+//    Dobladora G-Weike; el resto captura únicamente el total del día.
+//  • ESTRUCTURA (muebles, sillas, mamparas): solo el total del día.
+// Desde Configuración se puede cambiar una máquina (queda en m.modo).
+function normName(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+const TROQUELES_HORA_RE=/^(laser de cama|newton 1|newton 2)$|dobladora|weike|gwk/;
+function machineUsesHora(m){
+  if(!m) return false;
+  if(m.modo==='hora') return true;
+  if(m.modo==='dia') return false;
+  if(m.ct==='LASER') return true;
+  if(m.ct==='TROQUELES') return TROQUELES_HORA_RE.test(normName(m.name));
+  return false;
+}
+function rebuildHoraList(){
+  LASER_MAQUINAS_HORA.length=0;
+  machines.forEach(m=>{ if(machineUsesHora(m) && !LASER_MAQUINAS_HORA.includes(m.name)) LASER_MAQUINAS_HORA.push(m.name); });
+}
+// La Dobladora G-Weike y la Soldadora Láser se agregan solas si el equipo
+// todavía no las tiene (si alguien las elimina, la lápida evita que vuelvan).
+function ensureSeedMachines(){
+  const has=re=>machines.some(m=>re.test(normName(m.name)));
+  if(!has(/dobladora|weike|gwk/)) machines.push({id:'m16',name:'Dobladora G-Weike',ct:'TROQUELES',cap:1000,photo:''});
+  if(!has(/soldadora.*laser/)) machines.push({id:'m17',name:'Soldadora Láser',ct:'EST. MUEBLES',cap:500,photo:''});
+}
+
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
 function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t);}
 // ── CLOUD JSONP ──
@@ -2670,6 +2634,7 @@ function fastRefreshToday(){
   const todaySheets=[
     {name:'OEE_Registros', assign:(d)=>{ records=mergeRecordsById(records,d); }},
     {name:'Maquinas_Config', assign:(d)=>applyMachineRoster(d)},
+    {name:'Cierre_Dia', assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
     ...ALL_CTS.map(ct=>({
       name: ctSheet(ct),
       assign:(d)=>{
@@ -2765,21 +2730,17 @@ function loadLocal(){
       if(hadObsolete) localStorage.setItem(SK.machines,JSON.stringify(machines));
     } else { machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
   }catch(e){ machines=JSON.parse(JSON.stringify(DEFAULT_MACHINES)); }
+  ensureSeedMachines();
   machines=machines.filter(m=>!machineTombs.includes(m.id));
   try{records=JSON.parse(localStorage.getItem(SK.records))||[];}catch(e){records=[];}
   try{const l=localStorage.getItem(SK.laminas);laminas=l?JSON.parse(l):JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}catch(e){laminas=JSON.parse(JSON.stringify(DEFAULT_LAMINAS));}
   try{const t=localStorage.getItem(SK.tubulares);tubulares=t?JSON.parse(t):JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}catch(e){tubulares=JSON.parse(JSON.stringify(DEFAULT_TUBULARES));}
   try{aprovRecords=JSON.parse(localStorage.getItem(SK.aprovRecords))||[];}catch(e){aprovRecords=[];}
   try{mermaSemanalRecs=JSON.parse(localStorage.getItem(SK.mermaSemanalRecs))||[];}catch(e){mermaSemanalRecs=[];}
-  try{mantLogs=JSON.parse(localStorage.getItem(SK.mantLogs))||[];}catch(e){mantLogs=[];}
   try{horaRecords=JSON.parse(localStorage.getItem('oee_hora_laser_v1'))||[];}catch(e){horaRecords=[];}
-  // Restore horaHora machines from saved config
-  machines.forEach(m=>{
-    if(m.horaHora && !LASER_MAQUINAS_HORA.includes(m.name)){
-      LASER_MAQUINAS_HORA.push(m.name);
-    }
-  });
-  try{const saved=localStorage.getItem(SK.mantPlan);if(saved){const custom=JSON.parse(saved);Object.keys(custom).forEach(ct=>{Object.keys(custom[ct]).forEach(mach=>{if(MANT_DATA[ct]&&MANT_DATA[ct][mach])MANT_DATA[ct][mach].componentes=custom[ct][mach];});});}}catch(e){}
+  loadDiaLocal();
+  rebuildHoraList();
+  try{const saved=localStorage.getItem(SK.mantPlan);if(saved){const custom=JSON.parse(saved);const rows=[];Object.keys(custom).forEach(ct=>{Object.keys(custom[ct]).forEach(mach=>{rows.push({ct,mach,componentes:custom[ct][mach]});});});applyMantPlanRows(rows);}}catch(e){}
   try{
     const savedTargets=localStorage.getItem(SK.ctTargets);
     ctTargets=savedTargets?JSON.parse(savedTargets):{};
@@ -2878,6 +2839,112 @@ function mergeRecordsById(existing, incoming){
   return Object.values(byId);
 }
 
+// ── CIERRE DEL DÍA: PIEZAS TOTALES (máquinas sin hora por hora) ───────
+// Un solo registro por máquina y día, que se captura al terminar el día.
+let diaRecords=[];
+const SK_DIA='oee_dia_v1';
+let _diaPending=null, _diaTimer=null, _diaShown=null;
+function loadDiaLocal(){ try{ diaRecords=JSON.parse(localStorage.getItem(SK_DIA))||[]; }catch(e){ diaRecords=[]; } }
+function saveDiaLocal(){ try{ localStorage.setItem(SK_DIA,JSON.stringify(diaRecords)); }catch(e){} }
+// El id ignora acentos y espacios ('Área General' → areageneral)
+function diaId(ct,machine,fecha){ return 'dia_'+String(ct).replace(/[^A-Za-z0-9]/g,'')+'_'+normName(machine).replace(/[^a-z0-9]/g,'')+'_'+fecha; }
+// Se busca por centro + máquina + fecha (no por id), así un registro que llegue
+// con otro formato de id sigue encontrándose y no se duplica.
+function getDiaRecord(ct,machine,fecha){ return diaRecords.find(r=>r.ct===ct && r.machine===machine && r.fecha===fecha); }
+function getCTDiaToday(ct){
+  const today=todayStr();
+  return diaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine) && !LASER_MAQUINAS_HORA.includes(r.machine));
+}
+function diaHasPiezas(r){ return !!r && r.piezas!=null && r.piezas!=='' && !isNaN(Number(r.piezas)); }
+function normalizeDiaRow(r){
+  const p=(r.piezas===''||r.piezas==null)?null:parseFloat(r.piezas);
+  return {...r,piezas:(p==null||isNaN(p))?null:Math.max(0,p),parosNoProg:Math.max(0,parseFloat(r.parosNoProg)||0)};
+}
+function diaMsg(txt,color){ const m=document.getElementById('dia-save-msg'); if(!m) return; m.textContent=txt; m.style.color=color||'var(--green)'; if(txt) setTimeout(()=>{ if(m.textContent===txt) m.textContent=''; },3500); }
+// Mientras se escribe (piezas o paros), se recuerda el contexto (máquina/fecha) Y
+// los valores del MOMENTO en que se tecleó: así, si se cambia de máquina o de
+// menú antes de que corra el guardado, todo se guarda en la máquina correcta.
+function onDiaInput(){
+  if(!canCaptureDia()) return;
+  _diaPending={ct:document.getElementById('reg-ct').value,machine:document.getElementById('reg-machine').value,fecha:document.getElementById('reg-fecha').value,
+               value:document.getElementById('dia-piezas')?.value??'',paros:getParos()};
+  clearTimeout(_diaTimer); _diaTimer=setTimeout(flushDiaSave,1500);
+}
+function flushDiaSave(){
+  clearTimeout(_diaTimer);
+  if(!_diaPending) return;
+  const p=_diaPending; _diaPending=null;
+  commitDiaTotal(p.ct,p.machine,p.fecha,p.value,false,p.paros);
+}
+function commitDiaTotal(ct,machine,fecha,raw,explicit,parosArg){
+  if(!canCaptureDia() || !ct || !machine || !fecha) return false;
+  const prev=getDiaRecord(ct,machine,fecha);
+  const txt=String(raw==null?'':raw).trim();
+  const paros=Array.isArray(parosArg)?parosArg:(prev?safeParse(prev.paros,[]):[]);
+  let piezas=diaHasPiezas(prev)?Number(prev.piezas):null;
+  if(txt!=='') piezas=Math.max(0,Math.round(parseFloat(txt)||0));
+  // No se crea un registro vacío: debe haber el total o al menos un paro
+  if(!prev && piezas==null && !paros.length) return false;
+  const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
+  if(prev && !explicit){
+    const samePiezas=(diaHasPiezas(prev)?Number(prev.piezas):null)===piezas;
+    const sameParos=JSON.stringify(safeParse(prev.paros,[]))===JSON.stringify(paros);
+    if(samePiezas && sameParos) return true;
+  }
+  const id=prev?prev.id:diaId(ct,machine,fecha);
+  const rec={id,ct,machine,fecha,piezas,paros:JSON.stringify(paros),parosNoProg,op:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
+  if(prev) diaRecords[diaRecords.indexOf(prev)]=rec; else diaRecords.push(rec);
+  saveDiaLocal();
+  cloudUpsertRow('Cierre_Dia',{...rec,piezas:piezas==null?'':piezas});   // upsert: un solo registro por máquina y día
+  try{ renderDiaCard(); }catch(e){}
+  try{ renderDashboard(); }catch(e){}
+  return true;
+}
+function saveDiaTotal(){
+  if(!canCaptureDia()) return;
+  const ct=document.getElementById('reg-ct').value, machine=document.getElementById('reg-machine').value, fecha=document.getElementById('reg-fecha').value;
+  const v=document.getElementById('dia-piezas').value;
+  const paros=getParos();
+  if(String(v).trim()==='' && !paros.length){ diaMsg('⚠ Escribe el total de piezas del día (o un paro)','var(--amber)'); return; }
+  _diaPending=null; clearTimeout(_diaTimer);
+  if(commitDiaTotal(ct,machine,fecha,v,true,paros)) diaMsg('✓ Guardado');
+}
+function renderDiaCard(){
+  const card=document.getElementById('reg-dia-card'); if(!card||!currentUser) return;
+  const ct=document.getElementById('reg-ct').value, machine=document.getElementById('reg-machine').value, fecha=document.getElementById('reg-fecha').value;
+  document.getElementById('reg-dia-maquina').textContent=machine?'— '+machine:'';
+  const inp=document.getElementById('dia-piezas'), btn=document.getElementById('btn-guardar-dia');
+  const rec=getDiaRecord(ct,machine,fecha);
+  // Si cambió la máquina/fecha mostrada, el campo SIEMPRE se refresca (aunque el
+  // cursor siga dentro) — así nunca se ve (ni se guarda) el valor de otra máquina.
+  const shown=_diaShown;
+  const ctxChanged=!shown || shown.ct!==ct || shown.machine!==machine || shown.fecha!==fecha;
+  _diaShown={ct,machine,fecha};
+  const typing=!ctxChanged && _diaPending && _diaPending.machine===machine && _diaPending.fecha===fecha;
+  if(ctxChanged || (!typing && document.activeElement!==inp)) inp.value=diaHasPiezas(rec)?rec.piezas:'';
+  const canCap=canCaptureDia();
+  inp.disabled=!canCap; btn.disabled=!canCap;
+  const why=canCap?'':'Tu cuenta no puede registrar: la captura es del Operador (o un permiso otorgado en Configuración → Usuarios → Accesos).';
+  inp.title=why; btn.title=why; btn.style.opacity=canCap?'1':'.45';
+  const est=document.getElementById('dia-estado');
+  if(est){
+    const t=rec?new Date(rec.updatedAt):null; const hhmm=(t&&!isNaN(t))?t.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
+    if(diaHasPiezas(rec)) est.innerHTML=`<span style="color:var(--green);font-weight:600">✓ Registrado</span> <span style="color:var(--text3);font-size:11px">${hhmm}${rec.op?' · '+rec.op:''}</span>`;
+    else if(rec) est.innerHTML='<span style="color:var(--amber);font-weight:600">⏳ Falta el total de piezas</span> <span style="color:var(--text3);font-size:11px">(ya hay paros)</span>';
+    else est.innerHTML='<span style="color:var(--amber);font-weight:600">⏳ Pendiente</span>';
+  }
+  // Últimos días de esta máquina (clic para ver/corregir ese día)
+  const hist=document.getElementById('dia-hist');
+  if(hist){
+    const last=diaRecords.filter(r=>r.ct===ct&&r.machine===machine).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).slice(0,7);
+    hist.innerHTML=last.length?`<div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">Últimos días de esta máquina</div>`+last.map(r=>`<div onclick="document.getElementById('reg-fecha').value='${r.fecha}';onFechaChange()" title="Ver o corregir este día" style="display:flex;gap:14px;align-items:center;padding:5px 8px;border-bottom:0.5px solid var(--border);font-size:12px;cursor:pointer;${r.fecha===fecha?'background:var(--bg3)':''}"><span style="width:84px">${dayLabel(r.fecha)}</span><b style="font-family:'IBM Plex Mono',monospace;width:90px">${diaHasPiezas(r)?r.piezas+' pzas':'sin total'}</b><span style="color:var(--amber);width:80px">${(Number(r.parosNoProg)||0)>0?r.parosNoProg+' min paros':''}</span><span style="color:var(--text3)">${r.op||''}</span></div>`).join(''):'';
+  }
+}
+function onFechaChange(){ flushLiveSyncNow(); updateInfoBox(); checkHoraPanel(); }
+// Respaldo: si se cierra o recarga la página con algo sin guardar
+window.addEventListener('pagehide',()=>{ try{ flushDiaSave(); }catch(e){} });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ flushDiaSave(); }catch(e){} } });
+
 // ── PLANTILLA DE MÁQUINAS COMPARTIDA ENTRE DISPOSITIVOS ──────────────
 // Antes, agregar/eliminar una máquina solo afectaba al navegador donde se
 // hacía (la lista vivía únicamente en localStorage). Por eso una máquina
@@ -2896,7 +2963,7 @@ function machineInRoster(name){ if(!machines.length) return true; return machine
 function machineCloudRow(m,deleted){
   return {id:m.id, name:m.name, ct:m.ct, cap:m.cap||0,
     photo:(m.photo && !String(m.photo).startsWith('data:'))?m.photo:'',
-    horaHora:!!(m.horaHora||LASER_MAQUINAS_HORA.includes(m.name)),
+    horaHora:machineUsesHora(m), modo:m.modo||'',
     deleted:!!deleted, updatedAt:new Date().toISOString()};
 }
 function syncMachineToCloud(m,deleted){
@@ -2925,18 +2992,18 @@ function applyMachineRoster(rows){
     const local=machines.find(m=>m.id===r.id);
     if(!local){
       if(!r.name || !r.ct) return;
-      machines.push({id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:r.photo||'',horaHora:hora,updatedAt:r.updatedAt});
+      machines.push({id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:r.photo||'',modo:(r.modo==='hora'||r.modo==='dia')?r.modo:undefined,updatedAt:r.updatedAt});
       changed=true;
     } else if((r.updatedAt||'')>(local.updatedAt||'')){
       local.name=r.name||local.name; local.ct=r.ct||local.ct; local.cap=parseInt(r.cap)||local.cap;
-      local.horaHora=hora||local.horaHora;
+      if(r.modo==='hora'||r.modo==='dia') local.modo=r.modo;
       if(r.photo) local.photo=r.photo;
       local.updatedAt=r.updatedAt; changed=true;
     }
   });
   if(!changed) return;
   saveMachineTombs(); save('machines');
-  machines.forEach(m=>{ if(m.horaHora && !LASER_MAQUINAS_HORA.includes(m.name)) LASER_MAQUINAS_HORA.push(m.name); });
+  rebuildHoraList();
   try{ renderConfig(); }catch(e){}
   try{ updateFilterSelects(); }catch(e){}
   try{ populateTubMachines(); }catch(e){}
@@ -3014,15 +3081,15 @@ function normalizeAprovRow(r){
 }
 function loadFromCloud(){
   const isOperador=currentUser && currentUser.role==='operador';
-  // Aprovechamiento y Mantenimiento se omiten del sync solo si la cuenta
+  // Aprovechamiento se omite del sync solo si la cuenta
   // realmente no tiene acceso a esos menús (según sus permisos
   // personalizados) — ya no se asume por el rol, porque ahora Operador
   // también puede tener acceso a Aprovechamiento.
   const perms=currentUser?(currentUser.permissions||defaultPermissions(currentUser.role)):{};
   const canSeeAprov=perms['aprovechamiento']!==false;
-  const canSeeMant=perms['mantenimiento']!==false;
   const sheets=[
     {name:'Maquinas_Config',   assign:(d)=>applyMachineRoster(d)},
+    {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
     ...(canSeeAprov ? [
       {name:'Aprovechamiento', assign:(d)=>{
@@ -3037,9 +3104,12 @@ function loadFromCloud(){
         mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,norm); save('mermaSemanalRecs');
       }},
     ] : []),
-    ...(canSeeMant ? [
-      {name:'Mantenimiento',   assign:(d)=>{ mantLogs=mergeRecordsById(mantLogs,d); save('mantLogs'); }},
-    ] : []),
+    // Actividades del checklist de arranque por máquina (las edita Ingeniería /
+    // Líder en Configuración; todos los dispositivos las reciben).
+    {name:'Mant_Plan', assign:(d)=>{
+      applyMantPlanRows((d||[]).map(r=>({ct:r&&r.ct,mach:r&&r.mach,componentes:safeParse(r&&r.componentes_json,null)})));
+      persistMantPlanLocal();
+    }},
     ...ALL_CTS.map(ct=>({
       name: ctSheet(ct),
       assign:(d)=>{
@@ -3188,7 +3258,7 @@ function refreshRegistroAfterCloud(){
   const ae=document.activeElement;
   if(ae && ['INPUT','SELECT','TEXTAREA'].includes(ae.tagName) && document.getElementById('page-registro')?.contains(ae)) return;
   const touched=Array.from(document.querySelectorAll('#hora-franjas-list input')).some(i=>i.value!=='')
-    || document.querySelectorAll('#paros-list .paro-row').length>0;
+    || document.querySelectorAll('#paros-list .paro-row').length>0 || !!_diaPending;
   if(touched) return;
   checkHoraPanel();
   loadParosForContext();
@@ -3242,7 +3312,12 @@ function getCTHoraGrandTotal(ct){
   todays.forEach(r=>{
     if(!lastByMachine[r.machine]||isNewerRecord(r,lastByMachine[r.machine])) lastByMachine[r.machine]=r;
   });
-  return Object.values(lastByMachine).reduce((s,r)=>s+(r.totalFabricadas||0),0);
+  if(ct==='LASER') return Object.values(lastByMachine).reduce((s,r)=>s+(r.totalFabricadas||0),0);   // Laser: sin cambios
+  // Troqueles / Estructura: todos los turnos de las máquinas con hora por hora
+  // + el total de las máquinas que cierran el día
+  const horaTot=todays.filter(r=>LASER_MAQUINAS_HORA.includes(r.machine)).reduce((s,r)=>s+(Number(r.totalFabricadas)||0),0);
+  const diaTot=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.piezas)||0),0);
+  return horaTot+diaTot;
 }
 function renderDashboard(){
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
@@ -3256,11 +3331,13 @@ function renderDashboard(){
   // ── TARJETA ÚNICA DEL CT SELECCIONADO (datos de hoy) ──────
   const ctCardsEl=document.getElementById('ct-cards');
   if(ctCardsEl){
-    const ctRecs=Object.values(last).filter(r=>r.ct===ct);
+    const ctRecs=Object.values(last).filter(r=>r.ct===ct && (ct==='LASER'||LASER_MAQUINAS_HORA.includes(r.machine)));
     const ctOEEs=ctRecs.map(r=>r.oee);
     const ctAvg=ctOEEs.length?pct(ctOEEs.reduce((a,b)=>a+b,0)/ctOEEs.length):null;
-    const ctCosto=ctRecs.reduce((s,r)=>{const ch=COSTO_HORA_CT[ct]||0;return s+((r.parosNoProg||0)/60)*ch;},0);
-    const ctParos=ctRecs.reduce((s,r)=>s+(r.parosNoProg||0),0);
+    // Los paros de las máquinas de cierre del día también cuentan en el CT
+    const diaParos=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.parosNoProg)||0),0);
+    const ctCosto=ctRecs.reduce((s,r)=>{const ch=COSTO_HORA_CT[ct]||0;return s+((r.parosNoProg||0)/60)*ch;},0)+(diaParos/60)*(COSTO_HORA_CT[ct]||0);
+    const ctParos=ctRecs.reduce((s,r)=>s+(r.parosNoProg||0),0)+diaParos;
     const ctCumpl=ctRecs.filter(r=>r.cumpl!=null);
     const avgCumpl=ctCumpl.length?pct(ctCumpl.reduce((a,r)=>a+(r.cumpl||0),0)/ctCumpl.length):null;
     const color=ctAvg===null?'var(--text3)':oeeColor(ctAvg);
@@ -3282,7 +3359,7 @@ function renderDashboard(){
           <div class="ct-card-icon ${cls}">${ic(cls,17)}</div>
           <div class="ct-card-header-text">
             <span class="ct-badge ${cls}">${ctLabel(ct).toUpperCase()}</span>
-            <span style="font-size:10px;color:var(--text3)">${ctRecs.length} máq. con registro hoy</span>
+            <span style="font-size:10px;color:var(--text3)">${ctRecs.length+getCTDiaToday(ct).length} máq. con registro hoy</span>
           </div>
         </div>
         <div class="ct-card-body">
@@ -3369,6 +3446,10 @@ function renderDashboard(){
     tb.innerHTML=ctM.map(m=>{
       const rec=last[ct+'|'+m.name];
       const photo=m.photo?`<img src="${m.photo}" style="width:100px;height:100px;border-radius:8px;object-fit:cover;border:1px solid var(--border)">`:`<div style="width:100px;height:100px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>`;
+      if(!LASER_MAQUINAS_HORA.includes(m.name)){
+        const d=getDiaRecord(ct,m.name,todayStr());
+        return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="8" style="font-size:12px">${diaHasPiezas(d)?`<span style="color:var(--text3)">Cierre del día:</span> <b style="font-family:'IBM Plex Mono',monospace;font-size:14px">${d.piezas}</b> <span style="color:var(--text3)">piezas${d.op?' · '+d.op:''}</span>`:'<span style="color:var(--amber)">Cierre del día — pendiente de captura</span>'}${(d&&Number(d.parosNoProg)>0)?` <span style="color:var(--amber)">· ${d.parosNoProg} min de paros</span>`:''}</td></tr>`;
+      }
       if(!rec)return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="8" style="color:var(--text3);font-size:12px">Sin registros hoy</td></tr>`;
       const cumplCell=rec.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(rec.cumpl)}">${rec.cumpl}%</span>`:'–';
       const costoHora=COSTO_HORA_CT[ct]||0;
@@ -3392,7 +3473,7 @@ function renderDashboard(){
   // eliminó una máquina, no debe seguir apareciendo aquí solo porque
   // tenga un registro viejo de hoy en la nube.
   const currentMachineNames=new Set(getMachinesByCT(ct).map(m=>m.name));
-  const ctMachines=Object.keys(last).filter(k=>k.split('|')[0]===ct && currentMachineNames.has(k.split('|')[1]));
+  const ctMachines=Object.keys(last).filter(k=>k.split('|')[0]===ct && currentMachineNames.has(k.split('|')[1]) && LASER_MAQUINAS_HORA.includes(k.split('|')[1]));
   const labels=ctMachines.map(k=>k.split('|')[1]);
   const data=ctMachines.map(k=>last[k].oee);
   const color=ct==='TROQUELES'?'#4a9eff':ct==='LASER'?'#3ecf8e':'#f5a623';
@@ -3437,9 +3518,75 @@ const FRANJA_DISPLAY={
 };
 const FRANJA_ORDER=Object.keys(FRANJA_DISPLAY);
 
+// Resumen de lo que se captura hoy en un CT (Troqueles / Estructura): por
+// máquina, piezas de hoy, ayer y de la semana, y si ya se registró.
+function machineDayInfo(ct,m,iso){
+  if(LASER_MAQUINAS_HORA.includes(m.name)){
+    const rs=horaRecords.filter(r=>r.ct===ct&&r.machine===m.name&&r.fecha===iso);
+    const piezas=rs.reduce((s,r)=>s+(Number(r.totalFabricadas)||0),0), rechazo=rs.reduce((s,r)=>s+(Number(r.totalDanadas)||0),0);
+    const parosMin=records.filter(r=>r.ct===ct&&r.machine===m.name&&r.fecha===iso).reduce((s,r)=>s+(Number(r.parosNoProg)||0),0);
+    // "En captura" solo si ya hay piezas (un registro en cero no cuenta como captura)
+    return {piezas,rechazo,parosMin,has:(piezas>0||rechazo>0),updated:rs.map(r=>r.updatedAt||'').sort().pop()||'',op:(rs[rs.length-1]||{}).op||''};
+  }
+  const d=getDiaRecord(ct,m.name,iso);
+  return {piezas:diaHasPiezas(d)?Number(d.piezas):0,rechazo:0,parosMin:d?(Number(d.parosNoProg)||0):0,has:diaHasPiezas(d),updated:d?d.updatedAt:'',op:d?d.op:''};
+}
+function machineRangeTotal(ct,m,fromIso,toIso){
+  const src=LASER_MAQUINAS_HORA.includes(m.name)?horaRecords:diaRecords;
+  const key=LASER_MAQUINAS_HORA.includes(m.name)?'totalFabricadas':'piezas';
+  return src.filter(r=>r.ct===ct&&r.machine===m.name&&r.fecha>=fromIso&&r.fecha<=toIso).reduce((s,r)=>s+(Number(r[key])||0),0);
+}
+function renderDashResumenPanel(ct){
+  const panel=document.getElementById('dash-hora-panel'); if(!panel) return;
+  const today=todayStr(), ayer=isoAddDays(today,-1), semIni=getWeekRange(today).start;
+  const ms=getMachinesByCT(ct);
+  if(!ms.length){ panel.innerHTML='<div class="empty-state" style="padding:1.5rem 0">Este centro de trabajo no tiene máquinas.</div>'; return; }
+  const hhmm=iso=>{ const t=new Date(iso); return (!iso||isNaN(t))?'':t.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); };
+  const mono="font-family:'IBM Plex Mono',monospace";
+  let totHoy=0,totAyer=0,totSem=0,totParos=0,capturadas=0;
+  const rows=ms.map(m=>{
+    const hora=LASER_MAQUINAS_HORA.includes(m.name);
+    const hoy=machineDayInfo(ct,m,today);
+    const ay=machineRangeTotal(ct,m,ayer,ayer), sem=machineRangeTotal(ct,m,semIni,today);
+    totHoy+=hoy.piezas; totAyer+=ay; totSem+=sem; totParos+=hoy.parosMin; if(hoy.has) capturadas++;
+    const badge=hora
+      ?'<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff;white-space:nowrap">Hora × hora</span>'
+      :'<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(245,166,35,.12);color:var(--amber);white-space:nowrap">Cierre del día</span>';
+    const estado=hoy.has
+      ?`<span style="color:var(--green);font-weight:600">✓ ${hora?'En captura':'Registrado'}</span> <span style="color:var(--text3);font-size:11px">${hhmm(hoy.updated)}${(!hora&&hoy.op)?' · '+hoy.op:''}</span>`
+      :`<span style="color:${hora?'var(--text3)':'var(--amber)'}">${hora?'Sin captura':'⏳ Pendiente'}</span>`;
+    return `<tr><td><strong>${m.name}</strong></td><td>${badge}</td>
+      <td style="text-align:right;${mono};font-weight:700;font-size:14px;color:${hoy.has?'var(--text)':'var(--text3)'}">${hoy.has?hoy.piezas:'–'}${hoy.rechazo>0?`<div style="font-size:10px;font-weight:400;color:#f06060">${hoy.rechazo} rech.</div>`:''}</td>
+      <td style="text-align:right;${mono};color:var(--text2)">${ay||'–'}</td>
+      <td style="text-align:right;${mono};color:var(--text2)">${sem||'–'}</td>
+      <td style="text-align:right;${mono};color:${hoy.parosMin>0?'var(--amber)':'var(--text3)'}">${hoy.parosMin>0?hoy.parosMin+' min':'–'}</td>
+      <td>${estado}</td></tr>`;
+  }).join('');
+  const pend=ms.length-capturadas;
+  const chip=(label,val,col)=>`<div style="background:var(--bg3);border-radius:var(--radius);padding:8px 14px;min-width:130px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${label}</div><div style="${mono};font-size:20px;font-weight:700;color:${col||'var(--text)'}">${val}</div></div>`;
+  panel.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.9rem">
+      ${chip('Piezas totales hoy',totHoy)}
+      ${chip('Máquinas con captura',capturadas+' / '+ms.length,capturadas===ms.length?'var(--green)':'var(--text)')}
+      ${chip('Pendientes',pend,pend>0?'var(--amber)':'var(--green)')}
+    </div>
+    <div class="programa-table-wrap" style="max-height:420px">
+      <table class="programa-table">
+        <thead><tr><th>Máquina</th><th>Captura</th><th style="text-align:right">Hoy</th><th style="text-align:right">Ayer</th><th style="text-align:right">Semana</th><th style="text-align:right">Paros hoy</th><th>Estado</th></tr></thead>
+        <tbody>${rows}<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td><td></td><td style="text-align:right;${mono}">${totHoy}</td><td style="text-align:right;${mono}">${totAyer}</td><td style="text-align:right;${mono}">${totSem}</td><td style="text-align:right;${mono};color:${totParos>0?'var(--amber)':'var(--text3)'}">${totParos>0?totParos+' min':'–'}</td><td></td></tr></tbody>
+      </table>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">Las máquinas con <b>cierre del día</b> registran su total de piezas al terminar el día; las de <b>hora × hora</b> se actualizan durante el turno. "Semana" suma de lunes a hoy.</div>`;
+}
 function renderDashHoraPanel(ct){
   const panel=document.getElementById('dash-hora-panel');
   if(!panel) return;
+  const titleEl=document.getElementById('dash-hora-title');
+  if(titleEl){
+    if(!titleEl.dataset.svg) titleEl.dataset.svg=(titleEl.querySelector('svg')||{outerHTML:''}).outerHTML;
+    titleEl.innerHTML=titleEl.dataset.svg+(ct==='LASER'?'Producción hora × hora — hoy':'Resumen de producción del día');
+  }
+  // Laser conserva su tabla hora por hora; Troqueles y Estructura muestran el resumen
+  if(ct!=='LASER'){ renderDashResumenPanel(ct); return; }
   const today=todayStr();
   const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine));
 
@@ -3536,15 +3683,6 @@ function restoreOrDefaultMachineSelection(){
 function checkHoraPanel(){
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
-  // Cualquier máquina que se seleccione en Registro queda habilitada para
-  // hora×hora automáticamente — ya no hace falta entrar primero a
-  // Configuración a marcarla a mano. Si ya estaba habilitada, esto no
-  // cambia nada. Así, en cuanto se capture algo, aparece en tiempo real
-  // en el Dashboard (tabla de hora×hora y gráfica de OEE por máquina).
-  if(machine && !LASER_MAQUINAS_HORA.includes(machine)){
-    const m=getMachineByName(machine);
-    if(m) toggleHoraHora(m.id, m.name, true, true);
-  }
   // Force turno único for Newton/Muebles machines
   let turno=document.getElementById('reg-turno').value;
   if(MAQUINAS_TURNO_UNICO&&MAQUINAS_TURNO_UNICO.includes(machine)){
@@ -3553,8 +3691,15 @@ function checkHoraPanel(){
     if(turnoSel) turnoSel.value=turno;
   }
   const isLaserHora=LASER_MAQUINAS_HORA.includes(machine);
+  // Máquinas sin hora por hora: solo se captura el total de piezas del día
+  const isDia=!isLaserHora && !!getMachineByName(machine);
   const horaPanel=document.getElementById('reg-hora-panel');
   if(horaPanel) horaPanel.style.display=isLaserHora?'':'none';
+  const showEl=(id,show)=>{ const el=document.getElementById(id); if(el) el.style.display=show?'':'none'; };
+  showEl('reg-dia-card',isDia);
+  showEl('reg-produccion-card',!isDia);
+  showEl('reg-guardar-card',!isDia);
+  if(isDia) renderDiaCard();
   if(isLaserHora) renderHoraFranjas(machine,turno);
   // Show/hide dibujo panel
   const dibujoPanel=document.getElementById('dibujo-panel');
@@ -3605,20 +3750,26 @@ function loadParosForContext(){
   const fecha=document.getElementById('reg-fecha')?.value;
   list.innerHTML='';
   paroRows=[];
-  const matches=records.filter(r=>r.ct===ct && r.machine===machine && r.turno===turno && r.fecha===fecha);
-  const rec=matches.reduce((best,r)=>(!best||isNewerRecord(r,best))?r:best, null);
-  if(rec){
-    const savedParos=safeParse(rec.paros,[]);
-    savedParos.forEach(p=>{
-      addParoRow();
-      const lastId=paroRows[paroRows.length-1];
-      const row=document.getElementById(lastId);
-      const inputs=row?row.querySelectorAll('input'):[];
-      if(inputs[0]) inputs[0].value = p.motivo==='Sin descripción' ? '' : (p.motivo||'');
-      if(inputs[1]) inputs[1].value = p.min || '';
-    });
+  let savedParos=[];
+  if(machine && !LASER_MAQUINAS_HORA.includes(machine) && getMachineByName(machine)){
+    // Máquina de cierre del día: los paros son del día (van en su registro)
+    const d=getDiaRecord(ct,machine,fecha);
+    if(d) savedParos=safeParse(d.paros,[]);
+  } else {
+    const matches=records.filter(r=>r.ct===ct && r.machine===machine && r.turno===turno && r.fecha===fecha);
+    const rec=matches.reduce((best,r)=>(!best||isNewerRecord(r,best))?r:best, null);
+    if(rec) savedParos=safeParse(rec.paros,[]);
   }
+  savedParos.forEach(p=>{
+    addParoRow();
+    const lastId=paroRows[paroRows.length-1];
+    const row=document.getElementById(lastId);
+    const inputs=row?row.querySelectorAll('input'):[];
+    if(inputs[0]) inputs[0].value = p.motivo==='Sin descripción' ? '' : (p.motivo||'');
+    if(inputs[1]) inputs[1].value = p.min || '';
+  });
   updateParosTotal();
+  refreshParosEnabled();
 }
 function calcOEE(){
   const turno=document.getElementById('reg-turno').value;const machine=document.getElementById('reg-machine').value;
@@ -3637,14 +3788,19 @@ function calcOEE(){
   document.getElementById('b-rend').textContent=rend+'%';document.getElementById('b-rend').style.color=oeeColor(rend);document.getElementById('b-rend-sub').textContent=piezas+' / '+cap+' pzas';
   document.getElementById('b-cal').textContent=cal+'%';document.getElementById('b-cal').style.color=oeeColor(cal);document.getElementById('b-cal-sub').textContent=piezasBuenas+' buenas / '+piezas;
 }
-function addParoRow(){const id='p'+Date.now();paroRows.push(id);const d=document.createElement('div');d.className='paro-row';d.id=id;d.innerHTML=`<input type="text" placeholder="Motivo..." oninput="updateParosTotal();scheduleLiveSync()"><input type="number" min="0" placeholder="0" oninput="updateParosTotal();calcOEE();scheduleLiveSync()"><button class="btn-del" style="width:32px;height:32px;font-size:16px" onclick="removeParoRow('${id}')">×</button>`;document.getElementById('paros-list').appendChild(d);}
+let _paroSeq=0;
+// El id lleva un contador: antes usaba solo la hora en milisegundos y, al restaurar varios
+// paros guardados (se crean en el mismo milisegundo), las filas compartían id y el
+// último paro pisaba al anterior.
+function addParoRow(){const id='p'+Date.now()+'_'+(++_paroSeq);paroRows.push(id);const d=document.createElement('div');d.className='paro-row';d.id=id;d.innerHTML=`<input type="text" placeholder="Motivo..." oninput="updateParosTotal();scheduleLiveSync()"><input type="number" min="0" placeholder="0" oninput="updateParosTotal();calcOEE();scheduleLiveSync()"><button class="btn-del" style="width:32px;height:32px;font-size:16px" onclick="removeParoRow('${id}')">×</button>`;document.getElementById('paros-list').appendChild(d);refreshParosEnabled();}
 function removeParoRow(id){document.getElementById(id)?.remove();paroRows=paroRows.filter(r=>r!==id);updateParosTotal();calcOEE();scheduleLiveSync();}
 function getParos(){return Array.from(document.querySelectorAll('#paros-list .paro-row')).map(r=>{const ins=r.querySelectorAll('input');return{motivo:ins[0].value.trim()||'Sin descripción',min:parseInt(ins[1].value)||0};}).filter(p=>p.min>0||p.motivo!=='Sin descripción');}
 function getTotalParosMin(){return getParos().reduce((a,p)=>a+(p.min||0),0);}
 function updateParosTotal(){document.getElementById('paros-total-val').textContent=getTotalParosMin();}
 function saveRecord(){
+  if(!canRegisterMachine(document.getElementById('reg-machine').value)) return;
   const ct=document.getElementById('reg-ct').value;const machine=document.getElementById('reg-machine').value;const turno=document.getElementById('reg-turno').value;
-  const fecha=document.getElementById('reg-fecha').value||new Date().toISOString().slice(0,10);const op=document.getElementById('reg-op').value||'–';
+  const fecha=document.getElementById('reg-fecha').value||todayStr();const op=document.getElementById('reg-op').value||'–';
   const paros=getParos();const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
   const piezasProg=parseInt(document.getElementById('reg-programadas').value)||0;const piezasTotal=parseInt(document.getElementById('reg-piezas').value)||0;const piezasRechazo=parseInt(document.getElementById('reg-rechazadas').value)||0;
   const{disp,rend,cal,oee,cumpl,tO}=calcIndicadores(turno,parosNoProg,piezasProg,piezasTotal,piezasRechazo,machine);
@@ -3664,6 +3820,11 @@ function saveRecord(){
 // si no, guarda solo el registro OEE.
 function saveTurno(){
   const machine=document.getElementById('reg-machine').value;
+  if(!canRegisterMachine(machine)){
+    const m0=document.getElementById('save-msg');
+    if(m0){ m0.textContent='⚠ Tu cuenta no puede registrar: la captura es del Operador'; m0.style.color='var(--amber)'; setTimeout(()=>m0.textContent='',4000); }
+    return;
+  }
   if(currentUser && currentUser.role==='operador'){
     const ct=document.getElementById('reg-ct').value;
     const turno=document.getElementById('reg-turno').value;
@@ -3683,9 +3844,10 @@ function saveTurno(){
 }
 // ── APROVECHAMIENTO ──
 function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.cal} (${l.peso}kg)</option>`).join('');}
+function getLaminaOptionsShort(){return laminas.map(l=>`<option value="${l.cal}">${l.cal}</option>`).join('');}
 function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
-function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();}
-function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();}
+function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
+function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE LÁMINA (localStorage) ──
 // Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
 // página se recargaba antes de presionar "Guardar registro" — a
@@ -3694,6 +3856,36 @@ function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())retu
 // si la página se recarga el mismo día, antes de que el operador alcance
 // a guardar de verdad.
 const SK_LAM_DRAFT='oee_lam_draft_v1';
+// ── Formulario de Aprovechamiento: estados vacíos, contadores, foco y teclado ──
+function apRefresh(){
+  ['lam-hojas','lam-recortes','tub-tramos','tub-recortes'].forEach(k=>{
+    const list=document.getElementById(k+'-list'); if(!list) return;
+    const n=list.querySelectorAll('.dynamic-row').length;
+    const head=document.getElementById(k+'-head'), emp=document.getElementById(k+'-empty');
+    if(head) head.style.display=n?'':'none';
+    if(emp) emp.style.display=n?'none':'';
+  });
+  const qty=sel=>Array.from(document.querySelectorAll(sel)).reduce((s,r)=>s+(parseFloat(r.querySelectorAll('input')[0]?.value)||0),0);
+  const cnt=sel=>document.querySelectorAll(sel).length;
+  const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  set('lam-hojas-count', fmtN(qty('#lam-hojas-list .dynamic-row'),2)+' hojas');
+  set('tub-tramos-count', fmtN(qty('#tub-tramos-list .dynamic-row'),2)+' tramos');
+  const nl=cnt('#lam-recortes-list .dynamic-row'), nt=cnt('#tub-recortes-list .dynamic-row');
+  set('lam-recortes-count', nl+(nl===1?' recorte':' recortes'));
+  set('tub-recortes-count', nt+(nt===1?' recorte':' recortes'));
+  document.querySelectorAll('.ap-bad').forEach(el=>{ if(parseFloat(el.value)>0) el.classList.remove('ap-bad'); });
+}
+function apFocus(row){ const el=row&&row.querySelector('input:not([readonly])'); if(el){ el.focus(); try{ el.scrollIntoView({block:'nearest'}); }catch(e){} } }
+// Marca en rojo las filas incompletas y avisa: nada se descarta en silencio al guardar.
+function apMsg(id,txt,warn){ const m=document.getElementById(id); if(!m) return; m.textContent=txt; m.style.color=warn?'var(--amber)':'var(--green)'; setTimeout(()=>{ if(m.textContent===txt) m.textContent=''; },warn?5000:3000); }
+function apValidate(listSel,needIdx){
+  const bad=[]; let filas=0;
+  document.querySelectorAll(listSel+' .dynamic-row').forEach(row=>{
+    filas++; const ins=row.querySelectorAll('input');
+    needIdx.forEach(i=>{ const el=ins[i]; if(!el) return; if(!(parseFloat(el.value)>0)){ el.classList.add('ap-bad'); bad.push(el); } else el.classList.remove('ap-bad'); });
+  });
+  return {filas,bad};
+}
 function saveLamDraft(){
   const draft={
     fecha: document.getElementById('lam-fecha')?.value,
@@ -3748,6 +3940,7 @@ function restoreLamDraft(){
   if(msg){ msg.textContent='↺ Se recuperó lo que tenías capturado'; msg.style.color='var(--amber)'; setTimeout(()=>{msg.textContent='';msg.style.color='';},4000); }
 }
 function calcLamina(){
+  apRefresh();
   let pt=0;document.querySelectorAll('#lam-hojas-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const lam=getLaminaByCal(sel?sel.value:'');const h=parseFloat(ins[0]?.value)||0;const pw=lam?lam.peso:0;const pr=fmtN(h*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
   document.getElementById('lam-peso-total').textContent=fmtN(pt,3);
   const merma=parseFloat(document.getElementById('lam-merma').value)||0;
@@ -3764,7 +3957,11 @@ function calcLamina(){
 }
 function saveLamina(){
   if(!canCaptureAprov()){ console.warn('saveLamina bloqueado: sin permiso de capturar aprovechamiento.'); return; }
-  const fecha=document.getElementById('lam-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('lam-turno').value;const op=document.getElementById('lam-op').value||'–';
+  // Validación: no se guarda un registro vacío ni se descartan filas incompletas en silencio
+  { const vh=apValidate('#lam-hojas-list',[0]), vr=apValidate('#lam-recortes-list',[0,1]);
+    if(!vh.filas && !vr.filas){ apMsg('lam-save-msg','⚠ Agrega al menos un calibre o un recorte',true); return; }
+    if(vh.bad.length||vr.bad.length){ apMsg('lam-save-msg','⚠ Completa las filas marcadas en rojo (o quítalas con ×)',true); (vh.bad[0]||vr.bad[0]).focus(); return; } }
+  const fecha=document.getElementById('lam-fecha').value||todayStr();const turno=document.getElementById('lam-turno').value;const op=document.getElementById('lam-op').value||'–';
   const pt=parseFloat(document.getElementById('lam-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('lam-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('lam-ahorro').textContent.replace(/,/g,''))||0;
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
@@ -3784,10 +3981,10 @@ function saveLamina(){
   aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
   clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
-  const msg=document.getElementById('lam-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
+  apMsg('lam-save-msg','✓ Guardado',false);renderAprovHist();
 }
-function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();}
-function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();}
+function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
+function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE TUBULAR (localStorage) — mismo mecanismo que Lámina ──
 const SK_TUB_DRAFT='oee_tub_draft_v1';
 function saveTubDraft(){
@@ -3841,6 +4038,7 @@ function restoreTubDraft(){
   if(msg){ msg.textContent='↺ Se recuperó lo que tenías capturado'; msg.style.color='var(--amber)'; setTimeout(()=>{msg.textContent='';msg.style.color='';},4000); }
 }
 function calcTubular(){
+  apRefresh();
   let pt=0;document.querySelectorAll('#tub-tramos-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const tub=getTubularByTipo(sel?sel.value:'');const t=parseFloat(ins[0]?.value)||0;const pw=tub?tub.peso:0;const pr=fmtN(t*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
   document.getElementById('tub-peso-total').textContent=fmtN(pt,3);
   const merma=parseFloat(document.getElementById('tub-merma').value)||0;
@@ -3852,7 +4050,10 @@ function calcTubular(){
 }
 function saveTubular(){
   if(!canCaptureAprov()){ console.warn('saveTubular bloqueado: sin permiso de capturar aprovechamiento.'); return; }
-  const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||new Date().toISOString().slice(0,10);const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
+  { const vt=apValidate('#tub-tramos-list',[0]), vr=apValidate('#tub-recortes-list',[0]);
+    if(!vt.filas && !vr.filas){ apMsg('tub-save-msg','⚠ Agrega al menos un tubular o un recorte',true); return; }
+    if(vt.bad.length||vr.bad.length){ apMsg('tub-save-msg','⚠ Completa las filas marcadas en rojo (o quítalas con ×)',true); (vt.bad[0]||vr.bad[0]).focus(); return; } }
+  const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||todayStr();const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
   const pt=parseFloat(document.getElementById('tub-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('tub-ahorro').textContent.replace(/,/g,''))||0;
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
@@ -3870,7 +4071,7 @@ function saveTubular(){
   aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
   clearTubDraft();
   document.getElementById('tub-tramos-list').innerHTML='';document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
-  const msg=document.getElementById('tub-save-msg');msg.textContent='✓ Guardado';setTimeout(()=>msg.textContent='',3000);renderAprovHist();
+  apMsg('tub-save-msg','✓ Guardado',false);renderAprovHist();
 }
 function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
   const canvas=document.getElementById(canvasId);if(!canvas)return;
@@ -3914,6 +4115,9 @@ function aprovCloudRow(rec){
 
 // Material consumido por registro, agrupado por calibre (lámina) o tipo
 // (tubular), con el costo unitario de la configuración.
+const APROV_GRID="display:grid;grid-template-columns:1.3fr .9fr 1.1fr .9fr 1.2fr;gap:10px;align-items:center";
+const APROV_MONO="font-family:'IBM Plex Mono',monospace";
+const APROV_INPUT="width:100%;max-width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)";
 function aprovItems(r){
   const raw = r.tipo==='lamina'
     ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0}))
@@ -3925,6 +4129,15 @@ function aprovItems(r){
     const cfg=it.kind==='cal'?getLaminaByCal(it.key):getTubularByTipo(it.key);
     map[it.key]={...it,costo:(cfg&&cfg.costo)||0};
     out.push(map[it.key]);
+  });
+  // Material que venía en la explosión y NO se consumió (no aparece en lo registrado):
+  // entra como renglón con 0 registradas para poder valorarlo (explosionado − 0).
+  (r.explosionDetalle||[]).forEach(e=>{
+    const key=aprovExplKey(e); if(!key||map[key]) return;
+    const kind=r.tipo==='lamina'?'cal':'tipo';
+    const cfg=kind==='cal'?getLaminaByCal(key):getTubularByTipo(key);
+    map[key]={key,kind,real:0,extra:true,costo:(cfg&&cfg.costo)||0};
+    out.push(map[key]);
   });
   return out;
 }
@@ -3953,27 +4166,30 @@ function aprovDetailHtml(r){
   const canEdit=canEditAprovExplosion();
   const T=aprovTotals(r);
   const th="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase";
-  const grid="display:grid;grid-template-columns:1.3fr .9fr 1.1fr .9fr 1.2fr;gap:10px;align-items:center";
-  const mono="font-family:'IBM Plex Mono',monospace";
-  const inputCss="width:100%;max-width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)";
+  const grid=APROV_GRID, mono=APROV_MONO, inputCss=APROV_INPUT;
   let consumo;
   if(T.items.length){
     const rows=T.items.map((it,i)=>{
       const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
       const exVal=e?(Number(e.hojas)||0):'';
-      return `<div style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
-        <span style="font-weight:500">${it.key}</span>
+      const first=it.extra
+        ? `<span style="display:flex;align-items:center;gap:6px;min-width:0">${canEdit?`<button class="btn-del" style="width:22px;height:22px;font-size:12px;flex-shrink:0" title="Quitar este material de la explosión" onclick="removeExplosionExtra('${id}',${i})">×</button>`:''}<span style="font-weight:500">${it.key}</span><span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:rgba(62,207,142,.12);color:#3ecf8e;white-space:nowrap">NO CONSUMIDO</span></span>`
+        : `<span style="font-weight:500">${it.key}</span>`;
+      return `<div id="exrow-${id}-${i}" style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+        ${first}
         <span style="${mono}">${fmt2(it.real)}</span>
-        <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
+        <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" data-row="${i}" ${it.extra?'data-extra="1"':''} value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
         <span id="dif-${id}-${i}" style="${mono}">–</span>
         <span id="val-${id}-${i}" style="${mono}">–</span>
       </div>`;
     }).join('');
-    consumo=`<div style="${grid};padding:0 0 5px;border-bottom:1px solid var(--border)"><span style="${th}">${keyLabel}</span><span style="${th}">${unitW} registradas</span><span style="${th}">Explosionadas</span><span style="${th}">Diferencia</span><span style="${th}">Valor ($)</span></div>
+    const nuevoBtn=canEdit?`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px"><button onclick="addExplosionExtra('${id}')" style="font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">+ Material explosionado que no se consumió</button><span id="ex-hint-${id}" style="font-size:11px;color:var(--text3)">Lo que venía en la explosión y no se usó cuenta como ahorro.</span></div>`:'';
+    consumo=`<div id="ex-wrap-${id}" data-next="${T.items.length}">
+      <div style="${grid};padding:0 0 5px;border-bottom:1px solid var(--border)"><span style="${th}">${keyLabel}</span><span style="${th}">${unitW} registradas</span><span style="${th}">Explosionadas</span><span style="${th}">Diferencia</span><span style="${th}">Valor ($)</span></div>
       ${rows}
-      <div style="${grid};padding:7px 0;font-size:12px;font-weight:700">
+      <div id="tot-row-${id}" style="${grid};padding:7px 0;font-size:12px;font-weight:700">
         <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${fmt2(T.totReal)}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
-      </div>`;
+      </div></div>${nuevoBtn}`;
   } else {
     consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmt2(r.pesoTotal)} kg</b>) para poder compararlo contra lo explosionado.</div>
       <div id="legacy-rows-${id}"></div>
@@ -4018,32 +4234,78 @@ function recalcAprovDetail(id){
   const r2=n=>Math.round(n*100)/100;
   const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
   let totReal=0,totExpl=0,totDif=0,totVal=0,any=false;
+  const G='#3ecf8e', R='#f06060';
   const set=(el,txt,col)=>{ if(el){ el.textContent=txt; el.style.color=col||''; } };
+  const money=v=>(v<0?'-':'')+'$'+fmtMoney(Math.abs(v));
   inputs.forEach((inp,i)=>{
     const real=parseFloat(inp.dataset.real)||0, costo=parseFloat(inp.dataset.costo)||0;
+    const k=inp.dataset.row!==undefined?inp.dataset.row:i;
     totReal+=real;
-    const dif=document.getElementById(`dif-${id}-${i}`), val=document.getElementById(`val-${id}-${i}`);
+    const dif=document.getElementById(`dif-${id}-${k}`), val=document.getElementById(`val-${id}-${k}`);
     if(inp.value===''){ set(dif,'–','var(--text3)'); set(val,'–','var(--text3)'); return; }
     const ex=parseFloat(inp.value)||0; any=true;
     const d=r2(ex-real), vRaw=d*costo, v=r2(vRaw); totExpl+=ex; totDif+=d; totVal+=vRaw;
-    const col=d>0?'#3ecf8e':d<0?'#f06060':'var(--text2)';
-    set(dif,sgn2(d),col);
-    set(val,(v<0?'-':'')+'$'+fmtMoney(Math.abs(v)),col);
+    set(dif,sgn2(d),d>0?G:d<0?R:'var(--text2)');
+    set(val,money(v),v>0?G:v<0?R:'var(--text2)');
   });
   totDif=r2(totDif); totVal=r2(totVal);
-  const colT=totDif>0?'#3ecf8e':totDif<0?'#f06060':'var(--text2)';
+  // Cada total lleva el color de SU propio signo (antes el valor tomaba el color de la
+  // diferencia en láminas y podía salir en rojo siendo ahorro positivo).
+  const colD=totDif>0?G:totDif<0?R:'var(--text2)', colV=totVal>0?G:totVal<0?R:'var(--text2)';
   set(document.getElementById(`tot-${id}-real`),fmt2(totReal));
   set(document.getElementById(`tot-${id}-expl`),any?fmt2(totExpl):'–');
-  set(document.getElementById(`tot-${id}-dif`),any?sgn2(totDif):'–',any?colT:'var(--text3)');
-  set(document.getElementById(`tot-${id}-val`),any?((totVal<0?'-':'')+'$'+fmtMoney(Math.abs(totVal))):'–',any?colT:'var(--text3)');
+  set(document.getElementById(`tot-${id}-dif`),any?sgn2(totDif):'–',any?colD:'var(--text3)');
+  set(document.getElementById(`tot-${id}-val`),any?money(totVal):'–',any?colV:'var(--text3)');
   const sum=document.getElementById('sum-'+id);
   if(sum){
     const rec=parseFloat(sum.dataset.rec)||0;
     const mat=any?totVal:0;
-    set(document.getElementById('sum-mat-'+id),any?((mat<0?'-':'')+'$'+fmtMoney(Math.abs(mat))):'–',any?colT:'var(--text3)');
+    set(document.getElementById('sum-mat-'+id),any?money(mat):'–',any?colV:'var(--text3)');
     const tot=r2(mat+rec);
-    set(document.getElementById('sum-tot-'+id),(tot<0?'-':'')+'$'+fmtMoney(Math.abs(tot)),tot>=0?'#3ecf8e':'#f06060');
+    set(document.getElementById('sum-tot-'+id),money(tot),tot>=0?G:R);
   }
+}
+// Claves (calibres/tipos) que aún no están en la tabla de explosión de ese registro
+function aprovExtraOptions(id){
+  const rec=findAprov(id); if(!rec) return [];
+  const present=new Set(Array.from(document.querySelectorAll('.explosion-cal-input-'+id)).filter(i=>!i.closest('[data-removed]')).map(i=>i.dataset.key));
+  return (rec.tipo==='lamina'?laminas.map(l=>l.cal):tubulares.map(t=>t.tipo)).filter(k=>!present.has(k));
+}
+function aprovCostoDe(rec,key){ const cfg=rec.tipo==='lamina'?getLaminaByCal(key):getTubularByTipo(key); return (cfg&&cfg.costo)||0; }
+// Agrega un renglón para material que venía en la explosión y no se consumió
+function addExplosionExtra(id){
+  if(!canEditAprovExplosion()) return;
+  const rec=findAprov(id), wrap=document.getElementById('ex-wrap-'+id), tot=document.getElementById('tot-row-'+id);
+  if(!rec||!wrap||!tot) return;
+  const hint=document.getElementById('ex-hint-'+id), opts=aprovExtraOptions(id);
+  if(!opts.length){ if(hint){ hint.style.color='var(--amber)'; hint.textContent='Ya están todos los '+(rec.tipo==='lamina'?'calibres':'tipos')+' en la tabla.'; } return; }
+  const n=parseInt(wrap.dataset.next)||0; wrap.dataset.next=n+1;
+  const row=document.createElement('div');
+  row.className='explosion-new-row-'+id; row.id='exrow-'+id+'-'+n;
+  row.style.cssText=APROV_GRID+';padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px;background:rgba(62,207,142,.04)';
+  row.innerHTML=`<span style="display:flex;align-items:center;gap:6px;min-width:0"><button class="btn-del" style="width:22px;height:22px;font-size:12px;flex-shrink:0" title="Quitar" onclick="removeExplosionExtra('${id}',${n})">×</button><select id="exsel-${id}-${n}" data-prev="${opts[0]}" onchange="exKeyChanged('${id}',${n})" style="min-width:0;flex:1;font-size:12px;padding:4px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select></span>
+    <span style="${APROV_MONO}">0</span>
+    <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" id="exin-${id}-${n}" data-key="${opts[0]}" data-kind="${rec.tipo==='lamina'?'cal':'tipo'}" data-real="0" data-costo="${aprovCostoDe(rec,opts[0])}" data-row="${n}" data-extra="1" placeholder="Explosionadas" oninput="recalcAprovDetail('${id}')" style="${APROV_INPUT}"></span>
+    <span id="dif-${id}-${n}" style="${APROV_MONO}">–</span><span id="val-${id}-${n}" style="${APROV_MONO}">–</span>`;
+  tot.parentNode.insertBefore(row,tot);
+  if(hint){ hint.style.color='var(--text3)'; hint.textContent='Lo que venía en la explosión y no se usó cuenta como ahorro.'; }
+  row.querySelector('input').focus();
+  recalcAprovDetail(id);
+}
+function exKeyChanged(id,n){
+  const rec=findAprov(id), sel=document.getElementById(`exsel-${id}-${n}`), inp=document.getElementById(`exin-${id}-${n}`);
+  if(!rec||!sel||!inp) return;
+  const dup=Array.from(document.querySelectorAll('.explosion-cal-input-'+id)).some(i=>i!==inp && !i.closest('[data-removed]') && i.dataset.key===sel.value);
+  if(dup){ sel.value=sel.dataset.prev; const hint=document.getElementById('ex-hint-'+id); if(hint){ hint.style.color='var(--amber)'; hint.textContent='Ese '+(rec.tipo==='lamina'?'calibre':'tipo')+' ya está en la tabla.'; } return; }
+  sel.dataset.prev=sel.value; inp.dataset.key=sel.value; inp.dataset.costo=aprovCostoDe(rec,sel.value);
+  recalcAprovDetail(id);
+}
+// Quita un renglón: si es nuevo se descarta; si ya estaba guardado se oculta y se borra al guardar
+function removeExplosionExtra(id,n){
+  const row=document.getElementById(`exrow-${id}-${n}`); if(!row) return;
+  if(row.className.indexOf('explosion-new-row-')!==-1){ row.remove(); }
+  else { row.style.display='none'; row.dataset.removed='1'; const i=row.querySelector('input'); if(i) i.value=''; }
+  recalcAprovDetail(id);
 }
 function toggleAprovDetail(id,forceOpen){
   const el=document.getElementById('aprov-detail-'+id); if(!el) return;
@@ -4059,7 +4321,9 @@ function toggleAprovDetail(id,forceOpen){
 }
 function closeAprovDetail(id){
   const el=document.getElementById('aprov-detail-'+id); if(!el) return;
-  // Se descarta lo que se haya escrito sin guardar
+  // Se descarta lo que se haya escrito sin guardar (incluidos renglones de "no consumido")
+  el.querySelectorAll('[class*="explosion-new-row-"]').forEach(x=>x.remove());
+  el.querySelectorAll('[data-removed]').forEach(x=>{ x.style.display=''; delete x.dataset.removed; });
   el.querySelectorAll('input').forEach(i=>{ if(i.type!=='checkbox') i.value=i.defaultValue; });
   const lr=document.getElementById('legacy-rows-'+id); if(lr) lr.innerHTML='';
   el.style.display='none';
@@ -4163,7 +4427,8 @@ function aprovGroupStats(g){
     if(T.items.length && !T.any) noExpl++;
     T.items.forEach(it=>{
       let m=map[it.key];
-      if(!m){ m=map[it.key]={key:it.key,real:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false}; order.push(m); }
+      if(!m){ m=map[it.key]={key:it.key,real:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false,extra:true}; order.push(m); }
+      if(!it.extra) m.extra=false;
       m.real+=it.real;
       if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.real; m.expl+=it.expl; m.dif+=it.dif; m.valor+=it.valorRaw; }
     });
@@ -4181,7 +4446,7 @@ function renderAprovHist(force){
   // desglose), no se repinta — una sincronización en segundo plano no debe
   // borrar lo que se está capturando.
   if(!force && tbEl){
-    const dirty=Array.from(tbEl.querySelectorAll('input')).some(i=>i.type!=='checkbox' && i.value!==i.defaultValue);
+    const dirty=Array.from(tbEl.querySelectorAll('input')).some(i=>i.type!=='checkbox' && i.value!==i.defaultValue) || !!tbEl.querySelector('[class*="explosion-new-row-"],[data-removed]');
     if(dirty) return;
   }
   const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="ms-edit-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
@@ -4318,13 +4583,17 @@ function saveExplosionEdit(id){
   const rec=findAprov(id);
   if(!rec) return;
   const inputs=document.querySelectorAll('.explosion-cal-input-'+id);
-  const explosionDetalle=[];
+  const acc={}, orden=[];
   inputs.forEach(inp=>{
-    if(inp.value==='') return;
+    if(inp.closest('[data-removed]') || inp.value==='') return;
     const q=parseFloat(inp.value);
     if(isNaN(q)||q<0) return;
-    explosionDetalle.push(inp.dataset.kind==='tipo'?{tipo:inp.dataset.key,hojas:q}:{cal:inp.dataset.key,hojas:q});
+    if(inp.dataset.extra==='1' && !(q>0)) return;            // material no consumido: debe ser > 0
+    const k=inp.dataset.key; const kind=inp.dataset.kind;
+    if(!(k in acc)){ acc[k]={kind,q:0}; orden.push(k); }
+    acc[k].q+=q;
   });
+  const explosionDetalle=orden.map(k=>acc[k].kind==='tipo'?{tipo:k,hojas:acc[k].q}:{cal:k,hojas:acc[k].q});
   if(!explosionDetalle.length && !(rec.explosionDetalle&&rec.explosionDetalle.length)){
     inputs.forEach(inp=>inp.style.borderColor='var(--red)');
     return;
@@ -4360,7 +4629,7 @@ function buildWeeklyReportHtml(ws){
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
   const sections=groups.map(g=>{
     const st=g.st, isLam=g.tipo==='lamina';
-    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
+    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
       :`<tr><td colspan="5" class="muted">Registros sin desglose por ${isLam?'calibre':'tipo'}.</td></tr>`;
     const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
     const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
@@ -4477,7 +4746,7 @@ function renderConfig(){
   </div><div class="machine-info"><input class="machine-name-input" type="text" id="mname-${m.id}" value="${m.name}"><div class="machine-ct-label">${ct}</div><div class="machine-cap-row"><input class="machine-cap-input" type="number" id="mcap-${m.id}" value="${m.cap}" min="1"><span class="cap-unit">pzas / turno</span></div>
   <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
     <input type="checkbox" id="mhora-${m.id}" ${LASER_MAQUINAS_HORA.includes(m.name)?'checked':''} onchange="toggleHoraHora('${m.id}','${m.name}',this.checked)" style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer">
-    <label for="mhora-${m.id}" style="font-size:11px;color:var(--text3);cursor:pointer">Registro hora por hora</label>
+    <label for="mhora-${m.id}" title="Si se desactiva, solo se captura el total de piezas al final del día" style="font-size:11px;color:var(--text3);cursor:pointer">Registro hora por hora</label>
   </div>
   </div><button class="btn-del-machine" onclick="deleteMachine('${m.id}')">Eliminar</button></div>`).join('');
   });
@@ -4502,15 +4771,12 @@ function addMachine(){
   if(!name){msg.textContent='⚠ Ingresa un nombre.';msg.style.color='var(--amber)';return;}
   if(machines.find(m=>m.name===name)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}
   if(cap<1){msg.textContent='⚠ Capacidad inválida.';msg.style.color='var(--amber)';return;}
-  const newM={id:'m'+Date.now(),name,ct,cap,photo:'',horaHora};
+  const newM={id:'m'+Date.now(),name,ct,cap,photo:'',modo:horaHora?'hora':'dia'};
   machines.push(newM);
   machineTombs=machineTombs.filter(t=>t!==newM.id); saveMachineTombs();
   syncMachineToCloud(newM,false);
   save('machines');
-  // Add to LASER_MAQUINAS_HORA if checked
-  if(horaHora && !LASER_MAQUINAS_HORA.includes(name)){
-    LASER_MAQUINAS_HORA.push(name);
-  }
+  rebuildHoraList();
   document.getElementById('new-machine-name').value='';
   document.getElementById('new-machine-cap').value='';
   if(document.getElementById('new-machine-hora')) document.getElementById('new-machine-hora').checked=false;
@@ -4537,6 +4803,9 @@ function toggleCT(bodyId,headerEl){const body=document.getElementById(bodyId);co
 function toggleMantMachine(bodyId,headerEl){const body=document.getElementById(bodyId);const chv=headerEl.querySelector('.ct-chevron');if(body.style.display==='none'){body.style.display='';if(chv)chv.classList.remove('collapsed');}else{body.style.display='none';if(chv)chv.classList.add('collapsed');}}
 // ── NAV & TABS ──
 function navigate(page,el){
+  // Si la página ya no existe (p. ej. Mantenimiento, que se retiró), no se hace nada:
+  // antes de esta guarda se ocultaban todas las páginas y la pantalla quedaba en blanco.
+  if(!document.getElementById('page-'+page)) return;
   if(currentUser){
     const perms=currentUser.permissions||defaultPermissions(currentUser.role);
     if(perms[page]===false) return;
@@ -4576,10 +4845,9 @@ function navigate(page,el){
   updateFullscreenBtnVisibility(page);
   const _w=(tag)=>(e)=>console.warn('navigate('+page+') — '+tag+':', e);
   try{ if(page==='dashboard')renderDashboard(); }catch(e){ _w('dashboard')(e); }
-  try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); } }catch(e){ _w('historial')(e); }
+  try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); updateEmptyRecordsBtn(); } }catch(e){ _w('historial')(e); }
   try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){ _w('config')(e); }
   try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){ _w('aprovHist')(e); }
-  try{ if(page==='mantenimiento'){renderMantPlan();renderMantHist();renderCumplimiento();} }catch(e){ _w('mantenimiento')(e); }
   try{ if(page==='registro'){restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){ _w('registro')(e); }
   try{ if(page==='aprovechamiento'){applyAprovUI();} }catch(e){ _w('aprovUI')(e); }
 }
@@ -4774,87 +5042,13 @@ const MANT_DATA={
   'EST. SILLAS':{},
   'EST. MAMPARAS':{}
 };
-// ── CHECKLIST DATA ──
-const CHECKLIST={
-  'Boquilla (Nozzle)':['Inspección visual de deformación o salpicaduras','Verificar que el orificio esté centrado y limpio','Cambiar si hay daño visible'],
-  'Lente protectora':['Inspeccionar con linterna — sin manchas ni rayones','Limpiar con papel óptico si es necesario','Registrar fecha si se reemplazó'],
-  'Anillo cerámico':['Inspección visual de grietas o fracturas','Verificar que asiente correctamente','Cambiar si hay daño visible'],
-  'Chuck neumático — limpieza de garras':['Limpiar residuos metálicos de las garras','Verificar que garras abren y cierran correctamente','Comprobar presión neumática'],
-  'Chiller — nivel y temperatura':['Verificar nivel de agua en visor','Confirmar temperatura de operación en pantalla','Sin alarmas activas en el chiller'],
-  'Compresor — purga de condensado':['Abrir válvula de purga y drenar condensado','Verificar presión de trabajo en manómetro','Cerrar válvula completamente'],
-  'Filtro de aire 5.5KW — saturación':['Verificar indicador de saturación','Limpiar o reemplazar si indicador lo señala','Confirmar flujo de aire normal'],
-  'Lubricación automática de rieles':['Verificar nivel de aceite en depósito','Confirmar que el sistema está activo','Sin fugas en las líneas'],
-  'Mesa de peines — limpiar residuos':['Remover escoria y residuos metálicos','Verificar que los listones no estén doblados','Limpiar área bajo la mesa'],
-  'Listones de la mesa de corte — limpiar':['Remover escoria y residuos metálicos','Verificar que los listones no estén doblados','Limpiar área bajo la mesa'],
-  'Sistema de extracción de humo':['Encender sistema y verificar flujo de aire','Revisar filtros — limpiar si es necesario','Sin obstrucciones en ductos'],
-  'Guías lineales HIWIN — lubricación':['Aplicar grasa especificada en los patines','Mover ejes para distribuir lubricante','Verificar sin ruido o vibración anormal','Inspeccionar desgaste en la guía'],
-  'Cremallera y piñón APEX':['Aplicar grasa en los dientes','Verificar desgaste en flancos','Verificar juego axial del piñón','Confirmar movimiento suave'],
-  'Cremallera y piñón YYC':['Aplicar grasa en los dientes','Verificar desgaste en flancos','Verificar juego axial del piñón','Confirmar movimiento suave'],
-  'Servomotores YASKAWA':['Verificar temperatura superficial (máx 60°C)','Escuchar rodamientos — sin ruido','Verificar sin vibración excesiva','Revisar cable encoder — sin daño'],
-  'Cabezal Raytools — limpieza y calibración':['Limpiar exterior del cabezal','Verificar sistema anti-colisión','Calibrar punto focal si hubo cambio de lente','Confirmar altura de corte automática'],
-  'Cabezal Precitec Lightcutter':['Limpiar exterior del cabezal','Verificar sistema anti-colisión','Calibrar enfoque automático','Confirmar calidad de corte en prueba'],
-  'Chiller S&A — cambio de agua y filtros':['Drenar agua del sistema','Limpiar interior del depósito','Llenar con agua destilada nueva','Limpiar o reemplazar filtros','Verificar funcionamiento'],
-  'Fuente láser IPG 1.5KW':['Verificar parámetros de potencia en pantalla','Revisar fibra óptica — sin doblez ni daño','Verificar temperatura de operación','Confirmar horas acumuladas'],
-  'Fuente láser IPG 3KW':['Verificar parámetros de potencia en pantalla','Revisar fibra óptica — sin doblez ni daño','Verificar temperatura de operación','Confirmar horas acumuladas'],
-  'Listones de la mesa de corte — desgaste':['Inspeccionar desgaste en listones','Medir altura — reemplazar si deformación >2mm','Limpiar escoria acumulada','Verificar nivelación de la mesa'],
-  'Verificación de precisión de ejes':['Medir precisión de posicionamiento eje X','Medir precisión de posicionamiento eje Y','Comparar con especificación (±0.05mm)','Registrar valores obtenidos','Ajustar si se excede tolerancia'],
-  'Verificación de precisión ejes X/Y':['Medir precisión de posicionamiento eje X','Medir precisión de posicionamiento eje Y','Comparar con especificación (±0.05mm)','Registrar valores','Ajustar si es necesario'],
-  'Troquel — filo, alineación y sujeción':['Verificar filo del punzón — sin mellado','Verificar filo de la matriz','Confirmar sujeción firme','Verificar alineación punzón-matriz'],
-  'Manómetro — presión de trabajo':['Leer presión en manómetro','Confirmar dentro del rango de trabajo','Sin oscilaciones bruscas'],
-  'Bardas y sensores de seguridad':['Activar barda — verificar que la máquina para','Verificar sensores responden','Confirmar paro de emergencia funciona'],
-  'Nivel de aceite hidráulico':['Verificar nivel en visor — entre mín y máx','Sin cambio de color del aceite','Sin espuma visible'],
-  'Cilindro hidráulico — sellos y carrera':['Inspeccionar sellos — sin fuga','Verificar carrera completa','Sin vibración o golpeteo'],
-  'Bomba hidráulica — presión y temperatura':['Verificar presión de salida','Temperatura del aceite — máx 60°C','Sin ruido anormal'],
-  'Columnas guía — bujes y casquillos':['Aplicar lubricante en columnas','Verificar holgura lateral — sin juego excesivo','Inspección visual de desgaste'],
-  'Válvulas hidráulicas — limpieza y respuesta':['Verificar respuesta al activar','Limpiar exterior de válvulas','Sin fuga en conexiones'],
-  'Aceite hidráulico + filtros — cambio':['Drenar aceite completamente','Cambiar filtro de retorno','Cambiar filtro de presión','Llenar con aceite nuevo','Purgar aire','Verificar sin fugas'],
-  'Mangueras hidráulicas — fugas':['Inspección visual de todo el recorrido','Verificar conexiones — sin fuga','Buscar signos de abrasión o aplastamiento'],
-  'Panel eléctrico y paros de emergencia':['Probar paro de emergencia','Verificar indicadores del panel','Revisar conexiones — sin cables sueltos'],
-  'Embrague y freno — respuesta en punto muerto':['Activar y desactivar — para en punto muerto','Verificar tiempo de respuesta del freno','Sin resbalamiento del embrague'],
-  'Embrague y freno — fricciones y holgura':['Medir desgaste de pastillas de fricción','Ajustar holgura según especificación','Verificar resortes del embrague'],
-  'Volante — rodamientos (ruido y temperatura)':['Escuchar rodamientos — sin ruido','Medir temperatura (máx 70°C)','Sin vibración excesiva'],
-  'Cigüeñal — rodamientos principales':['Aplicar aceite en puntos de lubricación','Verificar temperatura (máx 70°C)','Sin ruido de golpeteo'],
-  'Corredera — guías y casquillos':['Aplicar lubricante en guías','Medir holgura lateral — dentro de tolerancia','Movimiento suave sin atascamiento'],
-  'Biela — pasador y casquillo':['Lubricar pasador de la biela','Verificar holgura radial del casquillo','Sin ruido de golpeteo'],
-  'Sistema de lubricación centralizada':['Verificar nivel de aceite en depósito','Confirmar todos los puntos reciben aceite','Sin obstrucciones en líneas'],
-  'Correas de transmisión motor-volante':['Verificar tensión de correas','Inspección visual de desgaste y grietas','Sin chirriado en operación'],
-  'Motor eléctrico — temperatura y rodamientos':['Verificar temperatura (máx 80°C)','Escuchar rodamientos — sin ruido','Sin vibración excesiva'],
-  'Punzón y matriz — filo y alineación':['Verificar filo del punzón','Verificar filo de la matriz','Alineación correcta punzón-matriz','Sin deformación visible'],
-  'Back gauge — posición y medida correcta':['Verificar medida del tope con cinta','Confirmar que medida programada coincide','Sin holgura excesiva en el mecanismo'],
-  'Cilindros hidráulicos — fugas y sincronía':['Verificar sincronía de ambos cilindros','Inspeccionar sellos — sin fuga','Sin vibración en el movimiento'],
-  'Motorreductor back gauge — lubricación':['Aplicar lubricante en el reductor','Verificar temperatura de operación','Sin ruido anormal'],
-  'Husillo back gauge — lubricación y holgura':['Aplicar grasa en el husillo','Verificar holgura axial','Movimiento suave en todo el recorrido'],
-  'Punzón y matriz — desgaste y reafilado':['Medir desgaste con calibrador','Reafilar si el radio supera tolerancia','Registrar medidas obtenidas'],
-  'Guías laterales de viga — paralelismo':['Medir paralelismo con nivel','Ajustar si hay desviación >0.1mm','Lubricar guías laterales'],
-  'Gomas del prensatela — inspección':['Verificar elasticidad — sin endurecimiento','Sin grietas ni deformación permanente','Reemplazar si dureza es excesiva'],
-  'Punta de contacto — desgaste y salpicaduras':['Inspección visual de desgaste del orificio','Limpiar salpicaduras','Cambiar si el orificio está ovalado'],
-  'Tobera — limpiar salpicaduras':['Retirar tobera y limpiar','Aplicar spray antiadherente','Verificar flujo de gas libre'],
-  'Antorcha PF400 — cuello y manguera':['Verificar que el cuello no esté doblado','Inspeccionar manguera — sin grietas','Verificar conexión de gas hermética'],
-  'Pinza de tierra — contacto y mordaza':['Limpiar mordaza con lija','Verificar cable — sin daño','Confirmar buen contacto eléctrico'],
-  'Rodillos de arrastre — presión y alineación':['Verificar presión de los rodillos','Confirmar alineación con la guía','Sin marcas de deformación en el alambre'],
-  'Liner — limpieza con aire comprimido':['Retirar liner del cable','Soplar con aire comprimido','Reinstalar correctamente','Verificar alimentación fluida'],
-  'Rodillos de arrastre — ranura y presión':['Verificar ranura — sin desgaste excesivo','Ajustar presión de apriete','Verificar alimentación uniforme'],
-  'Mecanismo de alimentación — lubricación':['Lubricar engranajes de alimentación','Verificar tensión del alambre en carrete','Sin atascamiento en alimentación'],
-  'Transformador / rectificador':['Verificar temperatura de operación','Sin olores a quemado','Verificar voltaje de salida en prueba'],
-  'Control mecánico de voltaje — contactos':['Verificar funcionamiento del potenciómetro','Limpiar contactos','Confirmar voltaje correcto en prueba'],
-  'Electrodos de punta — oxidación o deformación':['Inspección visual de la punta','Verificar que la punta está centrada','Limpiar con lija fina si hay oxidación leve','Cambiar si hay deformación severa'],
-  'Brazos de cobre — holgura en articulaciones':['Verificar que las articulaciones no tienen juego','Apretar tornillería si hay holgura','Limpiar oxidación en cobre'],
-  'Pedal — respuesta sin atascamiento':['Verificar respuesta del pedal','Sin resistencia mecánica excesiva','Confirmar que activa el ciclo correctamente'],
-  'Flujo de agua de enfriamiento al encender':['Abrir paso de agua antes de encender','Verificar flujo en ambos brazos','Sin fugas en conexiones'],
-  'Electrodos — reperfilar o cambiar':['Verificar desgaste de la punta','Reperfilar con fresadora de electrodos','Cambiar si desgaste es severo','Verificar calidad del punto tras ajuste'],
-  'Brazos de cobre — oxidación y tornillería':['Limpiar oxidación con limpiador de cobre','Apretar tornillería de uniones','Verificar conductividad — sin puntos calientes'],
-  'Sistema de enfriamiento — incrustaciones':['Verificar tuberías — sin incrustaciones','Limpiar con descalcificante si hay depósitos','Verificar caudal después de la limpieza'],
-  'Mecanismo de presión — fuerza entre electrodos':['Verificar contacto uniforme entre electrodos','Ajustar presión del mecanismo','Prueba de soldadura — verificar calidad del punto'],
-  'Transformador — temperatura y aislamiento':['Verificar temperatura durante operación','Sin olores a quemado','Revisar conexiones eléctricas accesibles'],
-  'Mangueras de agua — grietas y fugas':['Inspección visual de todo el recorrido','Sin grietas, aplastamiento ni fugas','Verificar abrazaderas apretadas'],
-  'Reductor Motovario — nivel de aceite':['Verificar nivel de aceite en visor','Sin fugas en sellos','Sin ruido anormal durante operación'],
-  'Chuck neumático — lubricación interna':['Desmontaje del chuck','Lubricar mecanismo interno de garras','Verificar operación correcta después del montaje'],
-  'Área de trabajo — limpiar salpicaduras':['Limpiar salpicaduras metálicas de la mesa','Limpiar área alrededor de la máquina','Verificar que no hay piezas sueltas en la zona']
-};
-// ── MANT PLAN FUNCTIONS ──
-function saveMantPlan(){
+// ── ACTIVIDADES DEL CHECKLIST DE ARRANQUE (plan por máquina) ──
+function persistMantPlanLocal(){
   const custom={};Object.keys(MANT_DATA).forEach(ct=>{custom[ct]={};Object.keys(MANT_DATA[ct]).forEach(mach=>{custom[ct][mach]=MANT_DATA[ct][mach].componentes;});});
-  localStorage.setItem(SK.mantPlan,JSON.stringify(custom));
+  try{ localStorage.setItem(SK.mantPlan,JSON.stringify(custom)); }catch(e){}
+}
+function saveMantPlan(){
+  persistMantPlanLocal();
   const planRows=[];Object.keys(MANT_DATA).forEach(ct=>{Object.keys(MANT_DATA[ct]).forEach(mach=>{planRows.push({ct,mach,componentes_json:JSON.stringify(MANT_DATA[ct][mach].componentes)});});});
   cloudWriteAll('Mant_Plan',planRows);
 }
@@ -4916,205 +5110,76 @@ function submitAtrasoForm(ct){
   document.getElementById('atraso-motivo').value='';
   renderDashboard();
 }
-function renderMantPlan(){
-  ALL_CTS.forEach(ct=>{
-    const ctKey=ctClass(ct);
-    const el=document.getElementById('mant-plan-'+ctKey);if(!el)return;
-    el.innerHTML=Object.entries(MANT_DATA[ct]).map(([mname,mdata],mi)=>{
-      const mid='mant-m-'+ctKey+'-'+mi;
-      const compRows=mdata.componentes.map((c,ci)=>`
-        <div class="mant-comp-row-edit">
-          <input type="text" value="${c.n}" onchange="updateMantField('${ct}','${mname}',${ci},'n',this.value)">
-          <input type="text" value="${c.f}" onchange="updateMantField('${ct}','${mname}',${ci},'f',this.value)" style="text-align:center;font-size:11px">
-          <div style="display:flex;align-items:center;gap:5px">
-            <span class="${c.who==='op'?'who-op':'who-tec'}" id="badge-who-${ctKey}-${mi}-${ci}">${c.who==='op'?'Operador':'Técnico'}</span>
-            <select style="width:22px;padding:2px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:11px" title="Cambiar responsable" onchange="updateMantField('${ct}','${mname}',${ci},'who',this.value);updateWhoBadge('badge-who-${ctKey}-${mi}-${ci}',this.value);this.value=''">
-              <option value="">✎</option><option value="op">Operador</option><option value="tec">Técnico</option>
-            </select>
-          </div>
-          <div style="display:flex;align-items:center;gap:5px">
-            <span class="crit-${c.crit}" id="badge-crit-${ctKey}-${mi}-${ci}">${c.crit}</span>
-            <select style="width:22px;padding:2px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:11px" title="Cambiar criticidad" onchange="updateMantField('${ct}','${mname}',${ci},'crit',this.value);updateCritBadge('badge-crit-${ctKey}-${mi}-${ci}',this.value);this.value=''">
-              <option value="">✎</option><option value="Alta">Alta</option><option value="Media">Media</option>
-            </select>
-          </div>
-          <button class="btn-del" onclick="deleteMantComp('${ct}','${mname}',${ci})" title="Eliminar">×</button>
-        </div>`).join('');
-      return`<div class="mant-machine-block">
-        <div class="mant-machine-title" onclick="toggleMantMachine('${mid}',this)" style="cursor:pointer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-          ${mname}<span class="mant-machine-sub">${mdata.modelo}</span>
-          <span class="ct-chevron" style="margin-left:auto">▾</span>
-        </div>
-        <div id="${mid}">
-          <div class="mant-header"><span>Componente</span><span style="text-align:center">Frecuencia</span><span style="text-align:center">Responsable</span><span style="text-align:center">Criticidad</span><span></span></div>
-          ${compRows}
-          <div style="padding:6px 12px"><button class="btn-add-comp" onclick="addMantComp('${ct}','${mname}')">+ Agregar componente</button></div>
-          <div class="risk-box"><div class="risk-title">Riesgos por error humano</div>${mdata.riesgos.map(r=>`<div class="risk-item">${r}</div>`).join('')}</div>
-        </div>
-      </div>`;
-    }).join('');
+// Crea la entrada de una máquina (por ejemplo una máquina nueva) en el plan.
+function ensureMantEntry(ct,mach){
+  if(!MANT_DATA[ct]) MANT_DATA[ct]={};
+  if(!MANT_DATA[ct][mach]) MANT_DATA[ct][mach]={modelo:'',componentes:[],riesgos:[]};
+  return MANT_DATA[ct][mach];
+}
+// Aplica filas {ct, mach, componentes[]} (de este equipo o de la nube) al plan.
+function applyMantPlanRows(rows){
+  (rows||[]).forEach(r=>{
+    if(!r||!r.ct||!r.mach||!Array.isArray(r.componentes)) return;
+    const clean=r.componentes.filter(x=>x&&typeof x==='object'&&x.n).map(x=>({n:String(x.n),f:String(x.f||'Inicio de turno'),who:x.who==='op'?'op':'tec',crit:x.crit||'Media'}));
+    ensureMantEntry(r.ct,r.mach).componentes=clean;
   });
 }
-function updateMantField(ct,mach,idx,field,value){if(MANT_DATA[ct]&&MANT_DATA[ct][mach]&&MANT_DATA[ct][mach].componentes[idx]){MANT_DATA[ct][mach].componentes[idx][field]=value;saveMantPlan();}}
-function deleteMantComp(ct,mach,idx){if(!MANT_DATA[ct]||!MANT_DATA[ct][mach])return;MANT_DATA[ct][mach].componentes.splice(idx,1);saveMantPlan();renderMantPlan();}
-function addMantComp(ct,mach){if(!MANT_DATA[ct]||!MANT_DATA[ct][mach])return;MANT_DATA[ct][mach].componentes.push({n:'Nuevo componente',f:'Mensual',who:'tec',crit:'Media'});saveMantPlan();renderMantPlan();}
-function updateWhoBadge(id,value){const el=document.getElementById(id);if(!el)return;el.className=value==='op'?'who-op':'who-tec';el.textContent=value==='op'?'Operador':'Técnico';}
-function updateCritBadge(id,value){const el=document.getElementById(id);if(!el)return;el.className='crit-'+value;el.textContent=value;}
-// ── MANT REGISTRO FUNCTIONS ──
-function updateMantMachine(){
-  const ct=document.getElementById('mlog-ct').value;const msel=document.getElementById('mlog-machine');
-  const maquinas=Object.keys(MANT_DATA[ct]||{});msel.innerHTML=maquinas.map(m=>`<option>${m}</option>`).join('');updateMantComp();
-}
-function updateMantComp(){
-  const ct=document.getElementById('mlog-ct').value;const m=document.getElementById('mlog-machine').value;
-  const comps=(MANT_DATA[ct]&&MANT_DATA[ct][m])?MANT_DATA[ct][m].componentes:[];
-  document.getElementById('mlog-comp').innerHTML=comps.map(c=>`<option>${c.n}</option>`).join('');loadChecklist();
-}
-function loadChecklist(){
-  const comp=document.getElementById('mlog-comp').value;const machine=document.getElementById('mlog-machine').value;
-  const card=document.getElementById('checklist-card');const items=CHECKLIST[comp];
-  if(!items||!items.length){card.style.display='none';return;}
-  card.style.display='block';
-  document.getElementById('checklist-title').innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> ${machine} — ${comp}`;
-  document.getElementById('checklist-items').innerHTML=items.map((item,i)=>`
-    <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);cursor:pointer;user-select:none" class="check-item">
-      <input type="checkbox" id="chk-${i}" onchange="updateCheckProgress()" style="width:16px;height:16px;margin-top:1px;accent-color:var(--green);flex-shrink:0">
-      <span style="font-size:13px;color:var(--text);line-height:1.4">${item}</span>
-    </label>`).join('');
-  updateCheckProgress();
-}
-function updateCheckProgress(){
-  const all=document.querySelectorAll('#checklist-items input[type=checkbox]');const checked=document.querySelectorAll('#checklist-items input[type=checkbox]:checked');
-  const total=all.length;const done=checked.length;const pct=total>0?Math.round((done/total)*100):0;
-  document.getElementById('check-pct').textContent=pct+'%';
-  const bar=document.getElementById('check-bar');bar.style.width=pct+'%';bar.style.background=pct===100?'#3ecf8e':pct>=60?'#f5a623':'#f06060';
-  const badge=document.getElementById('check-badge');
-  if(pct===100)badge.innerHTML='<span style="color:#3ecf8e">✅ Checklist completo</span>';
-  else if(pct>=60)badge.innerHTML=`<span style="color:#f5a623">⚠ ${done} de ${total} ítems verificados</span>`;
-  else badge.innerHTML=`<span style="color:#f06060">${done} de ${total} ítems — pendiente</span>`;
-}
-function saveMantLog(){
-  const fecha=document.getElementById('mlog-fecha').value||new Date().toISOString().slice(0,10);
-  const ct=document.getElementById('mlog-ct').value;const machine=document.getElementById('mlog-machine').value;const comp=document.getElementById('mlog-comp').value;
-  const tipo=document.getElementById('mlog-tipo').value;const tecnico=document.getElementById('mlog-tecnico').value||'–';const obs=document.getElementById('mlog-obs').value||'–';
-  const allChk=document.querySelectorAll('#checklist-items input[type=checkbox]');const doneChk=document.querySelectorAll('#checklist-items input[type=checkbox]:checked');
-  const total=allChk.length;const done=doneChk.length;const pct=total>0?Math.round((done/total)*100):null;
-  const resultado=pct===null?'ok':pct===100?'ok':pct>=60?'obs':'falla';
-  const mRec={id:Date.now(),fecha,ct,machine,comp,tipo,tecnico,obs,resultado,checkPct:pct,checkDone:done,checkTotal:total};
-  mantLogs.push(mRec);save('mantLogs');cloudWriteRow('Mantenimiento',mRec);
-  document.getElementById('mlog-obs').value='';document.getElementById('checklist-card').style.display='none';document.getElementById('checklist-items').innerHTML='';
-  const msg=document.getElementById('mlog-msg');msg.textContent='✓ Registro guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);
-  renderMantHist();renderCumplimiento();
-}
-function updateMantHistMachineFilter(){
-  const ct = document.getElementById('mh-ct')?.value||'';
-  const sel = document.getElementById('mh-machine');
-  if(!sel) return;
-  let mach_list = [...new Set(mantLogs.filter(r=>!ct||r.ct===ct).map(r=>r.machine))].sort();
-  sel.innerHTML = '<option value="">Todas las máquinas</option>' +
-    mach_list.map(m=>`<option value="${m}">${m}</option>`).join('');
-}
-
-function renderMantHist(){
-  const fct=document.getElementById('mh-ct')?.value||'';
-  const fmachine=document.getElementById('mh-machine')?.value||'';
-  const ftipo=document.getElementById('mh-tipo')?.value||'';
-  const fres=document.getElementById('mh-res')?.value||'';
-  let filtered=[...mantLogs].reverse();
-  if(fct) filtered=filtered.filter(r=>r.ct===fct);
-  if(fmachine) filtered=filtered.filter(r=>r.machine===fmachine);
-  if(ftipo) filtered=filtered.filter(r=>r.tipo===ftipo);
-  if(fres) filtered=filtered.filter(r=>r.resultado===fres);
-  const body=document.getElementById('mant-hist-body');
-  const empty=document.getElementById('mant-hist-empty');
-  if(!filtered.length){body.innerHTML='';empty.style.display='block';updateMantHistMachineFilter();return;}
-  empty.style.display='none';
-  const resLabel={ok:'<span style="color:#3ecf8e;font-weight:600">OK</span>',obs:'<span style="color:#f5a623;font-weight:600">Obs.</span>',falla:'<span style="color:#f06060;font-weight:600">Falla</span>'};
-  // Group by machine
-  const byMachine={};
-  filtered.forEach(r=>{if(!byMachine[r.machine])byMachine[r.machine]={ct:r.ct,logs:[]};byMachine[r.machine].logs.push(r);});
-  body.innerHTML = Object.entries(byMachine).map(([mname,mdata])=>{
-    const badge=mdata.ct==='LASER'?'laser':mdata.ct==='TROQUELES'?'troqueles':'muebles';
-    const total=mdata.logs.length;
-    const ok=mdata.logs.filter(r=>r.resultado==='ok').length;
-    const fallas=mdata.logs.filter(r=>r.resultado==='falla').length;
-    const withChk=mdata.logs.filter(r=>r.checkPct!=null);
-    const avgChk=withChk.length?Math.round(withChk.reduce((a,r)=>a+r.checkPct,0)/withChk.length):null;
-    const chkColor=avgChk===null?'var(--text3)':avgChk>=85?'#3ecf8e':avgChk>=60?'#f5a623':'#f06060';
-    const safeId=mname.replace(/[^a-zA-Z0-9]/g,'_');
-    const rows=mdata.logs.map(r=>{
-      const chkCell=r.checkPct!=null?`<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:${r.checkPct===100?'#3ecf8e':r.checkPct>=60?'#f5a623':'#f06060'}">${r.checkPct}%</span>`:'<span style="color:var(--text3)">–</span>';
-      return`<div style="display:grid;grid-template-columns:90px 1fr 90px 70px 50px 70px 32px;gap:8px;align-items:center;padding:6px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
-        <span style="color:var(--text2)">${r.fecha}</span>
-        <span style="font-size:11px">${r.comp}${r.obs&&r.obs!=='–'?`<br><span style="color:var(--text3);font-size:10px">${r.obs}</span>`:''}</span>
-        <span style="font-size:11px;color:var(--text2)">${r.tecnico}</span>
-        <span><span class="${r.tipo==='Operador'?'who-op':'who-tec'}" style="font-size:10px">${r.tipo}</span></span>
-        ${chkCell}
-        <span>${resLabel[r.resultado]||r.resultado}</span>
-        <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteMantLog(${r.id})" title="Eliminar">×</button>
+// Editor en Configuración → Checklist de arranque: por máquina, las actividades
+// que el operador confirma al iniciar su turno.
+function renderChecklistEditor(){
+  const host=document.getElementById('chk-editor'); if(!host) return;
+  const open=new Set(Array.from(host.querySelectorAll('.chk-body')).filter(e=>e.style.display!=='none').map(e=>e.id));
+  let html='';
+  ALL_CTS.forEach(ct=>{
+    const ms=getMachinesByCT(ct); if(!ms.length) return;
+    const cls=ctClass(ct);
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin:14px 0 8px">${ctLabel(ct)}</div>`;
+    ms.forEach((m,mi)=>{
+      const e=MANT_DATA[ct]&&MANT_DATA[ct][m.name];
+      const comps=e?e.componentes:[];
+      const n=comps.filter(x=>x.who==='op').length;
+      const enc=encodeURIComponent(m.name), bid='chk-body-'+cls+'-'+mi;
+      const rows=comps.map((x,ci)=>x.who!=='op'?'':`<div class="chk-row">
+          <input type="text" value="${String(x.n).replace(/"/g,'&quot;')}" onchange="updateChkField('${ct}','${enc}',${ci},'n',this.value)">
+          <input type="text" list="chk-freq-list" value="${String(x.f).replace(/"/g,'&quot;')}" onchange="updateChkField('${ct}','${enc}',${ci},'f',this.value)" style="text-align:center;font-size:11px">
+          <button class="btn-del" onclick="deleteChkActivity('${ct}','${enc}',${ci})" title="Quitar actividad">×</button>
+        </div>`).join('');
+      html+=`<div class="mant-machine-block">
+        <div class="mant-machine-title" onclick="toggleMantMachine('${bid}',this)" style="cursor:pointer">
+          ${m.name}<span class="mant-machine-sub">${n} actividad${n===1?'':'es'}</span>
+          <span class="ct-chevron ${open.has(bid)?'':'collapsed'}">▾</span>
+        </div>
+        <div id="${bid}" class="chk-body" style="display:${open.has(bid)?'':'none'}">
+          <div class="chk-row chk-head"><span>Actividad</span><span style="text-align:center">Frecuencia</span><span></span></div>
+          ${rows||'<div style="padding:8px 12px;font-size:12px;color:var(--text3)">Sin actividades: esta máquina no pide checklist de arranque.</div>'}
+          <div style="padding:6px 12px"><button class="btn-add-comp" onclick="addChkActivity('${ct}','${enc}')">+ Agregar actividad</button></div>
+        </div>
       </div>`;
-    }).join('');
-    return`<div style="margin-bottom:.75rem;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
-      <div style="display:flex;align-items:center;gap:10px;padding:.6rem 1rem;background:var(--bg3);cursor:pointer" onclick="toggleMantHistSection('mhs${safeId}',this)">
-        <span class="ct-badge ${badge}" style="font-size:10px">${ctLabel(mdata.ct).toUpperCase()}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--text)">${mname}</span>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px">
-          <span style="color:var(--text3)">${total} reg.</span>
-          <span style="color:#3ecf8e">${ok} ✓</span>
-          ${fallas>0?`<span style="color:#f06060">${fallas} ✗</span>`:''}
-          ${avgChk!==null?`<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:${chkColor}">${avgChk}%</span>`:''}
-          <span style="color:var(--text3)" id="arr${safeId}">▾</span>
-        </div>
-      </div>
-      <div id="mhs${safeId}">
-        <div style="display:grid;grid-template-columns:90px 1fr 90px 70px 50px 70px 32px;gap:8px;padding:5px 12px;background:var(--bg2);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border)">
-          <span>Fecha</span><span>Componente / Obs.</span><span>Responsable</span><span>Tipo</span><span>Check</span><span>Resultado</span><span></span>
-        </div>
-        ${rows}
-      </div>
-    </div>`;
-  }).join('');
-  updateMantHistMachineFilter();
+    });
+  });
+  host.innerHTML=html||'<div class="empty-state">Sin máquinas.</div>';
 }
-
-function toggleMantHistSection(id,header){
-  const el=document.getElementById(id);
-  const arrId='arr'+id.replace('mhs','');
-  const arr=document.getElementById(arrId);
-  if(!el)return;
-  const open=el.style.display!=='none';
-  el.style.display=open?'none':'';
-  if(arr)arr.textContent=open?'▸':'▾';
+function updateChkField(ct,enc,ci,field,value){
+  const e=MANT_DATA[ct]&&MANT_DATA[ct][decodeURIComponent(enc)];
+  if(!e||!e.componentes[ci]) return;
+  const v=String(value).trim();
+  if(!v){ renderChecklistEditor(); return; }   // no se permite dejar vacío
+  e.componentes[ci][field]=v;
+  saveMantPlan();
 }
-function renderCumplimiento(){
-  if(!mantLogs.length){['cm-pct','cm-total','cm-ok','cm-fallas'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='–';});const sem=document.getElementById('cumpl-semaforo');if(sem)sem.innerHTML='<div style="color:var(--text3);font-size:13px;padding:1rem">Sin registros aún.</div>';return;}
-  const total=mantLogs.length;const withChk=mantLogs.filter(r=>r.checkPct!=null);const avgPct=withChk.length?Math.round(withChk.reduce((a,r)=>a+r.checkPct,0)/withChk.length):null;
-  const okCount=mantLogs.filter(r=>r.resultado==='ok').length;const fallaCount=mantLogs.filter(r=>r.resultado==='falla').length;
-  const setPct=(id,v,color)=>{const el=document.getElementById(id);if(el){el.textContent=v;el.style.color=color||'var(--text)';}};
-  setPct('cm-pct',avgPct!=null?avgPct+'%':'–',avgPct>=85?'#3ecf8e':avgPct>=60?'#f5a623':'#f06060');
-  setPct('cm-total',total,'var(--text)');setPct('cm-ok',okCount,'#3ecf8e');setPct('cm-fallas',fallaCount,'#f06060');
-  const byMachine={};mantLogs.forEach(r=>{if(!byMachine[r.machine])byMachine[r.machine]={ct:r.ct,ok:0,obs:0,falla:0,pcts:[]};byMachine[r.machine][r.resultado]=(byMachine[r.machine][r.resultado]||0)+1;if(r.checkPct!=null)byMachine[r.machine].pcts.push(r.checkPct);});
-  const sem=document.getElementById('cumpl-semaforo');
-  if(sem){sem.innerHTML=Object.entries(byMachine).map(([mname,data])=>{
-    const avgM=data.pcts.length?Math.round(data.pcts.reduce((a,b)=>a+b,0)/data.pcts.length):null;
-    const color=avgM===null?'#8b8fa8':avgM>=85?'#3ecf8e':avgM>=60?'#f5a623':'#f06060';
-    const semDot=`<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color}"></span>`;
-    const badge=data.ct==='LASER'?'laser':data.ct==='TROQUELES'?'troqueles':'muebles';
-    return`<div style="display:grid;grid-template-columns:20px 120px 80px 1fr 60px 60px 60px;gap:8px;align-items:center;padding:8px 12px;border-bottom:0.5px solid var(--border);font-size:12px">
-      <span>${semDot}</span><span style="font-weight:500;color:var(--text)">${mname}</span>
-      <span><span class="ct-badge ${badge}" style="font-size:10px">${ctLabel(data.ct).toUpperCase()}</span></span>
-      <div style="background:var(--border);border-radius:3px;height:6px;overflow:hidden"><div style="height:100%;border-radius:3px;background:${color};width:${avgM??0}%"></div></div>
-      <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:${color};text-align:right">${avgM!=null?avgM+'%':'–'}</span>
-      <span style="color:#3ecf8e;text-align:center">${data.ok} ✓</span>
-      <span style="color:${data.falla>0?'#f06060':'var(--text3)'};text-align:center">${data.falla>0?data.falla+' ✗':'–'}</span>
-    </div>`;}).join('');}
-  const last10=mantLogs.filter(r=>r.checkPct!=null).slice(-10);const canvas=document.getElementById('cumpl-chart');
-  if(canvas&&last10.length){if(cumplChart)cumplChart.destroy();
-    try{
-      cumplChart=new Chart(canvas,{type:'line',data:{labels:last10.map(r=>r.machine.substring(0,8)+' '+r.fecha.substring(5)),datasets:[{label:'Checklist %',data:last10.map(r=>r.checkPct),borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,.1)',tension:.3,fill:true,pointRadius:5,pointBackgroundColor:last10.map(r=>r.checkPct===100?'#3ecf8e':r.checkPct>=60?'#f5a623':'#f06060')}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#555870',font:{size:11}},grid:{color:'rgba(255,255,255,.05)'},border:{color:'transparent'}},x:{ticks:{color:'#8b8fa8',font:{size:10}},grid:{display:false},border:{color:'transparent'}}}}});
-    }catch(e){ console.warn('Chart.js falló al dibujar la tendencia de cumplimiento (no crítico):', e); }
-  }
+function deleteChkActivity(ct,enc,ci){
+  const e=MANT_DATA[ct]&&MANT_DATA[ct][decodeURIComponent(enc)];
+  if(!e||!e.componentes[ci]) return;
+  if(!confirm('¿Quitar "'+e.componentes[ci].n+'" del checklist de arranque?')) return;
+  e.componentes.splice(ci,1);
+  saveMantPlan(); renderChecklistEditor();
+  try{ renderChecklist(); }catch(err){}
+}
+function addChkActivity(ct,enc){
+  const e=ensureMantEntry(ct,decodeURIComponent(enc));
+  e.componentes.push({n:'Nueva actividad',f:'Inicio de turno',who:'op',crit:'Media'});
+  saveMantPlan(); renderChecklistEditor();
+  try{ renderChecklist(); }catch(err){}
 }
 
 // ── PANTALLA COMPLETA (solo Dashboard) ──
@@ -5146,17 +5211,35 @@ function updateFullscreenBtnVisibility(page){
 
 // ── DELETE FUNCTIONS ──
 
+// Registros "en cero" (sin piezas ni paros): los generaba el guardado en vivo cuando
+// alguien solo pasaba por una máquina. Se pueden quitar de una vez.
+function isEmptyOee(r){ return !(Number(r.piezasProg)>0||Number(r.piezasTotal)>0||Number(r.piezasRechazo)>0||Number(r.parosNoProg)>0); }
+function isEmptyHora(r){ return !(Number(r.totalFabricadas)>0||Number(r.totalDanadas)>0); }
+function updateEmptyRecordsBtn(){
+  const b=document.getElementById('btn-quitar-vacios'); if(!b) return;
+  const n=records.filter(isEmptyOee).length+horaRecords.filter(isEmptyHora).length;
+  b.textContent='🧹 Quitar vacíos'+(n?' ('+n+')':'');
+  b.style.opacity=n?'1':'.5';
+}
+function clearEmptyRecords(){
+  const oee=records.filter(isEmptyOee), hora=horaRecords.filter(isEmptyHora);
+  if(!oee.length && !hora.length){ alert('No hay registros vacíos.'); return; }
+  if(!confirm(`Se encontraron ${oee.length} registro(s) de OEE y ${hora.length} de hora×hora SIN piezas ni paros (todo en cero).\n\n¿Quitarlos? Los registros que tienen datos no se tocan.`)) return;
+  const oids=new Set(oee.map(r=>String(r.id)));
+  records=records.filter(r=>!oids.has(String(r.id))); save('records');
+  oee.forEach(r=>cloudDeleteRow('OEE_Registros',r.id));
+  const hids=new Set(hora.map(r=>String(r.id)));
+  hora.forEach(r=>cloudDeleteRow(ctSheet(r.ct),r.id));
+  horaRecords=horaRecords.filter(r=>!hids.has(String(r.id)));
+  try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
+  try{ renderAll(); }catch(e){}
+  updateEmptyRecordsBtn();
+}
 function clearAllRecords(){
   if(!confirm('¿Eliminar TODOS los registros de OEE? Esta acción no se puede deshacer.')) return;
   records = []; save('records'); renderHistory(); renderDashboard();
   cloudWriteAll('OEE_Registros', []);
 }
-function clearAllMantLogs(){
-  if(!confirm('¿Eliminar TODOS los registros de mantenimiento? Esta acción no se puede deshacer.')) return;
-  mantLogs = []; save('mantLogs'); renderMantHist(); renderCumplimiento();
-  cloudWriteAll('Mantenimiento', []);
-}
-
 function deleteRecord(id){
   if(!confirm('¿Eliminar este registro de OEE?')) return;
   records = records.filter(r => String(r.id) !== String(id));
@@ -5172,29 +5255,18 @@ function deleteAprov(id){
   renderAprovHist(true);
   cloudDeleteRow('Aprovechamiento', id);
 }
-function deleteMantLog(id){
-  if(!confirm('¿Eliminar este registro de mantenimiento?')) return;
-  mantLogs = mantLogs.filter(r => r.id !== id);
-  save('mantLogs');
-  renderMantHist();
-  renderCumplimiento();
-  cloudDeleteRow('Mantenimiento', id);
-}
 
 function toggleHoraHora(machineId, machineName, enabled, auto){
   const m = machines.find(x=>x.id===machineId);
-  if(m) m.horaHora = enabled;
+  if(m) m.modo = enabled ? 'hora' : 'dia';
   // El cambio manual desde Configuración se publica; la habilitación
   // automática al seleccionar una máquina en Registro es local (así un
   // dispositivo con datos viejos nunca pisa la configuración compartida).
   if(m && !auto) syncMachineToCloud(m,false);
   save('machines');
-  if(enabled){
-    if(!LASER_MAQUINAS_HORA.includes(machineName)) LASER_MAQUINAS_HORA.push(machineName);
-  } else {
-    const idx = LASER_MAQUINAS_HORA.indexOf(machineName);
-    if(idx > -1) LASER_MAQUINAS_HORA.splice(idx, 1);
-  }
+  rebuildHoraList();
+  try{ checkHoraPanel(); }catch(e){}
+  try{ renderDashboard(); }catch(e){}
 }
 
 function deletePhoto(machineId){
@@ -5213,14 +5285,14 @@ function renderHoraFranjas(machine, turno){
   const mach = getMachineByName(machine);
   const capPorHora = mach ? Math.round(mach.cap / franjas.length) : 0;
   const canCapture = canCaptureHora();
-  const dis = canCapture ? '' : 'disabled title="Tu cuenta no tiene permiso para capturar hora×hora — lo asigna un Ingeniero desde Configuración → Usuarios."';
+  const dis = canCapture ? '' : 'disabled title="Tu cuenta no tiene permiso para capturar hora×hora — se otorga en Configuración → Usuarios → Accesos → Permisos de captura."';
   document.getElementById('reg-hora-maquina').textContent = machine + ' · ' + turno.split(' ')[0]+' '+turno.split(' ')[1];
   const extraBtn=document.getElementById('btn-agregar-franja');
   if(extraBtn){
     extraBtn.disabled=!canCapture;
     extraBtn.style.opacity=canCapture?'1':'.4';
     extraBtn.style.cursor=canCapture?'pointer':'not-allowed';
-    extraBtn.title=canCapture?'':'Tu cuenta no tiene permiso para capturar hora×hora.';
+    extraBtn.title=canCapture?'':'Tu cuenta no tiene permiso para capturar (es del Operador).';
   }
   const list = document.getElementById('hora-franjas-list');
   list.innerHTML = franjas.map((f,i) => {
@@ -5330,6 +5402,9 @@ try{
 }catch(e){}
 function scheduleLiveSync(){
   if(!currentUser) return;
+  const mq=document.getElementById('reg-machine')?.value;
+  // Máquinas de cierre del día: sus paros se guardan con el registro del día
+  if(mq && !LASER_MAQUINAS_HORA.includes(mq) && getMachineByName(mq)){ onDiaInput(); return; }
   const ctx={
     ct: document.getElementById('reg-ct')?.value,
     machine: document.getElementById('reg-machine')?.value,
@@ -5345,6 +5420,7 @@ function scheduleLiveSync(){
 // (la máquina que se estaba llenando hasta este momento) — así no se
 // pierde lo que se acababa de escribir.
 function flushLiveSyncNow(){
+  try{ flushDiaSave(); }catch(e){}
   clearTimeout(_liveSyncTimer);
   if(_prevHoraContext){
     try{ liveSyncHoraAndParos(_prevHoraContext); }
@@ -5361,8 +5437,26 @@ function liveSyncHoraAndParos(ctxOverride){
 
   let totalFab=0, totalDan=0;
   const isHoraMachineReal=LASER_MAQUINAS_HORA.includes(machine);
+  // Las máquinas de cierre del día (sin hora por hora) no generan registro de OEE
+  if(!isHoraMachineReal) return;
+  // Solo quien tiene permiso de captura (Operador, o cuenta con permiso otorgado) escribe
+  // registros: ni hora por hora, ni paros, ni el registro de OEE.
+  if(!canCaptureHora()) return;
   const isHoraMachine=isHoraMachineReal && canCaptureHora();
   const nowIso=new Date().toISOString();
+  // No se crea un registro "vacío" solo por pasar por una máquina: debe haber
+  // algo capturado (piezas o paros) o un registro previo que actualizar.
+  {
+    const hid=getHoraStableId(ct,machine,turno,fecha), oid=getOeeStableId(ct,machine,turno,fecha);
+    if(!horaRecords.some(r=>r.id===hid) && !records.some(r=>r.id===oid)){
+      let any=getParos().some(p=>(p.min||0)>0);
+      if(!any && isHoraMachine){
+        const d0=getHoraData(machine,turno), x0=getHorasExtra(machine,turno);
+        any=[...d0.filter(x=>!x.isBreak),...x0].some(x=>x.fabricadas>0||x.danadas>0);
+      }
+      if(!any) return;
+    }
+  }
 
   if(isHoraMachine){
     const data=getHoraData(machine,turno);
@@ -5489,7 +5583,7 @@ function saveHoraRecord(){
   const ct = document.getElementById('reg-ct').value;
   const machine = document.getElementById('reg-machine').value;
   const turno = document.getElementById('reg-turno').value;
-  const fecha = document.getElementById('reg-fecha').value || new Date().toISOString().slice(0,10);
+  const fecha = document.getElementById('reg-fecha').value || todayStr();
   const op = document.getElementById('reg-op').value || '–';
   const data = getHoraData(machine, turno);
   const extra = getHorasExtra(machine, turno);
@@ -6023,9 +6117,24 @@ function clearHorasExtra(){
 }
 
 // ── INIT ──
-const today=new Date().toISOString().slice(0,10);
-['reg-fecha','lam-fecha','tub-fecha','mlog-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
-updateMantMachine();
+const today=todayStr();
+['reg-fecha','lam-fecha','tub-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
+// Teclado en los formularios de Aprovechamiento: Enter pasa al siguiente campo y, en el último
+// campo de la última fila, agrega una fila nueva.
+(function(){
+  const add={'lam-hojas-list':()=>addLamHoja(),'lam-recortes-list':()=>addLamRecorte(),'tub-tramos-list':()=>addTubTramo(),'tub-recortes-list':()=>addTubRecorte()};
+  Object.keys(add).forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('keydown',e=>{
+      if(e.key!=='Enter'||e.target.tagName!=='INPUT') return;
+      e.preventDefault();
+      const row=e.target.closest('.dynamic-row'); if(!row) return;
+      const ins=Array.from(row.querySelectorAll('input:not([readonly])')); const i=ins.indexOf(e.target);
+      if(i<ins.length-1){ ins[i+1].focus(); return; }
+      if(row===el.lastElementChild && canCaptureAprov()) add[id]();
+    });
+  });
+})();
 initAuth();
 </script>
 </body>
