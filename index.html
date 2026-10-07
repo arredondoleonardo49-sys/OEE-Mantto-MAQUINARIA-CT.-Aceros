@@ -373,6 +373,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ap-green{color:#3ecf8e}
 .ap-bar .save-msg{margin-left:auto}
 .ap-bad{border-color:var(--red)!important;background:rgba(240,96,96,.08)!important}
+/* ── Máquina predeterminada por usuario ── */
+.mach-star{background:transparent;border:none;cursor:pointer;font-size:15px;line-height:1;color:var(--text3);padding:0 2px;transition:color .15s,transform .15s}
+.mach-star:hover{color:#f5a623;transform:scale(1.15)}
+.mach-star.on{color:#f5a623}
+.mach-go{font-size:10px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:10px;cursor:pointer;padding:1px 8px;white-space:nowrap;text-transform:none;letter-spacing:0}
+.mach-go:hover{background:rgba(74,158,255,.2)}
+.mach-msg{font-size:10px;font-weight:500;color:var(--green);text-transform:none;letter-spacing:0}
 .dynamic-row input,.dynamic-row select{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%}
 .dynamic-row input:focus,.dynamic-row select:focus{outline:none;border-color:var(--blue)}
 .dynamic-row select option{background:var(--bg2)}
@@ -644,8 +651,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>Identificación del turno</div>
         <div class="form-grid-4">
-          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
-          <div class="form-group"><label>Máquina</label><select id="reg-machine" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
+          <div class="form-group"><label>Centro de trabajo</label><select id="reg-ct" onchange="_defaultPending=false;flushLiveSyncNow();updateMachineAndTurno()"><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select></div>
+          <div class="form-group"><label style="display:flex;align-items:center;gap:6px">Máquina<button type="button" id="reg-default-btn" class="mach-star" onclick="toggleDefaultMachine()" title="Dejar esta máquina como predeterminada">☆</button><button type="button" id="reg-default-go" class="mach-go" onclick="goToDefaultMachine()" style="display:none"></button><span id="reg-default-msg" class="mach-msg"></span></label><select id="reg-machine" onchange="_defaultPending=false;flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Turno</label><select id="reg-turno" onchange="flushLiveSyncNow();updateInfoBox();checkHoraPanel()"></select></div>
           <div class="form-group"><label>Fecha</label><input type="date" id="reg-fecha" onchange="onFechaChange()"></div>
         </div>
@@ -1320,7 +1327,7 @@ function initAuth(){
     const fresh=users.find(u=>u.id===stored.id && u.active!==false);
     if(fresh){
       currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[],permissions:fresh.permissions,captura:fresh.captura||[]};
-      onLoginSuccess();
+      onLoginSuccess(false);   // recarga de la página: sigue donde estaba
       return;
     }
     localStorage.removeItem(SK_CURRENT_USER);
@@ -1385,13 +1392,16 @@ function completeLogin(user){
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
-  onLoginSuccess();
+  onLoginSuccess(true);    // inicio de sesión nuevo: abre su máquina predeterminada
 }
 function logout(){
+  try{ flushEverythingNow(); }catch(e){}   // lo que se estaba capturando se guarda antes de salir
   localStorage.removeItem(SK_CURRENT_USER);
   location.reload();
 }
-function onLoginSuccess(){
+function onLoginSuccess(fresh){
+  _prevHoraContext=resolveInitialRegContext(!!fresh);
+  setTimeout(outboxRetry,2500);      // reintenta lo que no alcanzó a llegar a la nube la vez anterior
   applyRolePermissions();
   loadData();
   // applyRolePermissions() (y por lo tanto applyUserCtLock/updateMachineAndTurno)
@@ -2231,13 +2241,13 @@ function renderUsersConfig(){
     return `
     <div style="padding:.6rem 0;border-bottom:0.5px solid var(--border)">
       <div style="display:grid;grid-template-columns:1fr 110px 1fr 100px 100px 90px 85px;gap:8px;align-items:center">
-        <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}${(u.role!=='operador'&&(u.captura||[]).length)?' <span title="Esta cuenta tiene permiso de captura" style="color:var(--amber)">· ⚠ captura habilitada</span>':''}</div></div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}${rawDefaultMachine(u.id)?' <span title="Máquina predeterminada" style="color:#f5a623">· ★ '+rawDefaultMachine(u.id).machine+'</span>':''}${(u.role!=='operador'&&(u.captura||[]).length)?' <span title="Esta cuenta tiene permiso de captura" style="color:var(--amber)">· ⚠ captura habilitada</span>':''}</div></div>
         <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
           <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
           <option value="lider" ${u.role==='lider'?'selected':''}>Líder</option>
           <option value="ingeniero" ${u.role==='ingeniero'?'selected':''}>Ingeniero</option>
         </select>
-        <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo asignados" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
+        <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo y la máquina predeterminada" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
         <button onclick="toggleUserPermEditor('${u.id}')" title="Click para elegir qué menús, submenús y pestañas puede ver esta cuenta" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer">Accesos ✎</button>
         <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
         <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
@@ -2251,6 +2261,15 @@ function renderUsersConfig(){
           ${ctCheckboxesHtml('edit-ctchk-'+u.id, userCts)}
         </div>
         <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-top:6px" onclick="saveUserCts('${u.id}')">Guardar centros de trabajo</button>
+        <div style="margin-top:8px;padding:.5rem .6rem;background:var(--bg3);border-radius:var(--radius)">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px">★ Máquina predeterminada (Registrar turno)</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px;line-height:1.5">Al iniciar sesión, esta cuenta abre Registrar turno con esta máquina ya seleccionada. La persona también puede cambiarla con la ★ junto al selector de máquina.</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="dm-sel-${u.id}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);min-width:200px">${defaultMachineOptionsHtml(u)}</select>
+            <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="saveUserDefaultMachine('${u.id}')">Guardar máquina</button>
+            <span id="dm-msg-${u.id}" style="font-size:11px;color:var(--green)"></span>
+          </div>
+        </div>
       </div>
       <div id="perm-editor-${u.id}" style="display:none;padding:.6rem 0 0">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
@@ -2507,6 +2526,60 @@ function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
 function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t);}
 // ── CLOUD JSONP ──
 let _gasReqCounter=0;
+const GAS_WRITE_ACTIONS=['upsert','write','delete','writeAll'];
+let _unloading=false;
+
+// ── COLA DE ENVÍO (outbox) ──────────────────────────────────────────
+// Cada upsert/delete se anota aquí ANTES de enviarse y se borra solo cuando la nube confirma. Si la
+// página se recarga con una petición en vuelo, o se cae la red, el registro NO se pierde: se
+// reintenta al volver a abrir y cada minuto. Lo más reciente de cada registro reemplaza lo anterior.
+const SK_OUTBOX='oee_outbox_v1';
+let _outbox={};
+try{ _outbox=JSON.parse(localStorage.getItem(SK_OUTBOX))||{}; }catch(e){ _outbox={}; }
+let _outboxBusy=false;
+function outboxSave(){ try{ localStorage.setItem(SK_OUTBOX,JSON.stringify(_outbox)); }catch(e){ /* sin espacio: no bloquea el guardado normal */ } }
+function outboxAdd(action,sheet,id,record){
+  if(id===undefined||id===null||id==='') return null;
+  const json=record?JSON.stringify(record):'';
+  if(json.length>60000) return null;              // registros enormes (programa del día) no se encolan
+  const key=sheet+'|'+id, ts=Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const prev=_outbox[key];
+  _outbox[key]={action,sheet,id,record:record||null,ts,srvErr:prev?(prev.srvErr||0):0};
+  outboxSave();
+  return {key,ts};
+}
+function outboxDone(h){
+  if(!h) return;
+  const e=_outbox[h.key];
+  if(e && e.ts===h.ts){ delete _outbox[h.key]; outboxSave(); }   // si hubo un cambio más nuevo, ese sigue pendiente
+}
+function outboxRetry(){
+  if(_outboxBusy || !currentUser) return;
+  const keys=Object.keys(_outbox); if(!keys.length) return;
+  _outboxBusy=true;
+  const watchdog=setTimeout(()=>{ _outboxBusy=false; },40000);
+  const next=()=>{
+    const k=keys.shift();
+    if(!k){ clearTimeout(watchdog); _outboxBusy=false; return; }
+    const e=_outbox[k]; if(!e){ next(); return; }
+    const ts=e.ts;
+    // Los reintentos van con ifNewer: el script no pisa una versión MÁS NUEVA que ya esté en la hoja
+    const params=e.action==='delete'
+      ? {action:'delete',sheet:e.sheet,id:e.id}
+      : {action:'upsert',sheet:e.sheet,data:JSON.stringify(e.record),ifNewer:'1'};
+    gasRequest(params,
+      ()=>{ const cur=_outbox[k]; if(cur&&cur.ts===ts){ delete _outbox[k]; outboxSave(); } next(); },
+      (err)=>{
+        // Sin red: se conserva para siempre hasta que haya conexión. Si el servidor la rechaza,
+        // se reintenta unas veces y luego se descarta para no insistir eternamente.
+        if(String(err)!=='Network error'){ const cur=_outbox[k]; if(cur&&cur.ts===ts){ cur.srvErr=(cur.srvErr||0)+1; if(cur.srvErr>5) delete _outbox[k]; outboxSave(); } }
+        next();
+      });
+  };
+  next();
+}
+setInterval(outboxRetry,60000);
+window.addEventListener('online',()=>{ setTimeout(outboxRetry,500); });
 function gasRequest(params,onSuccess,onError){
   // El nombre del callback debe ser único incluso si dos peticiones se
   // disparan en el mismo milisegundo (ej. al subir el programa de GW1 y
@@ -2514,6 +2587,12 @@ function gasRequest(params,onSuccess,onError){
   // eso se le agrega un contador incremental.
   const cbName='cb_'+Date.now()+'_'+(_gasReqCounter++);
   const url=getGasUrl()+'?'+Object.entries({...params,callback:cbName}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  // Si la página se está cerrando, recargando u ocultando, una etiqueta <script> se CANCELA a medio
+  // enviar y la escritura se perdía en la nube. fetch con keepalive sí termina de enviarse. No hay
+  // respuesta que esperar: el registro sigue en la cola de envío y se confirma al volver a abrir.
+  if((_unloading || document.visibilityState==='hidden') && GAS_WRITE_ACTIONS.indexOf(params.action)!==-1){
+    try{ fetch(url,{mode:'no-cors',keepalive:true,credentials:'omit'}).catch(()=>{}); return; }catch(e){ /* sigue con el método normal */ }
+  }
   window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);if(data&&data.error){if(onError)onError(data.error);}else{if(onSuccess)onSuccess(data);}};
   const script=document.createElement('script');script.src=url;
   script.onerror=()=>{delete window[cbName];if(onError)onError('Network error');};
@@ -2528,16 +2607,18 @@ function cloudWriteRow(sheet,record){
 // agregar una nueva — necesario para registros que se editan muchas veces
 // (ej. Programa_Dia, donde cada checkbox/observación dispara un guardado).
 function cloudUpsertRow(sheet,record){
+  const h=outboxAdd('upsert',sheet,record&&record.id,record);
   gasRequest({action:'upsert',sheet,data:JSON.stringify(record)},
-    ()=>showCloudStatus('✓ Guardado en nube','ok'),
+    ()=>{ outboxDone(h); showCloudStatus('✓ Guardado en nube','ok'); },
     (err)=>showCloudStatus('⚠ '+err,'err'));
 }
 // Borra la fila con este "id" también en la nube — sin esto, la
 // sincronización automática la vuelve a traer y parece que "no se puede
 // borrar" (se borra local, pero la nube la resucita en el siguiente sync).
 function cloudDeleteRow(sheet,id){
+  const h=outboxAdd('delete',sheet,id,null);
   gasRequest({action:'delete',sheet,id},
-    ()=>showCloudStatus('✓ Eliminado en la nube','ok'),
+    ()=>{ outboxDone(h); showCloudStatus('✓ Eliminado en la nube','ok'); },
     (err)=>showCloudStatus('⚠ '+err,'err'));
 }
 function cloudWriteAll(sheet,records){
@@ -2942,8 +3023,15 @@ function renderDiaCard(){
 }
 function onFechaChange(){ flushLiveSyncNow(); updateInfoBox(); checkHoraPanel(); }
 // Respaldo: si se cierra o recarga la página con algo sin guardar
-window.addEventListener('pagehide',()=>{ try{ flushDiaSave(); }catch(e){} });
-document.addEventListener('visibilitychange',()=>{ if(document.hidden){ try{ flushDiaSave(); }catch(e){} } });
+// Antes solo se forzaba el guardado del cierre del día: lo escrito en hora×hora o en paros durante el
+// último 1.5 s (el tiempo de espera del guardado automático) se perdía al recargar o cerrar.
+function flushEverythingNow(){
+  try{ flushLiveSyncNow(); }catch(e){}   // hora por hora, paros y (dentro) el cierre del día
+  try{ flushDiaSave(); }catch(e){}
+}
+window.addEventListener('pagehide',()=>{ _unloading=true; flushEverythingNow(); });
+window.addEventListener('pageshow',()=>{ _unloading=false; });   // volver desde la caché del navegador
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushEverythingNow(); });
 
 // ── PLANTILLA DE MÁQUINAS COMPARTIDA ENTRE DISPOSITIVOS ──────────────
 // Antes, agregar/eliminar una máquina solo afectaba al navegador donde se
@@ -3089,6 +3177,9 @@ function loadFromCloud(){
   const canSeeAprov=perms['aprovechamiento']!==false;
   const sheets=[
     {name:'Maquinas_Config',   assign:(d)=>applyMachineRoster(d)},
+    // Máquina predeterminada por usuario. "optional": si el Apps Script aún no se actualizó y no
+    // conoce esta hoja, no se marca como error de sincronización (la función sigue sirviendo en este equipo).
+    {name:'Maquina_Predeterminada', optional:true, assign:(d)=>{ applyDefaultMachinesFromCloud(d); try{ refreshDefaultMachineUI(); }catch(e){} }},
     {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
     ...(canSeeAprov ? [
@@ -3183,7 +3274,7 @@ function loadFromCloud(){
         sheets.forEach(sh=>{
           try{
             const raw=data.results[sh.name];
-            if(raw && raw.__error){ console.warn('Cloud error '+sh.name, raw.__error); hasError=true; return; }
+            if(raw && raw.__error){ if(sh.optional && /no reconocida/i.test(String(raw.__error))) return; console.warn('Cloud error '+sh.name, raw.__error); hasError=true; return; }
             const rows=parseCloudRows(raw||[]);
             if(rows.length>0) sh.assign(rows);
           }catch(e){ console.warn('Parse error '+sh.name, e); hasError=true; }
@@ -3239,6 +3330,7 @@ function loadFromCloudPerSheet(sheets){
         finish();
       },
       (err)=>{
+        if(sh.optional && /no reconocida/i.test(String(err))){ finish(); return; }
         console.warn('Cloud error '+sh.name+':', err);
         hasError=true;
         finish();
@@ -3254,18 +3346,21 @@ function loadFromCloudPerSheet(sheets){
 // esto, la cuadrícula se veía en blanco aunque el turno ya existiera en la
 // nube, y la siguiente captura sobrescribía lo anterior.
 function refreshRegistroAfterCloud(){
+  try{ refreshDefaultMachineUI(); }catch(e){}
   if(!currentUser || !document.getElementById('reg-ct')) return;
   const ae=document.activeElement;
   if(ae && ['INPUT','SELECT','TEXTAREA'].includes(ae.tagName) && document.getElementById('page-registro')?.contains(ae)) return;
   const touched=Array.from(document.querySelectorAll('#hora-franjas-list input')).some(i=>i.value!=='')
     || document.querySelectorAll('#paros-list .paro-row').length>0 || !!_diaPending;
   if(touched) return;
+  if(_defaultPending) restoreOrDefaultMachineSelection();   // ya llegó la lista: se aplica la predeterminada
   checkHoraPanel();
   loadParosForContext();
 }
 function onCloudLoaded(hasError){
   try{ renderAll(); }catch(e){ console.warn('onCloudLoaded: renderAll', e); }
   try{ refreshRegistroAfterCloud(); }catch(e){ console.warn('onCloudLoaded: refreshRegistro', e); }
+  _defaultPending=false;   // la predeterminada solo se espera hasta la primera sincronización
   setTimeout(rosterMigration, 900);
   cloudConnected=true;
   lastSyncHadErrors=!!hasError;
@@ -3663,7 +3758,13 @@ function updateMachineAndTurno(){
 // updateMachineAndTurno() siempre reiniciaba a la primera máquina del CT,
 // obligando a volver a elegir la máquina correcta cada vez.
 function restoreOrDefaultMachineSelection(){
-  const ctx=_prevHoraContext;
+  let ctx=_prevHoraContext;
+  // La predeterminada pudo no estar disponible al iniciar sesión (lista de máquinas aún sin cargar):
+  // se aplica en cuanto se pueda, mientras la persona no haya elegido otra a mano.
+  if(_defaultPending && currentUser){
+    const d=getDefaultMachine(currentUser.id);
+    if(d){ ctx={ct:d.ct,machine:d.machine,turno:(ctx&&ctx.ct===d.ct&&ctx.machine===d.machine)?ctx.turno:null,fecha:todayStr(),uid:currentUser.id}; _defaultPending=false; }
+  }
   const ctSel=document.getElementById('reg-ct');
   if(ctx && ctx.ct && ctSel && !ctSel.disabled && Array.from(ctSel.options).some(o=>o.value===ctx.ct)){
     ctSel.value=ctx.ct;
@@ -3680,16 +3781,31 @@ function restoreOrDefaultMachineSelection(){
   updateInfoBox();calcOEE();
   checkHoraPanel();
 }
+// Máquinas de turno único (Newton, Punteadora…): el selector de turno se fija a "Turno único". Antes se
+// forzaba ese valor aunque el centro de trabajo NO lo tuviera en su lista (TROQUELES solo tiene Turno 1/2/3):
+// el selector quedaba en BLANCO, el guardado automático de Newton no escribía nada (ni local ni en la nube) y,
+// al volver a una máquina de varios turnos, la cuadrícula salía vacía. Ahora siempre queda un turno válido
+// (Turno 1 tiene el mismo horario 8:00–17:00) y se recuerda el turno anterior para devolverlo al regresar.
+let _turnoAntesDeUnico=null, _enTurnoUnico=false;
+function enforceTurnoUnico(){
+  const turnoSel=document.getElementById('reg-turno'); if(!turnoSel) return '';
+  const machine=document.getElementById('reg-machine')?.value;
+  const unico=!!(MAQUINAS_TURNO_UNICO&&MAQUINAS_TURNO_UNICO.includes(machine));
+  const TU='Turno único (8:00–17:00)';
+  const opts=Array.from(turnoSel.options).map(o=>o.value);
+  if(unico){
+    if(!_enTurnoUnico && turnoSel.value) _turnoAntesDeUnico=turnoSel.value;
+    turnoSel.value=opts.includes(TU)?TU:(opts[0]||'');
+  } else if(_enTurnoUnico && _turnoAntesDeUnico && opts.includes(_turnoAntesDeUnico)){
+    turnoSel.value=_turnoAntesDeUnico;
+  }
+  _enTurnoUnico=unico;
+  return turnoSel.value||(unico?TU:'');
+}
 function checkHoraPanel(){
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
-  // Force turno único for Newton/Muebles machines
-  let turno=document.getElementById('reg-turno').value;
-  if(MAQUINAS_TURNO_UNICO&&MAQUINAS_TURNO_UNICO.includes(machine)){
-    turno='Turno único (8:00–17:00)';
-    const turnoSel=document.getElementById('reg-turno');
-    if(turnoSel) turnoSel.value=turno;
-  }
+  const turno=enforceTurnoUnico();
   const isLaserHora=LASER_MAQUINAS_HORA.includes(machine);
   // Máquinas sin hora por hora: solo se captura el total de piezas del día
   const isDia=!isLaserHora && !!getMachineByName(machine);
@@ -3715,6 +3831,7 @@ function checkHoraPanel(){
   applyOperatorGate();
 }
 function updateInfoBox(){
+  enforceTurnoUnico();   // el turno del selector debe ser válido ANTES de usarlo (y de guardarlo como contexto)
   const ct=document.getElementById('reg-ct').value;const mn=document.getElementById('reg-machine').value;const turno=document.getElementById('reg-turno').value;
   const dur=TURNO_MIN[turno]||540;const mach=getMachineByName(mn);
   document.getElementById('inf-duracion').textContent=dur+' min';document.getElementById('inf-planeado').textContent=(dur-PAROS_PROG)+' min';
@@ -3733,9 +3850,10 @@ function updateInfoBox(){
   // el placeholder "Sin máquinas" — guardar eso ahora mismo corrompería
   // el contexto recién restaurado de localStorage antes de poder usarlo.
   if(machines.length){
-    _prevHoraContext={ct, machine:mn, turno, fecha:document.getElementById('reg-fecha')?.value};
+    _prevHoraContext={ct, machine:mn, turno, fecha:document.getElementById('reg-fecha')?.value, uid:currentUser?currentUser.id:undefined};
     try{ localStorage.setItem(SK_REG_CONTEXT, JSON.stringify(_prevHoraContext)); }catch(e){}
   }
+  try{ refreshDefaultMachineUI(); }catch(e){}
 }
 // Los paros son propios de cada máquina — al cambiar de máquina/turno, se
 // limpia la tarjeta y se recarga SOLO lo que ya se había guardado para
@@ -5396,10 +5514,116 @@ let _liveSyncTimer=null;
 // página, no solo cambiar de menú dentro de la misma sesión.
 const SK_REG_CONTEXT='oee_reg_context_v1';
 let _prevHoraContext=null;
-try{
-  const savedCtx=JSON.parse(localStorage.getItem(SK_REG_CONTEXT));
-  if(savedCtx && savedCtx.fecha===todayStr()) _prevHoraContext=savedCtx;
-}catch(e){}
+// Último contexto guardado en este equipo. Ahora lleva el id del usuario: antes era global y
+// quien iniciaba sesión después heredaba la máquina del anterior.
+let _savedRegCtx=null;
+try{ _savedRegCtx=JSON.parse(localStorage.getItem(SK_REG_CONTEXT)); }catch(e){ _savedRegCtx=null; }
+
+// ── MÁQUINA PREDETERMINADA POR USUARIO ───────────────────────────────
+// Se guarda en su PROPIA hoja (Maquina_Predeterminada) y no en Usuarios: el script reemplaza la
+// fila completa en cada escritura, y un operador con una copia local vieja de su cuenta podría
+// revertir una contraseña o unos permisos que Ingeniería acaba de cambiar.
+const SK_DEFAULT_MACHINES='oee_default_machines_v1';
+let defaultMachines={};          // { idUsuario: {ct, machine, updatedAt} }  (machine '' = sin predeterminada)
+try{ defaultMachines=JSON.parse(localStorage.getItem(SK_DEFAULT_MACHINES))||{}; }catch(e){ defaultMachines={}; }
+let _defaultPending=false;       // tras iniciar sesión, mientras la predeterminada aún no se pueda aplicar
+function saveDefaultMachinesLocal(){ try{ localStorage.setItem(SK_DEFAULT_MACHINES,JSON.stringify(defaultMachines)); }catch(e){} }
+function rawDefaultMachine(userId){ const d=defaultMachines[userId]; return (d&&d.ct&&d.machine)?d:null; }
+// Solo cuenta si hoy sigue siendo válida: el CT existe y está permitido para la cuenta, y la
+// máquina sigue en la plantilla de ese CT (si no, se ignora sin romper nada).
+function getDefaultMachine(userId){
+  const d=rawDefaultMachine(userId); if(!d) return null;
+  if(!CT_CONFIG[d.ct]) return null;
+  const u=(currentUser&&currentUser.id===userId)?currentUser:users.find(x=>x.id===userId);
+  const cts=(u&&u.cts&&u.cts.length)?u.cts:null;
+  if(cts && !cts.includes(d.ct)) return null;
+  if(!getMachinesByCT(d.ct).some(m=>m.name===d.machine)) return null;
+  return d;
+}
+function setDefaultMachine(userId,ct,machine){
+  const rec={id:userId,userId,ct:ct||'',machine:machine||'',by:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
+  defaultMachines[userId]={ct:rec.ct,machine:rec.machine,updatedAt:rec.updatedAt};
+  saveDefaultMachinesLocal();
+  cloudUpsertRow('Maquina_Predeterminada',rec);
+  try{ refreshDefaultMachineUI(); }catch(e){}
+}
+function applyDefaultMachinesFromCloud(rows){
+  (rows||[]).forEach(r=>{
+    const id=String(r.userId||r.id||''); if(!id) return;
+    const cur=defaultMachines[id];
+    const tNew=r.updatedAt?new Date(r.updatedAt).getTime():0, tCur=cur&&cur.updatedAt?new Date(cur.updatedAt).getTime():0;
+    if(!cur || tNew>=tCur) defaultMachines[id]={ct:String(r.ct||''),machine:String(r.machine||''),updatedAt:r.updatedAt||''};
+  });
+  saveDefaultMachinesLocal();
+}
+// Qué máquina debe mostrar Registro al entrar:
+//  · recarga de la página → donde se estaba (si es la misma persona y el mismo día): no se pierde nada
+//  · inicio de sesión nuevo → su máquina predeterminada (si tiene)
+//  · sin predeterminada → como antes
+function resolveInitialRegContext(fresh){
+  const me=currentUser; _defaultPending=false;
+  if(!me) return null;
+  const s=_savedRegCtx, mine=!!(s && s.uid===me.id && s.fecha===todayStr());
+  const d=rawDefaultMachine(me.id);
+  if(!fresh && mine) return s;
+  if(fresh) _defaultPending=true;     // inicio de sesión nuevo: también si aún no se conoce (puede llegar de la nube)
+  if(d){
+    _defaultPending=true;
+    return {ct:d.ct,machine:d.machine,turno:(mine&&s.ct===d.ct&&s.machine===d.machine)?s.turno:null,fecha:todayStr(),uid:me.id};
+  }
+  return mine?s:null;
+}
+function flashDefaultMsg(t){
+  const el=document.getElementById('reg-default-msg'); if(!el) return;
+  el.textContent=t; setTimeout(()=>{ if(el.textContent===t) el.textContent=''; },2800);
+}
+function refreshDefaultMachineUI(){
+  const star=document.getElementById('reg-default-btn'), go=document.getElementById('reg-default-go');
+  if(!star||!currentUser) return;
+  const ct=document.getElementById('reg-ct')?.value, m=document.getElementById('reg-machine')?.value;
+  const real=!!(ct&&m&&getMachineByName(m));
+  const d=getDefaultMachine(currentUser.id);
+  const isDef=!!(d&&d.ct===ct&&d.machine===m);
+  star.style.display=real?'':'none';
+  star.textContent=isDef?'★':'☆'; star.classList.toggle('on',isDef);
+  star.title=isDef?'Esta es tu máquina predeterminada. Clic para quitarla.':'Dejar esta máquina como predeterminada: se abrirá sola cada vez que inicies sesión.';
+  if(go){ const show=!!(d&&!isDef); go.style.display=show?'':'none'; if(show){ go.textContent='↩ '+d.machine; go.title='Volver a tu máquina predeterminada ('+d.machine+')'; } }
+}
+function toggleDefaultMachine(){
+  if(!currentUser) return;
+  const ct=document.getElementById('reg-ct')?.value, m=document.getElementById('reg-machine')?.value;
+  if(!ct||!m||!getMachineByName(m)) return;
+  const d=getDefaultMachine(currentUser.id);
+  if(d && d.ct===ct && d.machine===m){ setDefaultMachine(currentUser.id,'',''); flashDefaultMsg('Predeterminada quitada'); }
+  else { setDefaultMachine(currentUser.id,ct,m); flashDefaultMsg('★ Predeterminada'); }
+}
+function goToDefaultMachine(){
+  const d=currentUser&&getDefaultMachine(currentUser.id); if(!d) return;
+  flushLiveSyncNow();                                   // primero se guarda lo que se estaba capturando
+  const cur=_prevHoraContext||{};
+  _prevHoraContext={ct:d.ct,machine:d.machine,turno:cur.turno,fecha:document.getElementById('reg-fecha')?.value,uid:currentUser.id};
+  _defaultPending=false;
+  restoreOrDefaultMachineSelection();
+}
+// Asignación desde Configuración → Usuarios (Ingeniería / Líder)
+function defaultMachineOptionsHtml(u){
+  const cur=rawDefaultMachine(u.id);
+  const allowed=(u.cts&&u.cts.length)?u.cts.filter(c=>CT_CONFIG[c]):ALL_CTS;
+  let h='<option value="">— Ninguna —</option>';
+  allowed.forEach(ct=>{
+    const ms=getMachinesByCT(ct); if(!ms.length) return;
+    h+=`<optgroup label="${ctLabel(ct)}">`+ms.map(m=>`<option value="${ct}|${m.name}" ${cur&&cur.ct===ct&&cur.machine===m.name?'selected':''}>${m.name}</option>`).join('')+'</optgroup>';
+  });
+  return h;
+}
+function saveUserDefaultMachine(id){
+  const sel=document.getElementById('dm-sel-'+id); if(!sel) return;
+  const parts=sel.value?sel.value.split('|'):['',''];
+  setDefaultMachine(id,parts[0],parts[1]);
+  renderUsersConfig();
+  const ed=document.getElementById('ct-editor-'+id); if(ed) ed.style.display='block';
+  const m=document.getElementById('dm-msg-'+id); if(m){ m.textContent=sel.value?'✓ Guardada':'✓ Quitada'; setTimeout(()=>{ m.textContent=''; },2500); }
+}
 function scheduleLiveSync(){
   if(!currentUser) return;
   const mq=document.getElementById('reg-machine')?.value;
