@@ -3139,7 +3139,8 @@ function saveMachineTombs(){ try{ localStorage.setItem(SK_MACHINE_TOMBS,JSON.str
 function machineInRoster(name){ if(!machines.length) return true; return machines.some(x=>x.name===name); }
 function machineCloudRow(m,deleted){
   return {id:m.id, name:m.name, ct:m.ct, cap:m.cap||0,
-    photo:(m.photo && !String(m.photo).startsWith('data:'))?m.photo:'',
+    photo:(m.photo && String(m.photo).length<=PHOTO_MAX_CHARS*2)?m.photo:'',   // fotos grandes (subidas antes de esta versión) no caben en la URL
+    photoV:(!m.photo || String(m.photo).length<=PHOTO_MAX_CHARS*2)?1:0,   // 1 = la fila ya lleva la foto (vacía = foto eliminada)
     horaHora:machineUsesHora(m), modo:m.modo||'',
     checklist:m.checklist!==false,        // false = checklist de arranque apagado
     deleted:!!deleted, updatedAt:new Date().toISOString()};
@@ -3152,9 +3153,12 @@ function syncMachineToCloud(m,deleted){
 }
 // ids que ya existen en la plantilla compartida (para no pisarlos al publicar)
 let rosterRemoteIds=new Set();
+let rosterPhotoV=new Set();       // ids cuya fila ya incluye la foto
+const _photoPushed=new Set();
 function applyMachineRoster(rows){
   let changed=false;
-  (rows||[]).forEach(r=>{ if(r && r.id) rosterRemoteIds.add(r.id); });
+  rosterPhotoV=new Set();
+  (rows||[]).forEach(r=>{ if(r && r.id){ rosterRemoteIds.add(r.id); if(String(r.photoV)==='1') rosterPhotoV.add(r.id); } });
   (rows||[]).forEach(r=>{
     if(!r || !r.id) return;
     const del=(r.deleted===true||r.deleted==='true'||r.deleted==='TRUE');
@@ -3170,18 +3174,29 @@ function applyMachineRoster(rows){
     const local=machines.find(m=>m.id===r.id);
     if(!local){
       if(!r.name || !r.ct) return;
-      const nm={id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:r.photo||'',modo:(r.modo==='hora'||r.modo==='dia')?r.modo:undefined,updatedAt:r.updatedAt};
+      const nm={id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:String(r.photo||''),modo:(r.modo==='hora'||r.modo==='dia')?r.modo:undefined,updatedAt:r.updatedAt};
       if(parseChecklistFlag(r.checklist)===false) nm.checklist=false;
       machines.push(nm);
       changed=true;
     } else if((r.updatedAt||'')>(local.updatedAt||'')){
       local.name=r.name||local.name; local.ct=r.ct||local.ct; local.cap=parseInt(r.cap)||local.cap;
       if(r.modo==='hora'||r.modo==='dia') local.modo=r.modo;
-      if(r.photo) local.photo=r.photo;
+      if(String(r.photoV)==='1') local.photo=String(r.photo||''); else if(r.photo) local.photo=String(r.photo);
       const cf=parseChecklistFlag(r.checklist); if(cf===false) local.checklist=false; else if(cf===true) delete local.checklist;
       local.updatedAt=r.updatedAt; changed=true;
     }
   });
+  // Ingeniería publica una sola vez las fotos que solo existían en su equipo.
+  try{
+    if(currentUser && currentUser.role==='ingeniero'){
+      machines.forEach(m=>{
+        if(!m.photo || rosterPhotoV.has(m.id) || _photoPushed.has(m.id) || !rosterRemoteIds.has(m.id)) return;
+        _photoPushed.add(m.id);
+        const fix=ph=>{ m.photo=ph; save('machines'); syncMachineToCloud(m,false); try{renderConfig();renderDashboard();}catch(e){} };
+        if(String(m.photo).length>PHOTO_MAX_CHARS && String(m.photo).startsWith('data:')) shrinkPhoto(m.photo,fix); else syncMachineToCloud(m,false);
+      });
+    }
+  }catch(e){ console.warn('photo migration',e); }
   if(!changed) return;
   saveMachineTombs(); save('machines');
   rebuildHoraList();
@@ -3272,6 +3287,8 @@ function loadFromCloud(){
     {name:'Maquinas_Config',   assign:(d)=>applyMachineRoster(d)},
     // Máquina predeterminada por usuario. "optional": si el Apps Script aún no se actualizó y no
     // conoce esta hoja, no se marca como error de sincronización (la función sigue sirviendo en este equipo).
+    // Catálogo de calibres de lámina / tipos de tubular compartido (opcional por la misma razón).
+    {name:'Materiales_Config', optional:true, always:true, assign:(d)=>applyMaterialesConfig(d)},
     {name:'Maquina_Predeterminada', optional:true, assign:(d)=>{ applyDefaultMachinesFromCloud(d); try{ refreshDefaultMachineUI(); }catch(e){} }},
     {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
@@ -3369,7 +3386,7 @@ function loadFromCloud(){
             const raw=data.results[sh.name];
             if(raw && raw.__error){ if(sh.optional && /no reconocida/i.test(String(raw.__error))) return; console.warn('Cloud error '+sh.name, raw.__error); hasError=true; return; }
             const rows=parseCloudRows(raw||[]);
-            if(rows.length>0) sh.assign(rows);
+            if(rows.length>0||sh.always) sh.assign(rows);
           }catch(e){ console.warn('Parse error '+sh.name, e); hasError=true; }
         });
         onCloudLoaded(hasError);
@@ -3418,7 +3435,7 @@ function loadFromCloudPerSheet(sheets){
       (data)=>{
         try{
           const rows=parseCloudRows(data.rows||[]);
-          if(rows.length>0) sh.assign(rows);
+          if(rows.length>0||sh.always) sh.assign(rows);
         }catch(e){ console.warn('Parse error '+sh.name, e); }
         finish();
       },
@@ -4964,16 +4981,131 @@ function renderConfig(){
   });
 }
 function renderLamConfig(){
-  document.getElementById('lam-config-list').innerHTML=laminas.map((l,i)=>`<div class="mat-row mat-row-lam"><div class="mat-row-label">${l.cal}</div><input type="text" value="${l.sku||''}" placeholder="SKU" onchange="laminas[${i}].sku=this.value.trim()"><input type="number" value="${l.esp}" step="0.001" onchange="laminas[${i}].esp=parseFloat(this.value)||0"><input type="number" value="${l.peso}" step="0.001" onchange="laminas[${i}].peso=parseFloat(this.value)||0"><input type="number" value="${l.costo}" step="0.01" onchange="laminas[${i}].costo=parseFloat(this.value)||0"><button class="btn-del" onclick="laminas.splice(${i},1);renderLamConfig()" title="Eliminar">×</button></div>`).join('');
+  document.getElementById('lam-config-list').innerHTML=laminas.map((l,i)=>`<div class="mat-row mat-row-lam"><div class="mat-row-label">${l.cal}</div><input type="text" value="${l.sku||''}" placeholder="SKU" onchange="laminas[${i}].sku=this.value.trim();matEdit('lamina',${i})"><input type="number" value="${l.esp}" step="0.001" onchange="laminas[${i}].esp=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.peso}" step="0.001" onchange="laminas[${i}].peso=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.costo}" step="0.01" onchange="laminas[${i}].costo=parseFloat(this.value)||0;matEdit('lamina',${i})"><button class="btn-del" onclick="matDelete('lamina',${i})" title="Eliminar">×</button></div>`).join('');
 }
 function renderTubConfig(){
   const el=document.getElementById('tub-config-list');if(!tubulares.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Sin tubulares.</div>';return;}
-  el.innerHTML=tubulares.map((t,i)=>`<div class="mat-row mat-row-tub"><div class="mat-row-label" style="font-size:12px">${t.tipo}</div><input type="text" value="${t.sku||''}" placeholder="SKU" onchange="tubulares[${i}].sku=this.value.trim()"><input type="number" value="${t.peso}" step="0.01" onchange="tubulares[${i}].peso=parseFloat(this.value)||0"><input type="number" value="${t.costo}" step="0.01" onchange="tubulares[${i}].costo=parseFloat(this.value)||0"><button class="btn-del" onclick="tubulares.splice(${i},1);renderTubConfig()" title="Eliminar">×</button></div>`).join('');
+  el.innerHTML=tubulares.map((t,i)=>`<div class="mat-row mat-row-tub"><div class="mat-row-label" style="font-size:12px">${t.tipo}</div><input type="text" value="${t.sku||''}" placeholder="SKU" onchange="tubulares[${i}].sku=this.value.trim();matEdit('tubular',${i})"><input type="number" value="${t.peso}" step="0.01" onchange="tubulares[${i}].peso=parseFloat(this.value)||0;matEdit('tubular',${i})"><input type="number" value="${t.costo}" step="0.01" onchange="tubulares[${i}].costo=parseFloat(this.value)||0;matEdit('tubular',${i})"><button class="btn-del" onclick="matDelete('tubular',${i})" title="Eliminar">×</button></div>`).join('');
 }
-function addLamConfig(){const cal=document.getElementById('new-lam-cal').value.trim();const sku=document.getElementById('new-lam-sku').value.trim();const esp=parseFloat(document.getElementById('new-lam-esp').value)||0;const peso=parseFloat(document.getElementById('new-lam-peso').value)||0;const costo=parseFloat(document.getElementById('new-lam-costo').value)||0;const msg=document.getElementById('lam-config-msg');if(!cal){msg.textContent='⚠ Ingresa el calibre.';msg.style.color='var(--amber)';return;}if(laminas.find(l=>l.cal===cal)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}laminas.push({cal,sku,esp,peso,costo});renderLamConfig();['new-lam-cal','new-lam-sku','new-lam-esp','new-lam-peso','new-lam-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
-function addTubConfig(){const tipo=document.getElementById('new-tub-tipo').value.trim();const sku=document.getElementById('new-tub-sku').value.trim();const peso=parseFloat(document.getElementById('new-tub-peso').value)||0;const costo=parseFloat(document.getElementById('new-tub-costo').value)||0;const msg=document.getElementById('tub-config-msg');if(!tipo){msg.textContent='⚠ Ingresa el tipo.';msg.style.color='var(--amber)';return;}if(tubulares.find(t=>t.tipo===tipo)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}tubulares.push({tipo,sku,peso,costo});renderTubConfig();['new-tub-tipo','new-tub-sku','new-tub-peso','new-tub-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
-function saveLamConfig(){save('laminas');const msg=document.getElementById('lam-config-save-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
-function saveTubConfig(){save('tubulares');const msg=document.getElementById('tub-config-save-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
+function addLamConfig(){const cal=document.getElementById('new-lam-cal').value.trim();const sku=document.getElementById('new-lam-sku').value.trim();const esp=parseFloat(document.getElementById('new-lam-esp').value)||0;const peso=parseFloat(document.getElementById('new-lam-peso').value)||0;const costo=parseFloat(document.getElementById('new-lam-costo').value)||0;const msg=document.getElementById('lam-config-msg');if(!cal){msg.textContent='⚠ Ingresa el calibre.';msg.style.color='var(--amber)';return;}if(laminas.find(l=>l.cal===cal)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}const nl={cal,sku,esp,peso,costo};laminas.push(nl);matPublish('lamina',nl,false);renderLamConfig();['new-lam-cal','new-lam-sku','new-lam-esp','new-lam-peso','new-lam-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado y publicado para todos los dispositivos.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',4000);}
+function addTubConfig(){const tipo=document.getElementById('new-tub-tipo').value.trim();const sku=document.getElementById('new-tub-sku').value.trim();const peso=parseFloat(document.getElementById('new-tub-peso').value)||0;const costo=parseFloat(document.getElementById('new-tub-costo').value)||0;const msg=document.getElementById('tub-config-msg');if(!tipo){msg.textContent='⚠ Ingresa el tipo.';msg.style.color='var(--amber)';return;}if(tubulares.find(t=>t.tipo===tipo)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}const nt={tipo,sku,peso,costo};tubulares.push(nt);matPublish('tubular',nt,false);renderTubConfig();['new-tub-tipo','new-tub-sku','new-tub-peso','new-tub-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado y publicado para todos los dispositivos.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',4000);}
+// ── CATÁLOGO DE MATERIALES COMPARTIDO (calibres de lámina y tipos de tubular) ──
+// Antes el catálogo vivía solo en el navegador de quien lo editaba, así que un calibre nuevo
+// nunca llegaba al operador. Ahora cada material es una fila de la hoja "Materiales_Config"
+// (con "lápida" para los eliminados) y todos los dispositivos la aplican al sincronizar.
+const SK_MAT_TOMBS='oee_mat_tombs_v1';
+let matTombs={};                 // id -> fecha ISO de la eliminación
+try{ matTombs=JSON.parse(localStorage.getItem(SK_MAT_TOMBS))||{}; }catch(e){ matTombs={}; }
+function saveMatTombs(){ try{ localStorage.setItem(SK_MAT_TOMBS,JSON.stringify(matTombs)); }catch(e){} }
+let matRemoteIds=new Set();      // ids que ya existen en la hoja compartida
+let _matPubBusy=false;
+function matKey(kind,item){ return kind==='lamina'?item.cal:item.tipo; }
+function matId(kind,item){ return (kind==='lamina'?'lam:':'tub:')+matKey(kind,item); }
+function matSig(kind,item){ return JSON.stringify([item.sku||'',kind==='lamina'?(+item.esp||0):0,+item.peso||0,+item.costo||0]); }
+function matTs(v){ const t=v?new Date(v).getTime():0; return isNaN(t)?0:t; }
+function matRow(kind,item,deleted,when){
+  return {id:matId(kind,item),kind,key:matKey(kind,item),sku:String(item.sku||''),
+    esp:kind==='lamina'?(+item.esp||0):'',peso:+item.peso||0,costo:+item.costo||0,
+    deleted:!!deleted,updatedAt:when||new Date().toISOString()};
+}
+function matPersist(kind){ try{ save(kind==='lamina'?'laminas':'tubulares'); }catch(e){} }
+function matPublish(kind,item,deleted){
+  if(!item) return;
+  const row=matRow(kind,item,deleted);
+  item.updatedAt=row.updatedAt; item._sig=matSig(kind,item);
+  if(deleted){ matTombs[row.id]=row.updatedAt; saveMatTombs(); } else if(matTombs[row.id]){ delete matTombs[row.id]; saveMatTombs(); }
+  matRemoteIds.add(row.id);
+  matPersist(kind);
+  try{ cloudUpsertRow('Materiales_Config',row); }catch(e){ console.warn('matPublish',e); }
+}
+function matEdit(kind,i){
+  const list=kind==='lamina'?laminas:tubulares; const it=list[i]; if(!it) return;
+  matPublish(kind,it,false);
+}
+function matDelete(kind,i){
+  const list=kind==='lamina'?laminas:tubulares; const it=list[i]; if(!it) return;
+  if(!confirm('¿Eliminar "'+matKey(kind,it)+'"?\n\nSe elimina del catálogo en TODOS los dispositivos. Los registros históricos que ya lo usaron se conservan.')) return;
+  list.splice(i,1);
+  matPublish(kind,it,true);      // publica la lápida y guarda local
+  if(kind==='lamina') renderLamConfig(); else renderTubConfig();
+  try{ refreshMaterialSelects(); }catch(e){}
+}
+// Publica lo que cambió y aún no está en la nube (botón Guardar).
+function matPublishPending(){
+  [['lamina',laminas],['tubular',tubulares]].forEach(([kind,list])=>{
+    list.forEach(it=>{
+      const id=matId(kind,it);
+      if(it._sig!==undefined ? it._sig!==matSig(kind,it) : !matRemoteIds.has(id)) matPublish(kind,it,false);
+    });
+  });
+  try{ refreshMaterialSelects(); }catch(e){}
+}
+// Aplica la hoja compartida: agrega, actualiza o quita materiales según la fecha más nueva.
+function applyMaterialesConfig(rows){
+  let changed=false;
+  (rows||[]).forEach(r=>{
+    if(!r||!r.id||r.key===undefined||r.key==='') return;
+    const kind=(r.kind==='tubular')?'tubular':'lamina';
+    const id=String(r.id); matRemoteIds.add(id);
+    const del=(r.deleted===true||r.deleted==='true'||r.deleted==='TRUE');
+    const list=kind==='lamina'?laminas:tubulares; const kf=kind==='lamina'?'cal':'tipo';
+    const key=String(r.key);
+    const idx=list.findIndex(x=>x[kf]===key); const local=idx>=0?list[idx]:null;
+    const tR=matTs(r.updatedAt);
+    if(del){
+      if(!matTombs[id] || matTs(matTombs[id])<tR){ matTombs[id]=r.updatedAt||new Date(0).toISOString(); changed=true; }
+      if(local && tR>=matTs(local.updatedAt)){ list.splice(idx,1); changed=true; }
+      return;
+    }
+    if(matTombs[id]){ if(matTs(matTombs[id])>tR) return; delete matTombs[id]; changed=true; }
+    const fields={sku:String(r.sku||''),peso:parseFloat(r.peso)||0,costo:parseFloat(r.costo)||0};
+    if(kind==='lamina') fields.esp=parseFloat(r.esp)||0;
+    if(!local){
+      const ni=kind==='lamina'?{cal:key,esp:0,...fields}:{tipo:key,...fields};
+      ni.updatedAt=r.updatedAt||''; ni._sig=matSig(kind,ni);
+      list.push(ni); changed=true;
+    } else if(tR>matTs(local.updatedAt)){
+      Object.assign(local,fields); local.updatedAt=r.updatedAt; local._sig=matSig(kind,local); changed=true;
+    } else if(local._sig===undefined && tR===matTs(local.updatedAt)){
+      local._sig=matSig(kind,local);
+    }
+  });
+  if(changed){
+    saveMatTombs(); matPersist('lamina'); matPersist('tubular');
+    try{ if(document.getElementById('lam-config-list')) renderLamConfig(); }catch(e){}
+    try{ if(document.getElementById('tub-config-list')) renderTubConfig(); }catch(e){}
+    try{ refreshMaterialSelects(); }catch(e){}
+  }
+  matMigrate();
+}
+// El equipo de Ingeniería publica los materiales que aún no están en la hoja compartida
+// (el catálogo que ya tenía, calibres nuevos o precios editados antes de esta versión).
+function matMigrate(){
+  if(_matPubBusy || !currentUser || currentUser.role!=='ingeniero') return;
+  const rows=[];
+  [['lamina',laminas],['tubular',tubulares]].forEach(([kind,list])=>{
+    list.forEach(it=>{
+      const id=matId(kind,it);
+      if(matRemoteIds.has(id) || matTombs[id]) return;
+      const r=matRow(kind,it,false); it.updatedAt=r.updatedAt; it._sig=matSig(kind,it); rows.push(r);
+    });
+  });
+  if(!rows.length) return;
+  matPersist('lamina'); matPersist('tubular');
+  _matPubBusy=true;
+  upsertSequential('Materiales_Config',rows,()=>{ rows.forEach(r=>matRemoteIds.add(r.id)); _matPubBusy=false; });
+}
+// Reconstruye las opciones de los selectores ya abiertos en el formulario de Aprovechamiento
+// sin perder lo que el operador tenga seleccionado.
+function refreshMaterialSelects(){
+  const set=(sel,html)=>document.querySelectorAll(sel).forEach(el=>{ const cur=el.value; el.innerHTML=html; if(cur && Array.from(el.options).some(o=>o.value===cur)) el.value=cur; });
+  set('#lam-hojas-list select',getLaminaOptions());
+  set('#lam-recortes-list select',getLaminaOptionsShort());
+  set('#tub-tramos-list select',getTubularOptions());
+  set('#tub-recortes-list select',getTubularOptions());
+}
+function saveLamConfig(){save('laminas');matPublishPending();const msg=document.getElementById('lam-config-save-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
+function saveTubConfig(){save('tubulares');matPublishPending();const msg=document.getElementById('tub-config-save-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
 function addMachine(){
   const name=document.getElementById('new-machine-name').value.trim();
   const ct=document.getElementById('new-machine-ct').value;
@@ -5009,7 +5141,29 @@ function deleteMachine(id){
 }
 function saveConfig(){machines.forEach(m=>{const ni=document.getElementById('mname-'+m.id);const ci=document.getElementById('mcap-'+m.id);const oldName=m.name,oldCap=m.cap;if(ni&&ni.value.trim())m.name=ni.value.trim();if(ci&&parseInt(ci.value)>0)m.cap=parseInt(ci.value);if(m.name!==oldName||m.cap!==oldCap)syncMachineToCloud(m,false);});save('machines');const msg=document.getElementById('config-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);updateMachineAndTurno();updateFilterSelects();renderDashboard();}
 function triggerPhotoUpload(id){currentPhotoId=id;document.getElementById('photo-file-input').click();}
-function handlePhotoUpload(e){const file=e.target.files[0];if(!file||!currentPhotoId)return;const reader=new FileReader();reader.onload=function(ev){const m=machines.find(x=>x.id===currentPhotoId);if(m){m.photo=ev.target.result;save('machines');renderConfig();renderDashboard();}};reader.readAsDataURL(file);e.target.value='';}
+// Las fotos se reducen (≈160 px, JPEG) para poder publicarlas en la hoja Maquinas_Config:
+// sin eso la foto solo existía en el equipo donde se subió y los demás no la veían.
+const PHOTO_MAX_CHARS=7000;     // la petición viaja en la URL: se mantiene pequeña
+function shrinkPhoto(dataUrl,cb){
+  const img=new Image();
+  img.onload=()=>{
+    try{
+      let out=dataUrl;
+      for(const size of [160,128,100,80]){
+        const k=Math.min(1,size/Math.max(img.width,img.height));
+        const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(img.width*k)); c.height=Math.max(1,Math.round(img.height*k));
+        const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+        let done=false;
+        for(const q of [0.7,0.55,0.4]){ out=c.toDataURL('image/jpeg',q); if(out.length<=PHOTO_MAX_CHARS){ done=true; break; } }
+        if(done) break;
+      }
+      cb(out);
+    }catch(e){ cb(dataUrl); }
+  };
+  img.onerror=()=>cb(dataUrl);
+  img.src=dataUrl;
+}
+function handlePhotoUpload(e){const file=e.target.files[0];if(!file||!currentPhotoId)return;const mid=currentPhotoId;const reader=new FileReader();reader.onload=function(ev){shrinkPhoto(ev.target.result,function(data){const m=machines.find(x=>x.id===mid);if(m){m.photo=data;save('machines');syncMachineToCloud(m,false);renderConfig();renderDashboard();}});};reader.readAsDataURL(file);e.target.value='';}
 // ── COLLAPSIBLE ──
 function toggleCT(bodyId,headerEl){const body=document.getElementById(bodyId);const chv=headerEl.querySelector('.ct-chevron');if(body.style.display==='none'){body.style.display='';if(chv)chv.classList.remove('collapsed');}else{body.style.display='none';if(chv)chv.classList.add('collapsed');}}
 function toggleMantMachine(bodyId,headerEl){const body=document.getElementById(bodyId);const chv=headerEl.querySelector('.ct-chevron');if(body.style.display==='none'){body.style.display='';if(chv)chv.classList.remove('collapsed');}else{body.style.display='none';if(chv)chv.classList.add('collapsed');}}
