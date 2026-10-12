@@ -2645,11 +2645,25 @@ function cloudWriteRow(sheet,record){
 // Como write() pero actualiza la fila existente (buscada por "id") en vez de
 // agregar una nueva — necesario para registros que se editan muchas veces
 // (ej. Programa_Dia, donde cada checkbox/observación dispara un guardado).
+// Las escrituras del MISMO registro se envían en orden, una a la vez: antes, dos guardados seguidos
+// viajaban en paralelo y el más viejo podía llegar al Sheet DESPUÉS del más nuevo y pisarlo
+// (el turno "se borraba" aunque se había capturado completo). Si llegan más mientras una va en
+// camino, solo se envía la última.
+const _upQ={};
 function cloudUpsertRow(sheet,record){
   const h=outboxAdd('upsert',sheet,record&&record.id,record);
-  gasRequest({action:'upsert',sheet,data:JSON.stringify(record)},
-    ()=>{ outboxDone(h); showCloudStatus('✓ Guardado en nube','ok'); },
-    (err)=>showCloudStatus('⚠ '+err,'err'));
+  const key=sheet+'|'+(record&&record.id);
+  const q=_upQ[key]||(_upQ[key]={busy:false,next:null});
+  const send=(rec,hh)=>{
+    q.busy=true; let done=false;
+    const fin=()=>{ if(done) return; done=true; clearTimeout(wd); q.busy=false; if(q.next){ const n=q.next; q.next=null; send(n.rec,n.h); } };
+    const wd=setTimeout(fin,25000);
+    gasRequest({action:'upsert',sheet,data:JSON.stringify(rec)},
+      ()=>{ outboxDone(hh); showCloudStatus('✓ Guardado en nube','ok'); fin(); },
+      (err)=>{ showCloudStatus('⚠ '+err,'err'); fin(); });
+  };
+  if(q.busy && !(_unloading || document.visibilityState==='hidden')){ q.next={rec:record,h}; return; }
+  send(record,h);
 }
 // Borra la fila con este "id" también en la nube — sin esto, la
 // sincronización automática la vuelve a traer y parece que "no se puede
@@ -3034,7 +3048,8 @@ function commitDiaTotal(ct,machine,fecha,raw,explicit,parosArg){
   if(!canCaptureDia() || !ct || !machine || !fecha) return false;
   const prev=getDiaRecord(ct,machine,fecha);
   const txt=String(raw==null?'':raw).trim();
-  const paros=Array.isArray(parosArg)?parosArg:(prev?safeParse(prev.paros,[]):[]);
+  let paros=Array.isArray(parosArg)?parosArg:(prev?safeParse(prev.paros,[]):[]);
+  if(!paros.length && prev && !_hTouch.paros){ const sp=safeParse(prev.paros,[]); if(sp.length) paros=sp; }   // no borrar paros que la pantalla aún no mostraba
   let piezas=diaHasPiezas(prev)?Number(prev.piezas):null;
   if(txt!=='') piezas=Math.max(0,Math.round(parseFloat(txt)||0));
   // No se crea un registro vacío: debe haber el total o al menos un paro
@@ -3458,9 +3473,18 @@ function loadFromCloudPerSheet(sheets){
 function refreshRegistroAfterCloud(){
   try{ refreshDefaultMachineUI(); }catch(e){}
   if(!currentUser || !document.getElementById('reg-ct')) return;
+  // Hora por hora: se rellena en sitio lo que la persona aún no ha tocado (aunque esté escribiendo en otro campo)
+  try{
+    const mq=document.getElementById('reg-machine')?.value;
+    if(mq && LASER_MAQUINAS_HORA.includes(mq)){
+      softRestoreHora();
+      if(!_hTouch.paros && !document.querySelector('#paros-list .paro-row')) loadParosForContext();
+    }
+  }catch(e){ console.warn('softRestoreHora',e); }
   const ae=document.activeElement;
   if(ae && ['INPUT','SELECT','TEXTAREA'].includes(ae.tagName) && document.getElementById('page-registro')?.contains(ae)) return;
   const touched=Array.from(document.querySelectorAll('#hora-franjas-list input')).some(i=>i.value!=='')
+    || _hTouch.ids.size>0 || _hTouch.extra || _hTouch.dib || _hTouch.paros
     || document.querySelectorAll('#paros-list .paro-row').length>0 || !!_diaPending
     || !!getDiaDraft(document.getElementById('reg-ct').value,document.getElementById('reg-machine').value,document.getElementById('reg-fecha').value);
   if(touched) return;
@@ -3979,6 +4003,7 @@ function loadParosForContext(){
   const fecha=document.getElementById('reg-fecha')?.value;
   list.innerHTML='';
   paroRows=[];
+  _hTouch.paros=false;
   let savedParos=[];
   if(machine && !LASER_MAQUINAS_HORA.includes(machine) && getMachineByName(machine)){
     // Máquina de cierre del día: los paros son del día (van en su registro)
@@ -5606,7 +5631,7 @@ function updateFullscreenBtnVisibility(page){
 // Registros "en cero" (sin piezas ni paros): los generaba el guardado en vivo cuando
 // alguien solo pasaba por una máquina. Se pueden quitar de una vez.
 function isEmptyOee(r){ return !(Number(r.piezasProg)>0||Number(r.piezasTotal)>0||Number(r.piezasRechazo)>0||Number(r.parosNoProg)>0); }
-function isEmptyHora(r){ return !(Number(r.totalFabricadas)>0||Number(r.totalDanadas)>0); }
+function isEmptyHora(r){ return !(Number(r.totalFabricadas)>0||Number(r.totalDanadas)>0||Number(r.tiempoDibujos)>0); }
 function updateEmptyRecordsBtn(){
   const b=document.getElementById('btn-quitar-vacios'); if(!b) return;
   const n=records.filter(isEmptyOee).length+horaRecords.filter(isEmptyHora).length;
@@ -5672,6 +5697,120 @@ function deletePhoto(machineId){
 let horaChart = null;
 let horaRecords = [];
 
+// ── PROTECCIÓN CONTRA SOBRESCRIBIR CON DATOS EN BLANCO ───────────────
+// Causa de la pérdida de datos: el guardado en vivo reescribe el turno completo leyendo lo que
+// muestra la pantalla. Si la pantalla no mostraba todo lo ya guardado (tiempos de nidos y horas
+// extra no se restauraban; un equipo recién abierto no tenía aún lo que llegó de la nube; el botón
+// Guardar vaciaba el formulario), el siguiente guardado pisaba el registro con piezas en cero.
+// Ahora (1) todo se restaura al pintar la cuadrícula, (2) se recuerda qué campos TOCÓ la persona y
+// (3) un campo que no tocó y está vacío conserva lo ya guardado.
+let _hTouch={ids:new Set(),extra:false,dib:false,paros:false};
+let _gridKey='';
+function horaKey(ct,machine,turno,fecha){ return [ct,machine,turno,fecha].join('|'); }
+function resetHoraTouch(){ _hTouch.ids=new Set(); _hTouch.extra=false; _hTouch.dib=false; }
+document.addEventListener('input',e=>{
+  const t=e.target; if(!t||!t.closest) return;
+  if(t.closest('#hora-franjas-list')) _hTouch.ids.add(t.id);
+  else if(t.closest('#horas-extra-list')) _hTouch.extra=true;
+  else if(t.closest('#dibujo-list')) _hTouch.dib=true;
+  else if(t.closest('#paros-list')) _hTouch.paros=true;
+},true);
+document.addEventListener('click',e=>{
+  const t=e.target; if(!t||!t.closest) return;
+  if(t.closest('#horas-extra-list .btn-del')) _hTouch.extra=true;
+  else if(t.closest('#dibujo-list .btn-del')) _hTouch.dib=true;
+  else if(t.closest('#paros-list .btn-del')) _hTouch.paros=true;
+},true);
+function newestHoraRecord(ct,machine,turno,fecha){
+  return horaRecords.filter(r=>r.ct===ct&&r.machine===machine&&r.turno===turno&&r.fecha===fecha)
+    .reduce((best,r)=>(!best||isNewerRecord(r,best))?r:best,null);
+}
+let _dibSeq=0;
+function setDibujoRows(list){
+  const box=document.getElementById('dibujo-list'); if(!box) return;
+  box.innerHTML='';
+  (list||[]).forEach(d=>{
+    addDibujoRow();
+    const ins=box.lastElementChild.querySelectorAll('input');
+    if(ins[0]) ins[0].value=(d.nombre==='Sin nombre')?'':(d.nombre||'');
+    if(ins[1]) ins[1].value=d.minutos||'';
+  });
+  calcDibujoTotal();
+}
+function setExtraRows(list){
+  clearHorasExtra();
+  (list||[]).forEach(x=>{
+    addHoraExtra();
+    const box=document.getElementById('horas-extra-list'); if(!box||!box.lastElementChild) return;
+    const ins=box.lastElementChild.querySelectorAll('input');
+    if(ins[0]) ins[0].value=x.franja||'';
+    if(ins[1]) ins[1].value=x.fabricadas||'';
+    if(ins[2]) ins[2].value=x.danadas||'';
+  });
+}
+function extrasFromRecord(rec){
+  return safeParse(rec&&rec.franjas,[]).filter(f=>f&&(f.isExtra||/⚡$/.test(String(f.franja||''))))
+    .map(f=>({franja:String(f.franja||'').replace(/⚡$/,''),fabricadas:parseInt(f.fabricadas)||0,danadas:parseInt(f.danadas)||0,isExtra:true}));
+}
+// Rellena SIN reconstruir la cuadrícula lo que la persona aún no ha tocado (llegó algo de la nube).
+function softRestoreHora(){
+  const ct=document.getElementById('reg-ct')?.value, machine=document.getElementById('reg-machine')?.value;
+  const turno=document.getElementById('reg-turno')?.value, fecha=document.getElementById('reg-fecha')?.value;
+  if(!ct||!machine||!LASER_MAQUINAS_HORA.includes(machine)) return;
+  if(_gridKey!==horaKey(ct,machine,turno,fecha)) return;
+  const rec=newestHoraRecord(ct,machine,turno,fecha); if(!rec) return;
+  const sf=safeParse(rec.franjas,[]);
+  (LASER_FRANJAS[turno]||[]).forEach((f,i)=>{
+    if(f.includes('Comida')) return; const s=sf[i]; if(!s) return;
+    [['hora-fab-'+i,s.fabricadas],['hora-dan-'+i,s.danadas],['hora-motivo-'+i,s.motivo]].forEach(([id,v])=>{
+      const el=document.getElementById(id);
+      if(el && v && el.value==='' && !_hTouch.ids.has(id)) el.value=v;
+    });
+    if(parseInt(s.danadas)>0) toggleMotivoRow(i);
+  });
+  if(!_hTouch.extra && !document.querySelector('#horas-extra-list .dynamic-row')){ const ex=extrasFromRecord(rec); if(ex.length) setExtraRows(ex); }
+  if(MAQUINAS_DIBUJO.includes(machine) && !_hTouch.dib){
+    const filled=Array.from(document.querySelectorAll('#dibujo-list .dibujo-row')).some(r=>Array.from(r.querySelectorAll('input')).some(i=>i.value!==''));
+    const sd=safeParse(rec.dibujos,[]);
+    if(!filled && sd.length) setDibujoRows(sd);
+  }
+  try{ calcHoraTotales(machine,turno); }catch(e){}
+}
+// Nunca deja que un campo vacío que la persona no tocó borre lo ya guardado.
+function protectHora(existing,data,extra,dibujos){
+  if(!existing) return {data,extra,dibujos};
+  const sf=safeParse(existing.franjas,[]);
+  data=data.map((d,i)=>{
+    const sv=sf[i]; if(d.isBreak||!sv) return d; const o={...d};
+    if(!_hTouch.ids.has('hora-fab-'+i) && !d.fabricadas && parseInt(sv.fabricadas)>0) o.fabricadas=parseInt(sv.fabricadas);
+    if(!_hTouch.ids.has('hora-dan-'+i) && !d.danadas && parseInt(sv.danadas)>0) o.danadas=parseInt(sv.danadas);
+    if(!_hTouch.ids.has('hora-motivo-'+i) && !d.motivo && sv.motivo) o.motivo=sv.motivo;
+    return o;
+  });
+  if(!extra.length && !_hTouch.extra){ const ex=extrasFromRecord(existing); if(ex.length) extra=ex; }
+  if(!dibujos.length && !_hTouch.dib){ const sd=safeParse(existing.dibujos,[]); if(sd.length) dibujos=sd; }
+  return {data,extra,dibujos};
+}
+// Al abrir una cuadrícula sin registro local se consulta la nube (hoy), por si el turno ya existe allí.
+const _gridPulled={}, _pullPending={};
+function pullHoraForGrid(ct,fecha){
+  const k=ct+'|'+fecha; if(_gridPulled[k] && Date.now()-_gridPulled[k]<60000) return; _gridPulled[k]=Date.now();
+  if(!currentUser || typeof gasRequest!=='function') return;
+  _pullPending[k]=true; const endPull=()=>{ _pullPending[k]=false; };
+  setTimeout(endPull,20000);
+  gasRequest({action:'readAll',sheets:ctSheet(ct)+',OEE_Registros',since:fecha},(data)=>{
+    endPull();
+    try{
+      if(!data||!data.results) return;
+      const h=data.results[ctSheet(ct)], o=data.results['OEE_Registros'];
+      if(Array.isArray(h)&&h.length){ const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,parseCloudRows(h))]; localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }
+      if(Array.isArray(o)&&o.length){ records=mergeRecordsById(records,parseCloudRows(o)); save('records'); }
+      softRestoreHora();
+      if(!_hTouch.paros && !document.querySelector('#paros-list .paro-row')) loadParosForContext();
+    }catch(e){ console.warn('pullHoraForGrid',e); }
+  },()=>{ endPull(); });
+}
+
 function renderHoraFranjas(machine, turno){
   const franjas = LASER_FRANJAS[turno] || [];
   const mach = getMachineByName(machine);
@@ -5687,6 +5826,8 @@ function renderHoraFranjas(machine, turno){
     extraBtn.title=canCapture?'':'Tu cuenta no tiene permiso para capturar (es del Operador).';
   }
   const list = document.getElementById('hora-franjas-list');
+  resetHoraTouch();
+  _gridKey=horaKey(document.getElementById('reg-ct')?.value,machine,turno,document.getElementById('reg-fecha')?.value);
   list.innerHTML = franjas.map((f,i) => {
     const isBreak = f.includes('Comida');
     if(isBreak) return `
@@ -5716,7 +5857,11 @@ function renderHoraFranjas(machine, turno){
   // se ve "en blanco" momentáneamente mientras se pintan los valores.
   const ctNow=document.getElementById('reg-ct')?.value;
   const fechaNow=document.getElementById('reg-fecha')?.value;
-  const existing=horaRecords.find(r=>r.ct===ctNow && r.machine===machine && r.turno===turno && r.fecha===fechaNow);
+  const existing=newestHoraRecord(ctNow,machine,turno,fechaNow);
+  // Horas extra y tiempos de nidos también se restauran (antes quedaban en blanco o con lo de otra máquina)
+  setExtraRows(existing?extrasFromRecord(existing):[]);
+  setDibujoRows(existing?safeParse(existing.dibujos,[]):[]);
+  if(!existing && ctNow && fechaNow) pullHoraForGrid(ctNow,fechaNow);
   if(existing){
     const savedFranjas=safeParse(existing.franjas,[]);
     franjas.forEach((f,i)=>{
@@ -5932,6 +6077,8 @@ function liveSyncHoraAndParos(ctxOverride){
   const fecha=ctxOverride?.fecha ?? document.getElementById('reg-fecha')?.value;
   const op=ctxOverride?.op ?? (document.getElementById('reg-op')?.value||'–');
   if(!ct||!machine||!turno||!fecha) return;
+  // La cuadrícula en pantalla debe ser la de este turno; si no, leería datos de otra máquina/turno
+  if(LASER_MAQUINAS_HORA.includes(machine) && _gridKey!==horaKey(ct,machine,turno,fecha)) return;
 
   let totalFab=0, totalDan=0;
   const isHoraMachineReal=LASER_MAQUINAS_HORA.includes(machine);
@@ -5951,14 +6098,20 @@ function liveSyncHoraAndParos(ctxOverride){
       if(!any && isHoraMachine){
         const d0=getHoraData(machine,turno), x0=getHorasExtra(machine,turno);
         any=[...d0.filter(x=>!x.isBreak),...x0].some(x=>x.fabricadas>0||x.danadas>0);
+        if(!any && MAQUINAS_DIBUJO.includes(machine)) any=getDibujos().some(x=>x.minutos>0||x.nombre!=='Sin nombre');
       }
       if(!any) return;
     }
   }
 
   if(isHoraMachine){
-    const data=getHoraData(machine,turno);
-    const extra=getHorasExtra(machine,turno);
+    // Turno sin registro local y la nube aún no responde: se espera (hasta ~20 s) para no pisar con una captura parcial
+    if(!horaRecords.some(r=>r.id===getHoraStableId(ct,machine,turno,fecha)) && _pullPending[ct+'|'+fecha] && !(_unloading || document.visibilityState==='hidden')){
+      clearTimeout(_liveSyncTimer); _liveSyncTimer=setTimeout(()=>liveSyncHoraAndParos(ctxOverride),1500); return;
+    }
+    const prot=protectHora(newestHoraRecord(ct,machine,turno,fecha),getHoraData(machine,turno),getHorasExtra(machine,turno),MAQUINAS_DIBUJO.includes(machine)?getDibujos():[]);
+    const data=prot.data;
+    const extra=prot.extra;
     const allFrames=[...data.filter(d=>!d.isBreak), ...extra];
     totalFab=allFrames.reduce((a,d)=>a+d.fabricadas,0);
     totalDan=allFrames.reduce((a,d)=>a+d.danadas,0);
@@ -5967,7 +6120,7 @@ function liveSyncHoraAndParos(ctxOverride){
     const baseFranjas=data.filter(d=>!d.isBreak).length||1;
     const cap=Math.round(baseCap+extra.length*(baseCap/baseFranjas));
     const efic=cap>0?Math.round((totalFab/cap)*100):0;
-    const dibujos=MAQUINAS_DIBUJO.includes(machine)?getDibujos():[];
+    const dibujos=prot.dibujos;
     const tiempoDibujos=dibujos.reduce((a,d)=>a+d.minutos,0);
     const allFranjas=[...data, ...extra.map(e=>({...e, franja:e.franja+'⚡'}))];
 
@@ -5997,11 +6150,14 @@ function liveSyncHoraAndParos(ctxOverride){
 
   // Paros — aplica a CUALQUIER máquina (con o sin hora×hora), mismo id
   // fijo, se actualiza en vivo (no solo al presionar Guardar).
-  const paros=getParos();
-  const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
-  const piezasProg=parseInt(document.getElementById('reg-programadas')?.value)||0;
-  const {disp,rend,cal,oee,cumpl,tO}=calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine);
   const oeeId=getOeeStableId(ct,machine,turno,fecha);
+  const prevOee=records.filter(r=>r.id===oeeId)[0];
+  let paros=getParos();
+  if(!paros.length && !_hTouch.paros && prevOee){ const sp=safeParse(prevOee.paros,[]); if(sp.length) paros=sp; }
+  const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
+  let piezasProg=parseInt(document.getElementById('reg-programadas')?.value)||0;
+  if(!piezasProg && prevOee && Number(prevOee.piezasProg)>0) piezasProg=Number(prevOee.piezasProg);
+  const {disp,rend,cal,oee,cumpl,tO}=calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine);
   const oeeRec={id:oeeId,ct,machine,turno,fecha,op,paros:JSON.stringify(paros),parosNoProg,
     piezasProg,piezasTotal:totalFab,piezasRechazo:totalDan,tO,disp,rend,cal,oee,cumpl,updatedAt:nowIso};
   const oIdx=records.findIndex(r=>r.id===oeeId);
@@ -6083,8 +6239,9 @@ function saveHoraRecord(){
   const turno = document.getElementById('reg-turno').value;
   const fecha = document.getElementById('reg-fecha').value || todayStr();
   const op = document.getElementById('reg-op').value || '–';
-  const data = getHoraData(machine, turno);
-  const extra = getHorasExtra(machine, turno);
+  const prot = protectHora(newestHoraRecord(ct,machine,turno,fecha), getHoraData(machine, turno), getHorasExtra(machine, turno), MAQUINAS_DIBUJO.includes(machine) ? getDibujos() : []);
+  const data = prot.data;
+  const extra = prot.extra;
   const allFrames = [...data.filter(d=>!d.isBreak), ...extra];
   const totalFab = allFrames.reduce((a,d)=>a+d.fabricadas,0);
   const totalDan = allFrames.reduce((a,d)=>a+d.danadas,0);
@@ -6094,7 +6251,7 @@ function saveHoraRecord(){
   const cap = Math.round(baseCap + extra.length*(baseCap/baseFranjas2));
   const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
 
-  const dibujos = MAQUINAS_DIBUJO.includes(machine) ? getDibujos() : [];
+  const dibujos = prot.dibujos;
   const tiempoDibujos = dibujos.reduce((a,d)=>a+d.minutos,0);
   const allFranjas = [...data, ...extra.map(e=>({...e, franja:e.franja+'⚡'}))];
   const horaId = getHoraStableId(ct,machine,turno,fecha);
@@ -6135,19 +6292,10 @@ function saveHoraRecord(){
   msg.style.color = 'var(--green)';
   setTimeout(()=>msg.textContent='', 3000);
 
-  // Clear inputs
-  const franjas2 = LASER_FRANJAS[turno] || [];
-  franjas2.forEach((_,i)=>{
-    const f=document.getElementById('hora-fab-'+i); if(f) f.value='';
-    const d=document.getElementById('hora-dan-'+i); if(d) d.value='';
-    const m=document.getElementById('hora-motivo-'+i); if(m) m.value='';
-    const mr=document.getElementById('hora-motivo-row-'+i); if(mr) mr.style.display='none';
-  });
-  clearDibujos();
-  clearHorasExtra();
-  document.getElementById('paros-list').innerHTML='';paroRows=[];updateParosTotal();
-  try{ calcHoraTotales(machine, turno); }
-  catch(e){ console.warn('calcHoraTotales falló tras Guardar (no crítico):', e); }
+  // Antes aquí se vaciaba el formulario: el turno ya guardado parecía borrado y la siguiente captura lo
+  // pisaba. Ahora la pantalla se repinta con lo que quedó guardado.
+  try{ checkHoraPanel(); loadParosForContext(); }
+  catch(e){ console.warn('repintado tras Guardar (no crítico):', e); }
   renderHoraHist();
   renderAll();
   // Resincroniza en segundo plano para reflejar lo que otras máquinas/
@@ -6527,17 +6675,17 @@ function renderEvaluacion(){
 
 // ── DIBUJOS / NIDOS ──────────────────────────────────
 function addDibujoRow(){
-  const id='dib'+Date.now();
+  const id='dib'+Date.now()+'_'+(++_dibSeq);
   const d=document.createElement('div');
   d.className='dibujo-row';
   d.id=id;
   d.style.cssText='display:grid;grid-template-columns:1fr 80px 32px;gap:8px;align-items:center;margin-bottom:6px';
   d.innerHTML=`
-    <input type="text" placeholder="Nombre del dibujo o nido..." oninput="calcDibujoTotal()"
+    <input type="text" placeholder="Nombre del dibujo o nido..." oninput="calcDibujoTotal();scheduleLiveSync()"
       style="font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
-    <input type="number" min="0" placeholder="0" oninput="calcDibujoTotal()"
+    <input type="number" min="0" placeholder="0" oninput="calcDibujoTotal();scheduleLiveSync()"
       style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
-    <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="document.getElementById('${id}').remove();calcDibujoTotal()">×</button>`;
+    <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="document.getElementById('${id}').remove();calcDibujoTotal();scheduleLiveSync()">×</button>`;
   document.getElementById('dibujo-list').appendChild(d);
 }
 
@@ -6571,7 +6719,7 @@ let horasExtraCount = 0;
 function addHoraExtra(){
   if(!canCaptureHora()){ console.warn('addHoraExtra bloqueado: sin permiso de capturar hora×hora.'); return; }
   horasExtraCount++;
-  const id = 'hex'+Date.now();
+  const id = 'hex'+Date.now()+'_'+(++_dibSeq);
   const machine = document.getElementById('reg-machine').value;
   const turno = document.getElementById('reg-turno').value;
   // Suggest next franja label based on turno
@@ -6592,7 +6740,7 @@ function addHoraExtra(){
       style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
     <input type="number" min="0" placeholder="Dañadas" id="hex-dan-${id}" oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
       style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:#f06060;text-align:center;width:100%">
-    <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="document.getElementById('${id}').remove();horasExtraCount--;calcHoraTotales('${machine}','${turno}')">×</button>`;
+    <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="document.getElementById('${id}').remove();horasExtraCount--;calcHoraTotales('${machine}','${turno}');scheduleLiveSync()">×</button>`;
   document.getElementById('horas-extra-list').appendChild(d);
 }
 
