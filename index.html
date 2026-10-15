@@ -5185,7 +5185,12 @@ function renderRetrabajoSemanal(fct,fmachine){
   let ents=rtCollect();
   if(fct) ents=ents.filter(e=>e.ct===fct);
   if(fmachine) ents=ents.filter(e=>e.machine===fmachine);
-  if(!ents.length){ box.innerHTML=''; return; }
+  if(!ents.length){
+    // Sin retrabajo aún: se deja visible el bloque (vacío) para que se sepa dónde aparecerá.
+    const aplica=(!fct||fct==='LASER')&&(!fmachine||usaRetrabajo(fmachine))&&machines.some(m=>usaRetrabajo(m.name)&&machineInRoster(m.name));
+    box.innerHTML=aplica?`<div style="border:1px dashed rgba(240,96,96,.3);border-radius:var(--radius-lg);margin-bottom:.75rem;padding:9px 12px;font-size:12px;color:var(--text3)"><b style="color:#f06060">⚠ Retrabajo por semana — tubular (GW1 / GW2)</b> &nbsp;·&nbsp; Aún no hay retrabajo registrado. Aparecerá aquí, con su reporte semanal y su merma, en cuanto se capturen piezas dañadas con su registro de retrabajo en GW1 o GW2.</div>`:'';
+    return;
+  }
   const open=box.dataset.open!=='0';
   const groups=rtBuildGroups(ents), canMerma=canEditWeeklyMerma();
   const mono="font-family:'IBM Plex Mono',monospace";
@@ -6934,6 +6939,12 @@ function renderEvaluacion(){
   // pero no corresponde evaluarlo como si fuera su desempeño habitual.
   const ingenieroNames=new Set(users.filter(u=>u.role==='ingeniero').map(u=>(u.name||'').trim().toLowerCase()));
   filtered = filtered.filter(r=>!ingenieroNames.has(r.op.trim().toLowerCase()));
+  // Solo se evalúa a operadores/líderes que siguen existiendo y activos: si una cuenta se eliminó o se desactivó
+  // (ya no está en la planta), sus registros históricos no deben seguir apareciendo como un operador más.
+  if(users.some(u=>u.role!=='ingeniero')){
+    const vigentes=new Set(users.filter(u=>u.active!==false).map(u=>(u.name||'').trim().toLowerCase()));
+    filtered = filtered.filter(r=>vigentes.has(r.op.trim().toLowerCase()));
+  }
 
   const evalBody = document.getElementById('eval-body');
   const evalEmpty = document.getElementById('eval-empty');
