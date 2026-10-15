@@ -373,6 +373,34 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ap-green{color:#3ecf8e}
 .ap-bar .save-msg{margin-left:auto}
 .ap-bad{border-color:var(--red)!important;background:rgba(240,96,96,.08)!important}
+.rt-wrap{margin:2px 8px 8px 118px;border:1px solid rgba(240,96,96,.28);background:rgba(240,96,96,.04);border-radius:var(--radius)}
+.rt-head{width:100%;display:flex;align-items:center;gap:8px;background:transparent;border:none;cursor:pointer;padding:6px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:600;color:#f06060;text-align:left}
+.rt-head .rt-caret{display:inline-block;transition:transform .15s;font-size:10px}
+.rt-wrap.rt-closed .rt-caret{transform:rotate(-90deg)}
+.rt-wrap.rt-closed .rt-body{display:none}
+.rt-sum{font-weight:500;font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;margin-left:auto}
+.rt-body{padding:0 10px 8px}
+.rt-entry{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:7px 9px;margin-bottom:6px}
+.rt-l1,.rt-l2{display:grid;gap:7px;align-items:end}
+.rt-l1{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.6fr)}
+.rt-l2{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr) 30px;margin-top:6px}
+.rt-entry input,.rt-entry select{font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;box-sizing:border-box;min-width:0}
+.rt-entry input[readonly]{background:var(--bg);color:var(--text2)}
+.rt-add{font-size:11px;font-family:'IBM Plex Sans',sans-serif;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:4px 11px}
+.rt-warn{font-size:11px;color:var(--amber);margin-left:8px}
+@media(max-width:760px){.rt-wrap{margin-left:8px}.rt-l1{grid-template-columns:1fr 1fr}.rt-l2{grid-template-columns:1fr 1fr}}
+.ap-note{font-size:11px;color:var(--text3);line-height:1.45;margin:-.2rem 0 .55rem}
+.ped-row{display:block;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px}
+.ped-l1{display:grid;gap:8px;align-items:end;grid-template-columns:minmax(0,2.2fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,.9fr) 32px}
+.ped-l2{display:grid;gap:8px;align-items:end;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.4fr);margin-top:6px}
+.ped-f{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ped-f>span{font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ped-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2)}
+.ped-chip{background:var(--bg3);border-radius:10px;padding:2px 9px;white-space:nowrap}
+.ped-ok{background:rgba(62,207,142,.12);color:#3ecf8e}
+.ped-no{background:rgba(245,166,35,.14);color:#f5a623}
+.ped-warn{color:#f5a623;font-family:'IBM Plex Sans',sans-serif;font-size:11px}
+@media(max-width:700px){.ped-l1{grid-template-columns:1fr 1fr}.ped-l1 .ped-f:first-child{grid-column:1/-1}.ped-l2{grid-template-columns:1fr}}
 /* ── Máquina predeterminada por usuario ── */
 .mach-star{background:transparent;border:none;cursor:pointer;font-size:15px;line-height:1;color:var(--text3);padding:0 2px;transition:color .15s,transform .15s}
 .mach-star:hover{color:#f5a623;transform:scale(1.15)}
@@ -780,7 +808,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:var(--radius);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">
               <span>Hora</span><span style="text-align:center">Piezas prod.</span><span style="text-align:center">Piezas dañadas</span>
             </div>
-            <div style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece un campo para el motivo de rechazo.</div>
+            <div style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2) o un campo para el motivo (otras máquinas).</div>
             <div id="hora-franjas-list"></div>
           </div>
           <!-- Horas extra -->
@@ -874,6 +902,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             </select>
             <button class="btn" style="margin-left:auto;border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearHoraRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
           </div>
+          <div id="hora-rt-semanal"></div>
           <div id="hora-hist-body"></div>
           <div id="hora-hist-empty" class="empty-state" style="display:none">Sin registros hora por hora.</div>
         </div>
@@ -939,6 +968,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-recortes-count">0 recortes</span><button class="ap-add" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte</button></div>
+          <div class="ap-note">Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro.</div>
           <div class="dynamic-row-header dynamic-row-lam" id="lam-recortes-head" style="display:none"><span>Calibre</span><span>Ancho cm</span><span>Largo cm</span><span>Peso (kg)</span><span>Ahorro ($)</span><span></span></div>
           <div id="lam-recortes-list"></div>
           <div class="ap-empty" id="lam-recortes-empty">Sin recortes recuperados. Es opcional.</div>
@@ -968,10 +998,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div class="ap-empty" id="tub-tramos-empty">Aún no hay tubulares. Toca «+ Agregar tubular».</div>
         </div>
         <div class="ap-card">
-          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="tub-recortes-count">0 recortes</span><button class="ap-add" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar recorte</button></div>
-          <div class="dynamic-row-header dynamic-row-tub" id="tub-recortes-head" style="display:none"><span>Tipo de tubular</span><span>Peso (kg)</span><span>Tramos equiv.</span><span>Ahorro ($)</span><span></span></div>
+          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Pedacera utilizada<span class="ap-badge" id="tub-recortes-count">0 pedaceras</span><button class="ap-add" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar pedacera</button></div>
+          <div class="ap-note">Registra los retazos de tubular que se usaron para producir piezas. Ahorro = largo total usado ÷ largo del tramo × costo del tramo. Si cada retazo equivale al 40% o más de un tramo, ya es parte del material explosionado y no cuenta como ahorro.</div>
           <div id="tub-recortes-list"></div>
-          <div class="ap-empty" id="tub-recortes-empty">Sin recortes recuperados. Es opcional.</div>
+          <div class="ap-empty" id="tub-recortes-empty">Sin pedacera registrada. Es opcional.</div>
         </div>
       </div>
       <input type="hidden" id="tub-merma" value="0"><span id="tub-pct-merma" hidden>–</span>
@@ -3314,12 +3344,13 @@ function loadFromCloud(){
         const normalized=(d||[]).map(normalizeAprovRow);
         aprovRecords=mergeRecordsById(aprovRecords,normalized); save('aprovRecords');
       }},
-      // La merma se captura una vez por semana (5 días hábiles), no por registro.
-      {name:'Merma_Semanal', assign:(d)=>{
-        const norm=(d||[]).filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}));
-        mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,norm); save('mermaSemanalRecs');
-      }},
     ] : []),
+    // La merma semanal (aprovechamiento y retrabajo) se captura una vez por semana. Se sincroniza para toda cuenta:
+    // el retrabajo se ve desde el historial de Registrar turno, aunque la cuenta no tenga Aprovechamiento.
+    {name:'Merma_Semanal', assign:(d)=>{
+      const norm=(d||[]).filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}));
+      mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,norm); save('mermaSemanalRecs');
+    }},
     // Actividades del checklist de arranque por máquina (las edita Ingeniería /
     // Líder en Configuración; todos los dispositivos las reciben).
     {name:'Mant_Plan', assign:(d)=>{
@@ -4126,7 +4157,7 @@ function apRefresh(){
   set('tub-tramos-count', fmtN(qty('#tub-tramos-list .dynamic-row'),2)+' tramos');
   const nl=cnt('#lam-recortes-list .dynamic-row'), nt=cnt('#tub-recortes-list .dynamic-row');
   set('lam-recortes-count', nl+(nl===1?' recorte':' recortes'));
-  set('tub-recortes-count', nt+(nt===1?' recorte':' recortes'));
+  set('tub-recortes-count', nt+(nt===1?' pedacera':' pedaceras'));
   document.querySelectorAll('.ap-bad').forEach(el=>{ if(parseFloat(el.value)>0) el.classList.remove('ap-bad'); });
 }
 function apFocus(row){ const el=row&&row.querySelector('input:not([readonly])'); if(el){ el.focus(); try{ el.scrollIntoView({block:'nearest'}); }catch(e){} } }
@@ -4204,7 +4235,11 @@ function calcLamina(){
     const pesoRec=lam&&ancho>0&&largo>0?fmtN(ancho*largo*lam.esp*7.85/1000,4):0;
     const rec=lam&&lam.peso>0&&pesoRec>0?fmtN(pesoRec/lam.peso,4):0;
     const ahR=lam?fmtN(rec*lam.costo,2):0;
-    if(ins[2])ins[2].value=pesoRec>0?pesoRec:'';if(ins[3])ins[3].value=ahR>0?ahR:'';ah+=ahR;});
+    // Regla: un recorte que equivale al 40% o más de una lámina es parte del material explosionado (no es ahorro)
+    const pct=Math.round(rec*100), cuenta=pct<RECORTE_UMBRAL;
+    if(ins[2]){ ins[2].value=pesoRec>0?pesoRec:''; ins[2].title=rec>0?`Equivale a ${pct}% de una lámina`:'Calculado automáticamente'; }
+    if(ins[3]){ ins[3].dataset.gross=ahR>0?ahR:''; ins[3].value=ahR>0?(cuenta?ahR:0):''; ins[3].style.color=(ahR>0&&!cuenta)?'var(--amber)':''; ins[3].title=ahR>0?(cuenta?`Equivale a ${pct}% de una lámina (menos de ${RECORTE_UMBRAL}%): cuenta como ahorro`:`Equivale a ${pct}% de una lámina (${RECORTE_UMBRAL}% o más): es parte del material explosionado, no cuenta como ahorro`):''; }
+    if(cuenta) ah+=ahR;});
   document.getElementById('lam-ahorro').textContent=fmtN(ah,2).toLocaleString('es-MX');
   renderAprovChart('lam-chart','lam-chart-legend',fmtN(pt-merma,3),merma,lamChart,(c)=>{lamChart=c;});
   saveLamDraft();
@@ -4229,7 +4264,7 @@ function saveLamina(){
   // Recortes recuperados (calibre, medidas, peso y ahorro de cada uno)
   const recortesDetalle=Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.value)||0};
+    return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.dataset.gross)||0};
   }).filter(x=>x.cal && x.ancho>0 && x.largo>0);
   const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
   aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
@@ -4238,9 +4273,41 @@ function saveLamina(){
   apMsg('lam-save-msg','✓ Guardado',false);renderAprovHist();
 }
 function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
-function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" step="0.001" placeholder="0.000" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-recortes-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
+function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row ped-row';d.id=id;
+  const f=(lbl,inner)=>`<label class="ped-f"><span>${lbl}</span>${inner}</label>`;
+  d.innerHTML=`<div class="ped-l1">
+    ${f('Tubular',`<select data-f="tipo" onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select>`)}
+    ${f('Retazos (pz)',`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" oninput="calcTubular()">`)}
+    ${f('Largo c/u cm',`<input type="number" data-f="largoRet" min="0" step="any" placeholder="0" oninput="calcTubular()">`)}
+    ${f('Pzas producidas',`<input type="number" data-f="piezasProd" min="0" step="1" placeholder="0" oninput="calcTubular()">`)}
+    ${f('Largo pieza cm',`<input type="number" data-f="largoPieza" min="0" step="any" placeholder="0" oninput="calcTubular()" title="Largo de cada pieza terminada">`)}
+    <button class="btn-del" style="align-self:end" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>
+  </div>
+  <div class="ped-l2">
+    ${f('OP',`<input type="text" data-f="op" placeholder="Orden de producción" oninput="calcTubular()">`)}
+    ${f('Modelo / pieza',`<input type="text" data-f="modelo" placeholder="Modelo" oninput="calcTubular()">`)}
+    ${f('Ubicación del retazo',`<input type="text" data-f="ubicacion" placeholder="Dónde quedó / de dónde se tomó" oninput="calcTubular()">`)}
+  </div>
+  <div class="ped-chips" data-f="chips"></div>`;
+  document.getElementById('tub-recortes-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE TUBULAR (localStorage) — mismo mecanismo que Lámina ──
 const SK_TUB_DRAFT='oee_tub_draft_v1';
+// Lee una fila de pedacera y calcula su equivalencia, el % del tramo y el ahorro
+function readPedRow(row){
+  const g=n=>row.querySelector(`[data-f="${n}"]`);
+  const v=n=>g(n)?g(n).value:'';
+  const num=n=>parseFloat(v(n))||0;
+  const tipo=v('tipo'), tub=getTubularByTipo(tipo);
+  const nPz=num('nPz'), largoRet=num('largoRet'), piezasProd=num('piezasProd'), largoPieza=num('largoPieza');
+  const largoTramo=tuboLargoCm(tipo);
+  const eqP=largoRet>0&&largoTramo>0?largoRet/largoTramo:0;
+  const pct=Math.round(eqP*100), cuenta=pct<RECORTE_UMBRAL;
+  const rec=eqP*nPz, largoTotal=nPz*largoRet;
+  const bruto=tub?Math.round(rec*(tub.costo||0)*100)/100:0;
+  const peso=tub&&tub.peso>0?Math.round(rec*tub.peso*1000)/1000:0;
+  return {tipo,op:v('op').trim(),modelo:v('modelo').trim(),ubicacion:v('ubicacion').trim(),nPz,largoRet,piezasProd,largoPieza,largoTramo,largoTotal,
+          rec:Math.round(rec*10000)/10000,peso,ahorro:bruto,eqP,pct,cuenta,efectivo:cuenta?bruto:0,costo:tub?(tub.costo||0):0};
+}
 function saveTubDraft(){
   const draft={
     maquina: document.getElementById('tub-machine')?.value,
@@ -4253,8 +4320,8 @@ function saveTubDraft(){
       return {tipo: sel?.value, cant: ins[0]?.value};
     }),
     recortes: Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
-      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-      return {tipo: sel?.value, peso: ins[0]?.value};
+      const o={}; row.querySelectorAll('[data-f]').forEach(el=>{ if(el.dataset.f!=='chips') o[el.dataset.f]=el.value; });
+      return o;
     }),
   };
   try{ localStorage.setItem(SK_TUB_DRAFT, JSON.stringify(draft)); }catch(e){}
@@ -4283,9 +4350,7 @@ function restoreTubDraft(){
     addTubRecorte(true);
     const rows=document.querySelectorAll('#tub-recortes-list .dynamic-row');
     const row=rows[rows.length-1];
-    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    if(sel && r.tipo) sel.value=r.tipo;
-    if(ins[0] && r.peso) ins[0].value=r.peso;
+    Object.keys(r||{}).forEach(n=>{ const el=row.querySelector(`[data-f="${n}"]`); if(el && r[n]!=null && r[n]!=='') el.value=r[n]; });
   });
   calcTubular();
   const msg=document.getElementById('tub-save-msg');
@@ -4297,15 +4362,32 @@ function calcTubular(){
   document.getElementById('tub-peso-total').textContent=fmtN(pt,3);
   const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   document.getElementById('tub-pct-merma').textContent=pt>0?fmtN((merma/pt)*100,2)+'%':'–';
-  let ah=0;document.querySelectorAll('#tub-recortes-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const tub=getTubularByTipo(sel?sel.value:'');const pr=parseFloat(ins[0]?.value)||0;const rec=tub&&tub.peso>0?fmtN(pr/tub.peso,4):0;const ahR=tub?fmtN(rec*tub.costo,2):0;if(ins[1])ins[1].value=rec||'';if(ins[2])ins[2].value=ahR||'';ah+=ahR;});
+  let ah=0;document.querySelectorAll('#tub-recortes-list .dynamic-row').forEach(row=>{
+    const x=readPedRow(row); ah+=x.efectivo;
+    const chips=row.querySelector('[data-f="chips"]'); if(!chips) return;
+    const out=[];
+    if(x.largoRet>0&&x.nPz>0){
+      out.push(`<span class="ped-chip">Largo total usado: ${fmtN(x.largoTotal,1)} cm</span>`);
+      out.push(`<span class="ped-chip" title="Cada retazo de ${fmtN(x.largoRet,1)} cm ÷ tramo de ${fmtN(x.largoTramo,0)} cm">${x.pct}% del tramo c/u · ${fmtN(x.rec,3)} tramo${x.rec===1?'':'s'} equiv.</span>`);
+      out.push(x.cuenta?`<span class="ped-chip ped-ok" title="Menos de ${RECORTE_UMBRAL}% del tramo: cuenta como ahorro">Ahorro: $${fmtMoney(x.efectivo)}</span>`
+                       :`<span class="ped-chip ped-no" title="${RECORTE_UMBRAL}% o más del tramo: es parte del material explosionado, no cuenta como ahorro">Explosión (no es ahorro)</span>`);
+      if(x.costo<=0) out.push(`<span class="ped-warn">Este tubular no tiene costo configurado: el ahorro saldrá en $0.</span>`);
+    } else out.push(`<span class="ped-warn" style="color:var(--text3)">Captura N.º de retazos y largo c/u para calcular.</span>`);
+    if(x.piezasProd>0&&x.largoPieza>0){
+      const usado=x.piezasProd*x.largoPieza;
+      out.push(`<span class="ped-chip">Piezas: ${fmtN(usado,1)} cm</span>`);
+      if(x.largoTotal>0&&usado>x.largoTotal+0.01) out.push(`<span class="ped-warn">⚠ Las piezas (${fmtN(usado,1)} cm) suman más que los retazos (${fmtN(x.largoTotal,1)} cm). Revisa los datos.</span>`);
+    }
+    chips.innerHTML=out.join('');
+  });
   document.getElementById('tub-ahorro').textContent=fmtN(ah,2).toLocaleString('es-MX');
   renderAprovChart('tub-chart','tub-chart-legend',fmtN(pt-merma,3),merma,tubChart,(c)=>{tubChart=c;});
   saveTubDraft();
 }
 function saveTubular(){
   if(!canCaptureAprov()){ console.warn('saveTubular bloqueado: sin permiso de capturar aprovechamiento.'); return; }
-  { const vt=apValidate('#tub-tramos-list',[0]), vr=apValidate('#tub-recortes-list',[0]);
-    if(!vt.filas && !vr.filas){ apMsg('tub-save-msg','⚠ Agrega al menos un tubular o un recorte',true); return; }
+  { const vt=apValidate('#tub-tramos-list',[0]), vr=apValidate('#tub-recortes-list',[0,1]);
+    if(!vt.filas && !vr.filas){ apMsg('tub-save-msg','⚠ Agrega al menos un tubular o una pedacera',true); return; }
     if(vt.bad.length||vr.bad.length){ apMsg('tub-save-msg','⚠ Completa las filas marcadas en rojo (o quítalas con ×)',true); (vt.bad[0]||vr.bad[0]).focus(); return; } }
   const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||todayStr();const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
   const pt=parseFloat(document.getElementById('tub-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('tub-merma').value)||0;
@@ -4318,9 +4400,9 @@ function saveTubular(){
     return {tipo: sel?.value, cant: parseFloat(ins[0]?.value)||0, pesoTotal: parseFloat(ins[2]?.value)||0};
   }).filter(t=>t.tipo && t.cant>0);
   const recortesDetalle=Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
-    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    return {tipo: sel?.value, peso: parseFloat(ins[0]?.value)||0, rec: parseFloat(ins[1]?.value)||0, ahorro: parseFloat(ins[2]?.value)||0};
-  }).filter(x=>x.tipo && x.peso>0);
+    const x=readPedRow(row);
+    return {tipo:x.tipo,op:x.op,modelo:x.modelo,ubicacion:x.ubicacion,nPz:x.nPz,largoRet:x.largoRet,piezasProd:x.piezasProd,largoPieza:x.largoPieza,largoTramo:x.largoTramo,largoTotal:x.largoTotal,rec:x.rec,peso:x.peso,ahorro:x.ahorro};
+  }).filter(x=>x.tipo && x.nPz>0 && x.largoRet>0);
   const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,tramosDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
   aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
   clearTubDraft();
@@ -4399,6 +4481,32 @@ function aprovExplKey(e){ return e.cal||e.tipo; }
 // Diferencia = explosionado − registrado (positivo = se consumió menos de
 // lo planeado = ahorro). Ahorro teórico = valor de esa diferencia + ahorro
 // por recuperación de recortes.
+// Regla de control de material: un recorte recuperado que equivale al 40% o más de una lámina (o de un tramo)
+// ya forma parte del material explosionado — no es ahorro. Por debajo del 40% sí se cuenta como ahorro.
+// Se evalúa por separado para cada recorte (en tubular, por cada retazo de la pedacera).
+const RECORTE_UMBRAL=40;
+// Largo del tramo en cm a partir del nombre ("…6mts" → 600, "…5.65M…" → 565); 600 si el nombre no lo dice.
+function tuboLargoCm(tipo){
+  const m=String(tipo||'').match(/(\d+(?:[.,]\d+)?)\s*m(?:ts?|etros)?\b/i);
+  if(m){ const v=parseFloat(m[1].replace(',','.')); if(v>0&&v<=12) return Math.round(v*100); }
+  return 600;
+}
+// eqP = equivalencia de UN recorte/retazo en láminas o tramos; eq = total de la fila.
+function aprovRecInfo(r,x){
+  const isLam=r.tipo==='lamina', k=x.cal||x.tipo;
+  const cfg=isLam?getLaminaByCal(k):getTubularByTipo(k);
+  let eqP=0,n=1,legacy=false;
+  if(isLam){
+    if(cfg&&cfg.peso>0&&Number(x.peso)>0) eqP=Number(x.peso)/cfg.peso;
+    else if(cfg&&cfg.costo>0&&Number(x.ahorro)>0) eqP=Number(x.ahorro)/cfg.costo;
+  } else if(Number(x.largoRet)>0){
+    n=Number(x.nPz)||1; eqP=Number(x.largoRet)/(Number(x.largoTramo)||tuboLargoCm(k));
+  } else { // registro tubular anterior (por peso): no se puede saber cuántos retazos eran, se respeta como estaba
+    legacy=true; eqP=Number(x.rec)>0?Number(x.rec):((cfg&&cfg.peso>0&&Number(x.peso)>0)?Number(x.peso)/cfg.peso:0);
+  }
+  const pct=Math.round(eqP*100);
+  return {eqP,n,eq:eqP*n,pct,legacy,cuenta:legacy?true:pct<RECORTE_UMBRAL};
+}
 function aprovTotals(r){
   const r2=n=>Math.round(n*100)/100;
   const items=aprovItems(r);
@@ -4408,8 +4516,12 @@ function aprovTotals(r){
     const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
     if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=r2(it.expl-it.real); it.valorRaw=it.dif*it.costo; it.valor=r2(it.valorRaw); totExpl+=it.expl; totDif+=it.dif; valor+=it.valorRaw; }
   });
-  const ahorroRec=Number(r.ahorro)||0;
-  return {items,any,totReal:r2(totReal),totExpl:r2(totExpl),totDif:r2(totDif),valor:r2(valor),ahorroRec,ahorroTeorico:r2(valor+ahorroRec)};
+  const recs=r.recortesDetalle||[];
+  let bruto=0,efectivo=0;
+  if(recs.length){ recs.forEach(x=>{ const a=Number(x.ahorro)||0; bruto+=a; if(aprovRecInfo(r,x).cuenta) efectivo+=a; }); }
+  else { bruto=efectivo=Number(r.ahorro)||0; }
+  const ahorroRec=r2(efectivo);
+  return {items,any,totReal:r2(totReal),totExpl:r2(totExpl),totDif:r2(totDif),valor:r2(valor),ahorroRec,ahorroRecBruto:r2(bruto),cubierto:r2(bruto-efectivo),ahorroTeorico:r2(valor+ahorroRec)};
 }
 
 // Panel desplegable de un registro: láminas/tubulares registrados,
@@ -4454,26 +4566,43 @@ function aprovDetailHtml(r){
       </div>`:`<div style="font-size:11px;color:var(--text3)">Solo Ingeniería o Líder pueden capturar este desglose.</div>`}`;
   }
   const rec=r.recortesDetalle||[];
+  const eqUnit=isLam?'lám.':'tramo';
+  const pill=(ok)=>ok?`<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:rgba(62,207,142,.12);color:#3ecf8e;white-space:nowrap" title="Menos de ${RECORTE_UMBRAL}% de ${isLam?'una lámina':'un tramo'}: cuenta como ahorro">AHORRO</span>`
+                    :`<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:rgba(245,166,35,.14);color:#f5a623;white-space:nowrap" title="${RECORTE_UMBRAL}% o más de ${isLam?'una lámina':'un tramo'}: es parte del material explosionado, no es ahorro">EXPLOSIÓN</span>`;
   const recHtml=rec.length
-    ? rec.map(x=>{
-        const medidas=isLam?`${fmt2(x.ancho)} × ${fmt2(x.largo)} cm · ${fmt2(x.peso)} kg`:`${fmt2(x.peso)} kg (${fmt2(x.rec)} tramo eq.)`;
-        return `<div style="display:grid;grid-template-columns:1.3fr 2fr 1.2fr;gap:10px;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px"><span style="font-weight:500">${x.cal||x.tipo}</span><span style="${mono};color:var(--text2)">${medidas}</span><span style="${mono};color:#3ecf8e">$${fmtMoney(x.ahorro)}</span></div>`;
+    ? `<div style="font-size:10px;color:var(--text3);line-height:1.4;margin-bottom:4px">Cada recorte se evalúa por separado: ${RECORTE_UMBRAL}% o más de ${isLam?'una lámina':'un tramo'} = parte de la explosión (no es ahorro).</div>`+rec.map(x=>{
+        const I=aprovRecInfo(r,x);
+        const nuevoTub=!isLam&&Number(x.largoRet)>0;
+        const medidas=isLam?`${fmt2(x.ancho)} × ${fmt2(x.largo)} cm · ${fmt2(x.peso)} kg`
+          : nuevoTub?`${fmt2(x.nPz)} × ${fmt2(x.largoRet)} cm = ${fmt2(x.largoTotal||x.nPz*x.largoRet)} cm`
+          : `${fmt2(x.peso)} kg (registro anterior)`;
+        const eqTxt=I.eq>0?(nuevoTub?`≈ ${I.eq.toFixed(3)} ${I.eq===1?'tramo':'tramos'} · ${I.pct}% c/u`:isLam?`≈ ${fmt2(I.eq)} lám. · ${I.pct}%`:`≈ ${fmt2(I.eq)} tramos`):'';
+        const extra=nuevoTub?[
+            (Number(x.piezasProd)>0&&Number(x.largoPieza)>0)?`Piezas: ${fmt2(x.piezasProd)} × ${fmt2(x.largoPieza)} cm`:'',
+            x.op?`OP ${x.op}`:'', x.modelo||'', x.ubicacion?`Ubic.: ${x.ubicacion}`:''].filter(Boolean).join(' · '):'';
+        const val=I.cuenta?`<span style="${mono};color:#3ecf8e">$${fmtMoney(x.ahorro)}</span>`
+                          :`<span style="${mono};color:var(--text3);text-decoration:line-through" title="No cuenta como ahorro">$${fmtMoney(x.ahorro)}</span>`;
+        return `<div style="padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap"><span style="font-weight:500">${x.cal||x.tipo}</span>${I.legacy?'':pill(I.cuenta)}</span>${val}</div>
+          <div style="${mono};color:var(--text2);font-size:11px;margin-top:2px">${medidas}${eqTxt?' · '+eqTxt:''}</div>
+          ${extra?`<div style="color:var(--text3);font-size:11px;margin-top:1px">${extra}</div>`:''}
+        </div>`;
       }).join('')
     : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
-  const ahorroRec=Number(r.ahorro)||0;
-  return `<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start">
+  const ahorroRec=T.ahorroRec;
+  return `<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start">
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">${isLam?'Láminas consumidas vs. explosionadas':'Tubulares consumidos vs. explosionados'}</div>
         ${consumo}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Recortes de recuperación</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">${isLam?'Recortes de recuperación':'Pedacera utilizada'}</div>
         ${recHtml}
       </div>
     </div>
-    <div id="sum-${id}" data-rec="${ahorroRec}" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius)">
+    <div id="sum-${id}" data-rec="${ahorroRec}" data-lam="${isLam?1:0}" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius)">
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Material no consumido (explosión − registrado)</div><div id="sum-mat-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
-      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Recortes recuperados</div><div style="${mono};font-size:14px;font-weight:700;color:#3ecf8e">$${fmtMoney(ahorroRec)}</div></div>
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Recortes recuperados <span id="sum-recnote-${id}" style="text-transform:none;letter-spacing:0"></span></div><div id="sum-rec-${id}" style="${mono};font-size:14px;font-weight:700;color:#3ecf8e">$${fmtMoney(T.ahorroRec)}</div></div>
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Ahorro teórico</div><div id="sum-tot-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
     </div>
     <div style="font-size:10px;color:var(--text3);margin-top:6px">Diferencia = explosionado − registrado. En verde (+): se consumió menos de lo planeado. En rojo (−): se consumió de más.</div>
@@ -4515,6 +4644,7 @@ function recalcAprovDetail(id){
     const rec=parseFloat(sum.dataset.rec)||0;
     const mat=any?totVal:0;
     set(document.getElementById('sum-mat-'+id),any?money(mat):'–',any?colV:'var(--text3)');
+    set(document.getElementById('sum-rec-'+id),'$'+fmtMoney(rec),'#3ecf8e');
     const tot=r2(mat+rec);
     set(document.getElementById('sum-tot-'+id),money(tot),tot>=0?G:R);
   }
@@ -4674,10 +4804,10 @@ function aprovWeeklyMerma(g){
 }
 function aprovGroupStats(g){
   const r2=n=>Math.round(n*100)/100;
-  let peso=0,ahorroRec=0,valorMat=0,noExpl=0; const map={}, order=[];
+  let peso=0,ahorroRec=0,valorMat=0,noExpl=0,cubierto=0; const map={}, order=[];
   g.recs.forEach(r=>{
     const T=aprovTotals(r);
-    peso+=Number(r.pesoTotal)||0; ahorroRec+=T.ahorroRec; valorMat+=T.valor;
+    peso+=Number(r.pesoTotal)||0; ahorroRec+=T.ahorroRec; valorMat+=T.valor; cubierto+=T.cubierto;
     if(T.items.length && !T.any) noExpl++;
     T.items.forEach(it=>{
       let m=map[it.key];
@@ -4689,7 +4819,7 @@ function aprovGroupStats(g){
   });
   const merma=aprovWeeklyMerma(g);
   const pctMerma=(merma&&peso>0)?merma.kg/peso*100:null;
-  return {peso:r2(peso),ahorroRec:r2(ahorroRec),valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
+  return {peso:r2(peso),ahorroRec:r2(ahorroRec),cubierto:r2(cubierto),valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
           items:order.map(m=>({...m,real:r2(m.real),realCmp:r2(m.realCmp),expl:r2(m.expl),dif:r2(m.dif),valor:r2(m.valor)})),
           merma,pctMerma,pctAprov:pctMerma==null?null:100-pctMerma,n:g.recs.length};
 }
@@ -4862,46 +4992,18 @@ function saveExplosionEdit(id){
 }
 
 // ── REPORTE SEMANAL IMPRIMIBLE ──────────────────────────────────────
-function buildWeeklyReportHtml(ws){
-  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const r2=n=>Math.round(n*100)/100;
-  const money=n=>(n<0?'-':'')+'$'+fmtMoney(Math.abs(n));
-  const colr=n=>n>0?'pos':n<0?'neg':'';
-  const recs=aprovVisibleRecords().filter(r=>aprovWeekStartOf(r.fecha)===ws);
-  const groups=aprovBuildGroups(recs);
-  let totPeso=0,totMerma=0,pesoConMerma=0,totRec=0,totMat=0,hayFinde=false; const pendientes=[];
-  groups.forEach(g=>{
-    g.st=aprovGroupStats(g); totPeso+=g.st.peso; totRec+=g.st.ahorroRec; totMat+=g.st.valorMat;
-    if(g.st.merma){ totMerma+=g.st.merma.kg; pesoConMerma+=g.st.peso; } else pendientes.push(`${g.tipo==='lamina'?'Lámina':'Tubular'} ${g.maquina}`);
-    g.recs.forEach(r=>{ const d=isoDow(r.fecha); if(d===0||d===6) hayFinde=true; });
-  });
-  totPeso=r2(totPeso); totRec=r2(totRec); totMat=r2(totMat);
-  const ahorroTot=r2(totMat+totRec);
-  const pctMermaTot=pesoConMerma>0?totMerma/pesoConMerma*100:null;
-  const quien=currentUser?currentUser.name:'';
-  const ahora=new Date();
-  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
-  const sections=groups.map(g=>{
-    const st=g.st, isLam=g.tipo==='lamina';
-    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
-      :`<tr><td colspan="5" class="muted">Registros sin desglose por ${isLam?'calibre':'tipo'}.</td></tr>`;
-    const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
-    const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
-    const mermaTxt=st.merma
-      ?`<b>${fmt2(st.merma.kg)} kg</b> de merma &nbsp;·&nbsp; <b>${fmt2(st.pctMerma)}%</b> del material procesado &nbsp;·&nbsp; Aprovechamiento: <b>${fmt2(st.pctAprov)}%</b>${st.merma.src==='diaria'?' <span class="muted">(suma de registros diarios)</span>':''}`
-      :`<span class="warn">Merma semanal pendiente de captura</span>`;
-    return `<section>
-      <h2><span class="tag ${isLam?'lam':'tub'}">${isLam?'LÁMINA':'TUBULAR'}</span> ${esc(g.maquina)} <small>${st.n} registro${st.n===1?'':'s'} · ${fmt2(st.peso)} kg procesados</small></h2>
-      <div class="cols">
-        <table><thead><tr><th>${isLam?'Calibre':'Tubular'}</th><th class="n">${isLam?'Láminas':'Tramos'} reg.</th><th class="n">Explosionadas</th><th class="n">Diferencia</th><th class="n">Valor</th></tr></thead><tbody>${itemRows}${totalRow}</tbody></table>
-        <table><thead><tr><th>Día</th><th>Turno</th><th class="n">Peso (kg)</th><th class="n">Recortes</th><th class="n">Ahorro teórico</th></tr></thead><tbody>${dayRows}</tbody></table>
-      </div>
-      <div class="line">${mermaTxt}</div>
-      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
-    </section>`;
-  }).join('') || '<p class="muted">Sin registros en esta semana.</p>';
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de aprovechamiento — ${esc(weekLabelShort(ws))}</title>
-<style>
+// Pedacera utilizada (tubular): detalle de retazos del grupo semanal
+function pedaceraReportHtml(g,esc,money){
+  const rows=[];
+  [...g.recs].reverse().forEach(r=>(r.recortesDetalle||[]).forEach(x=>{
+    if(!(Number(x.largoRet)>0)) return;
+    const I=aprovRecInfo(r,x);
+    rows.push(`<tr><td>${dayLabel(r.fecha)}</td><td>${esc(x.tipo)}</td><td class="n">${fmt2(x.nPz)} × ${fmt2(x.largoRet)} cm</td><td class="n">${I.pct}%</td><td class="n">${(Number(x.piezasProd)>0&&Number(x.largoPieza)>0)?fmt2(x.piezasProd)+' × '+fmt2(x.largoPieza)+' cm':'—'}</td><td>${esc([x.op,x.modelo,x.ubicacion].filter(Boolean).join(' · '))}</td><td class="n ${I.cuenta?'pos':''}">${I.cuenta?money(Number(x.ahorro)||0):'<span class="muted">explosión</span>'}</td></tr>`);
+  }));
+  if(!rows.length) return '';
+  return `<div style="margin-top:8px"><table><thead><tr><th>Pedacera · día</th><th>Tubular</th><th class="n">Retazos</th><th class="n">% tramo</th><th class="n">Piezas</th><th>OP · modelo · ubicación</th><th class="n">Ahorro</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+}
+const WEEKLY_REPORT_CSS=`<style>
 @page{size:letter;margin:12mm}
 *{box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,Helvetica,sans-serif;color:#1b1f2a;font-size:11px;margin:0;background:#e9ebf0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -4938,7 +5040,48 @@ tr.tot td{font-weight:700;border-top:1px solid #8a90a0;background:#fafbfc}
 .sign div{flex:1;border-top:1px solid #8a90a0;padding-top:4px;text-align:center}
 footer{margin-top:10px;font-size:9px;color:#889}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0;padding:0;max-width:none}.bar{display:none}}
-</style></head><body>
+</style>`;
+function buildWeeklyReportHtml(ws){
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const r2=n=>Math.round(n*100)/100;
+  const money=n=>(n<0?'-':'')+'$'+fmtMoney(Math.abs(n));
+  const colr=n=>n>0?'pos':n<0?'neg':'';
+  const recs=aprovVisibleRecords().filter(r=>aprovWeekStartOf(r.fecha)===ws);
+  const groups=aprovBuildGroups(recs);
+  let totPeso=0,totMerma=0,pesoConMerma=0,totRec=0,totMat=0,hayFinde=false; const pendientes=[];
+  groups.forEach(g=>{
+    g.st=aprovGroupStats(g); totPeso+=g.st.peso; totRec+=g.st.ahorroRec; totMat+=g.st.valorMat;
+    if(g.st.merma){ totMerma+=g.st.merma.kg; pesoConMerma+=g.st.peso; } else pendientes.push(`${g.tipo==='lamina'?'Lámina':'Tubular'} ${g.maquina}`);
+    g.recs.forEach(r=>{ const d=isoDow(r.fecha); if(d===0||d===6) hayFinde=true; });
+  });
+  totPeso=r2(totPeso); totRec=r2(totRec); totMat=r2(totMat);
+  const ahorroTot=r2(totMat+totRec);
+  const pctMermaTot=pesoConMerma>0?totMerma/pesoConMerma*100:null;
+  const quien=currentUser?currentUser.name:'';
+  const ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const sections=groups.map(g=>{
+    const st=g.st, isLam=g.tipo==='lamina';
+    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
+      :`<tr><td colspan="5" class="muted">Registros sin desglose por ${isLam?'calibre':'tipo'}.</td></tr>`;
+    const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
+    const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
+    const mermaTxt=st.merma
+      ?`<b>${fmt2(st.merma.kg)} kg</b> de merma &nbsp;·&nbsp; <b>${fmt2(st.pctMerma)}%</b> del material procesado &nbsp;·&nbsp; Aprovechamiento: <b>${fmt2(st.pctAprov)}%</b>${st.merma.src==='diaria'?' <span class="muted">(suma de registros diarios)</span>':''}`
+      :`<span class="warn">Merma semanal pendiente de captura</span>`;
+    return `<section>
+      <h2><span class="tag ${isLam?'lam':'tub'}">${isLam?'LÁMINA':'TUBULAR'}</span> ${esc(g.maquina)} <small>${st.n} registro${st.n===1?'':'s'} · ${fmt2(st.peso)} kg procesados</small></h2>
+      <div class="cols">
+        <table><thead><tr><th>${isLam?'Calibre':'Tubular'}</th><th class="n">${isLam?'Láminas':'Tramos'} reg.</th><th class="n">Explosionadas</th><th class="n">Diferencia</th><th class="n">Valor</th></tr></thead><tbody>${itemRows}${totalRow}</tbody></table>
+        <table><thead><tr><th>Día</th><th>Turno</th><th class="n">Peso (kg)</th><th class="n">Recortes</th><th class="n">Ahorro teórico</th></tr></thead><tbody>${dayRows}</tbody></table>
+      </div>
+      ${isLam?'':pedaceraReportHtml(g,esc,money)}
+      <div class="line">${mermaTxt}</div>
+      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
+    </section>`;
+  }).join('') || '<p class="muted">Sin registros en esta semana.</p>';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de aprovechamiento — ${esc(weekLabelShort(ws))}</title>
+${WEEKLY_REPORT_CSS}</head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
 <div class="page">
 <header><div><h1>Reporte semanal de aprovechamiento de material</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
@@ -4956,8 +5099,8 @@ ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a 
 </div></body></html>`;
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
-function printWeeklyReport(ws){
-  const html=buildWeeklyReportHtml(ws);
+function printWeeklyReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
+function openPrintHtml(html){
   let w=null;
   try{ w=window.open('','_blank'); }catch(e){ w=null; }
   if(w){
@@ -4972,6 +5115,169 @@ function printWeeklyReport(ws){
   f.contentDocument.open(); f.contentDocument.write(html); f.contentDocument.close();
   setTimeout(()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){} setTimeout(()=>f.remove(),3000); },400);
 }
+
+
+// ── RETRABAJO POR SEMANA (reporte semanal + merma semanal) ──────────
+// Mismo esquema que Aprovechamiento: se agrupa por semana (lun–vie) y máquina; la merma se captura una vez por
+// semana y se guarda en la hoja Merma_Semanal (tipo "retrabajo").
+function rtCollect(){
+  const best={};
+  horaRecords.forEach(r=>{ if(!r||!machineInRoster(r.machine)||!usaRetrabajo(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
+  const out=[];
+  Object.values(best).forEach(r=>{
+    const ws=aprovWeekStartOf(r.fecha);
+    safeParse(r.franjas,[]).forEach(f=>{
+      if(!f||f.isBreak||!Array.isArray(f.retrabajo)) return;
+      f.retrabajo.forEach(x=>{
+        if(!x) return;
+        const tub=getTubularByTipo(x.tubular);
+        const cons=Number(x.consumo)>0?Number(x.consumo):rtConsumo(x.tubular,Number(x.largoPza)||0,Number(x.nPz)||0);
+        out.push({...x,consumo:cons,kg:cons*(tub&&tub.peso>0?tub.peso:0),machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:f.franja,ws,turnoKey:r.fecha+'|'+r.turno});
+      });
+    });
+  });
+  return out;
+}
+function rtBuildGroups(entries){
+  const map={};
+  entries.forEach(e=>{ const gid=aprovGid(e.ws,'retrabajo',e.machine); (map[gid]=map[gid]||{gid,ws:e.ws,machine:e.machine,entries:[]}).entries.push(e); });
+  const groups=Object.values(map);
+  groups.forEach(g=>g.entries.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.franja).localeCompare(String(b.franja))));
+  groups.sort((a,b)=>b.ws.localeCompare(a.ws)||String(a.machine).localeCompare(String(b.machine)));
+  return groups;
+}
+function rtGroupStats(g){
+  const r3=n=>Math.round(n*1000)/1000, r2=n=>Math.round(n*100)/100;
+  let pzas=0,cons=0,kg=0; const turnos=new Set(), causas={}, modelos={};
+  g.entries.forEach(e=>{
+    pzas+=Number(e.nPz)||0; cons+=e.consumo; kg+=e.kg; turnos.add(e.turnoKey);
+    const c=rtCausaTxt(e)||'Sin causa'; const o=causas[c]||(causas[c]={pzas:0,cons:0,kg:0}); o.pzas+=Number(e.nPz)||0; o.cons+=e.consumo; o.kg+=e.kg;
+    const mk=(e.modelo||'Sin modelo')+'||'+(e.tubular||'—'); const m=modelos[mk]||(modelos[mk]={modelo:e.modelo||'Sin modelo',tubular:e.tubular||'—',pzas:0,cons:0,kg:0}); m.pzas+=Number(e.nPz)||0; m.cons+=e.consumo; m.kg+=e.kg;
+  });
+  const ex=mermaSemanalRecs.find(m=>m.id==='ms_'+g.gid);
+  const merma=(ex&&!isNaN(Number(ex.merma)))?Number(ex.merma):null;
+  return {pzas,cons:r3(cons),kg:r2(kg),n:turnos.size,causas,modelos,merma};
+}
+function renderRetrabajoSemanal(fct,fmachine){
+  const box=document.getElementById('hora-rt-semanal'); if(!box) return;
+  let ents=rtCollect();
+  if(fct) ents=ents.filter(e=>e.ct===fct);
+  if(fmachine) ents=ents.filter(e=>e.machine===fmachine);
+  if(!ents.length){ box.innerHTML=''; return; }
+  const open=box.dataset.open!=='0';
+  const groups=rtBuildGroups(ents), canMerma=canEditWeeklyMerma();
+  const mono="font-family:'IBM Plex Mono',monospace";
+  const openEd=Array.from(box.querySelectorAll('[id^="rtms-edit-"]')).filter(e=>e.style.display==='block').map(e=>e.id);
+  const dirty=Array.from(box.querySelectorAll('input')).some(i=>i.value!==i.defaultValue);
+  if(dirty) return;
+  let html=`<div style="border:1px solid rgba(240,96,96,.25);border-radius:var(--radius-lg);margin-bottom:.75rem;overflow:hidden">
+    <button type="button" onclick="rtSemToggle()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(240,96,96,.05);border:none;cursor:pointer;padding:9px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#f06060;text-align:left"><span style="font-size:10px">${open?'▾':'▸'}</span>⚠ Retrabajo por semana — tubular (GW1 / GW2)<span class="ap-badge">${new Set(groups.map(g=>g.ws)).size} semana${new Set(groups.map(g=>g.ws)).size===1?'':'s'}</span></button>
+    <div style="display:${open?'block':'none'}">`;
+  let last=null;
+  groups.forEach(g=>{
+    const st=rtGroupStats(g);
+    if(g.ws!==last){
+      last=g.ws;
+      const wk=groups.filter(x=>x.ws===g.ws).map(rtGroupStats);
+      const tc=wk.reduce((s,x)=>s+x.cons,0), tk=wk.reduce((s,x)=>s+x.kg,0);
+      html+=`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 12px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <span style="font-weight:700;font-size:13px">Semana ${weekLabel(g.ws)}</span><span style="font-size:11px;color:var(--text3)">lun – vie</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3)">Consumo extra</span><b style="${mono};font-size:13px;color:var(--amber)">${tc.toFixed(3)} tramos${tk>0?` · ${fmt2(tk)} kg`:''}</b>
+        <button onclick="printRetrabajoReport('${g.ws}')" title="Abrir el reporte semanal de retrabajo para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal</button>
+      </div>`;
+    }
+    const mermaHtml=st.merma!=null
+      ?`<span style="${mono};font-size:11px;color:var(--amber)">Merma semanal: <b>${fmt2(st.merma)} kg</b></span>${canMerma?`<button onclick="openRtMerma('${g.gid}')" style="font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;text-decoration:underline;padding:0;font-family:'IBM Plex Sans',sans-serif">✎ Editar</button>`:''}`
+      :(canMerma?`<button onclick="openRtMerma('${g.gid}')" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:3px 10px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma semanal</button>`:`<span style="font-size:11px;color:var(--text3)">Merma semanal pendiente</span>`);
+    const top=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).slice(0,3).map(([c,o])=>`${escH(c)} (${o.pzas})`).join(' · ');
+    html+=`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 12px 8px 22px;border-bottom:0.5px solid var(--border);font-size:12px">
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span><b>${escH(g.machine)}</b>
+        <span style="color:var(--text3);font-size:11px">${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</span>
+        <span style="color:var(--text3);font-size:11px">${top}</span>
+        <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto">${mermaHtml}</span>
+        <span style="${mono};font-size:11px;color:var(--amber);font-weight:700">${st.cons.toFixed(3)} tramos${st.kg>0?` · ${fmt2(st.kg)} kg`:''}</span>
+      </div>
+      <div id="rtms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.ws)} — Retrabajo tubular · ${escH(g.machine)}. Consumo extra por retrabajo: <b style="${mono}">${st.cons.toFixed(3)} tramos${st.kg>0?` (${fmt2(st.kg)} kg)`:''}</b>. Se captura <b>una sola vez</b> por semana.</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--text2)">Merma de la semana (kg):</span>
+          <input type="number" id="rtms-input-${g.gid}" min="0" step="any" value="${st.merma!=null?st.merma:''}" placeholder="0.00" style="width:110px;font-size:12px;${mono};padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
+          <button onclick="saveRtMerma('${g.gid}','${g.ws}','${escH(g.machine)}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Guardar</button>
+          <button onclick="closeRtMerma('${g.gid}')" style="font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 14px;font-family:'IBM Plex Sans',sans-serif">Cancelar</button>
+        </div>
+      </div>`;
+  });
+  html+='</div></div>';
+  box.innerHTML=html;
+  openEd.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='block'; });
+}
+function rtSemToggle(){ const b=document.getElementById('hora-rt-semanal'); if(!b) return; b.dataset.open=(b.dataset.open==='0')?'1':'0'; renderRetrabajoSemanal(document.getElementById('hora-hist-ct')?.value||'',document.getElementById('hora-hist-machine')?.value||''); }
+function openRtMerma(gid){
+  if(!canEditWeeklyMerma()) return;
+  document.querySelectorAll('[id^="rtms-edit-"]').forEach(el=>{ if(el.style.display==='block') closeRtMerma(el.id.replace('rtms-edit-','')); });
+  const el=document.getElementById('rtms-edit-'+gid); if(!el) return;
+  el.style.display='block'; document.getElementById('rtms-input-'+gid)?.focus();
+}
+function closeRtMerma(gid){
+  const el=document.getElementById('rtms-edit-'+gid); if(!el) return;
+  el.querySelectorAll('input').forEach(i=>{ i.value=i.defaultValue; i.style.borderColor=''; });
+  el.style.display='none';
+}
+function saveRtMerma(gid,ws,maquina){
+  if(!canEditWeeklyMerma()) return;
+  const input=document.getElementById('rtms-input-'+gid); if(!input) return;
+  const kg=parseFloat(input.value);
+  if(input.value===''||isNaN(kg)||kg<=0){ input.style.borderColor='var(--red)'; return; }
+  const rec={id:'ms_'+gid,tipo:'retrabajo',maquina,weekStart:ws,merma:kg,op:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
+  const i=mermaSemanalRecs.findIndex(m=>m.id===rec.id);
+  if(i>=0) mermaSemanalRecs[i]=rec; else mermaSemanalRecs.push(rec);
+  save('mermaSemanalRecs');
+  cloudUpsertRow('Merma_Semanal',rec);
+  input.defaultValue=input.value;
+  renderRetrabajoSemanal(document.getElementById('hora-hist-ct')?.value||'',document.getElementById('hora-hist-machine')?.value||'');
+}
+function buildRetrabajoReportHtml(ws){
+  const esc=escH, r2=n=>Math.round(n*100)/100;
+  const groups=rtBuildGroups(rtCollect().filter(e=>e.ws===ws));
+  let totP=0,totC=0,totK=0,totM=0,conMerma=0; const pend=[];
+  groups.forEach(g=>{ g.st=rtGroupStats(g); totP+=g.st.pzas; totC+=g.st.cons; totK+=g.st.kg; if(g.st.merma!=null){ totM+=g.st.merma; conMerma++; } else pend.push(g.machine); });
+  const quien=currentUser?currentUser.name:''; const ah=new Date();
+  const generado=`${ah.getDate()} de ${MESES_ES[ah.getMonth()]} de ${ah.getFullYear()}, ${String(ah.getHours()).padStart(2,'0')}:${String(ah.getMinutes()).padStart(2,'0')}`;
+  const sections=groups.map(g=>{
+    const st=g.st;
+    const causaRows=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).map(([c,o])=>`<tr><td>${esc(c)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('');
+    const modRows=Object.values(st.modelos).sort((a,b)=>b.cons-a.cons).map(m=>`<tr><td>${esc(m.modelo)}</td><td>${esc(m.tubular)}</td><td class="n">${m.pzas}</td><td class="n">${m.cons.toFixed(3)}</td></tr>`).join('');
+    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(e.tubular||'—')}</td><td class="n">${fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
+    const mermaTxt=st.merma!=null?`Merma semanal registrada: <b>${fmt2(st.merma)} kg</b>`:`<span class="warn">Merma semanal pendiente de captura</span>`;
+    return `<section>
+      <h2><span class="tag tub">TUBULAR</span> ${esc(g.machine)} <small>${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</small></h2>
+      <div class="cols">
+        <table><thead><tr><th>Causa / motivo</th><th class="n">Pzas</th><th class="n">Tramos extra</th><th class="n">kg</th></tr></thead><tbody>${causaRows}<tr class="tot"><td>Total</td><td class="n">${st.pzas}</td><td class="n">${st.cons.toFixed(3)}</td><td class="n">${st.kg>0?fmt2(st.kg):'—'}</td></tr></tbody></table>
+        <table><thead><tr><th>Modelo</th><th>Tubular</th><th class="n">Pzas</th><th class="n">Tramos extra</th></tr></thead><tbody>${modRows}</tbody></table>
+      </div>
+      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Modelo</th><th>Tubular</th><th class="n">Largo cm</th><th class="n">Pzas</th><th class="n">Tramos extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${detRows}</tbody></table></div>
+      <div class="line">${mermaTxt}</div>
+    </section>`;
+  }).join('')||'<p class="muted">Sin retrabajo registrado en esta semana.</p>';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de retrabajo — ${esc(weekLabelShort(ws))}</title>
+${WEEKLY_REPORT_CSS}
+</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
+<div class="page">
+<header><div><h1>Reporte semanal de retrabajo — tubular</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi"><div class="l">Piezas con retrabajo</div><div class="v">${totP}</div><div class="s">${(n=>n+' turno'+(n===1?'':'s'))(groups.reduce((s,g)=>s+g.st.n,0))}</div></div>
+  <div class="kpi main"><div class="l">Consumo extra</div><div class="v">${totC.toFixed(3)} tramos</div><div class="s">${totK>0?fmt2(totK)+' kg equivalentes':'sin peso configurado'}</div></div>
+  <div class="kpi"><div class="l">Merma semanal</div><div class="v">${conMerma?fmt2(totM)+' kg':'—'}</div><div class="s">${conMerma?'registrada':'sin capturar'}</div></div>
+  <div class="kpi"><div class="l">Máquinas</div><div class="v">${groups.length}</div><div class="s">${pend.length?'falta merma: '+esc(pend.join(', ')):'merma capturada'}</div></div>
+</div>
+${sections}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Consumo extra = piezas rechazadas × largo de pieza ÷ largo del tramo. kg equivalentes = tramos extra × peso del tramo configurado.</footer>
+</div></body></html>`;
+}
+function printRetrabajoReport(ws){ openPrintHtml(buildRetrabajoReportHtml(ws)); }
 
 // ── HISTORIAL OEE ──
 function renderHistory(){
@@ -5710,7 +6016,7 @@ function horaKey(ct,machine,turno,fecha){ return [ct,machine,turno,fecha].join('
 function resetHoraTouch(){ _hTouch.ids=new Set(); _hTouch.extra=false; _hTouch.dib=false; }
 document.addEventListener('input',e=>{
   const t=e.target; if(!t||!t.closest) return;
-  if(t.closest('#hora-franjas-list')) _hTouch.ids.add(t.id);
+  if(t.closest('#hora-franjas-list')) _hTouch.ids.add((t.dataset&&t.dataset.touch)||t.id);
   else if(t.closest('#horas-extra-list')) _hTouch.extra=true;
   else if(t.closest('#dibujo-list')) _hTouch.dib=true;
   else if(t.closest('#paros-list')) _hTouch.paros=true;
@@ -5766,6 +6072,7 @@ function softRestoreHora(){
       const el=document.getElementById(id);
       if(el && v && el.value==='' && !_hTouch.ids.has(id)) el.value=v;
     });
+    if(usaRetrabajo(machine) && Array.isArray(s.retrabajo) && s.retrabajo.length && !_hTouch.ids.has('hora-rt-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !rtHasContent(i)) setRetrabajoRows(i,s.retrabajo);
     if(parseInt(s.danadas)>0) toggleMotivoRow(i);
   });
   if(!_hTouch.extra && !document.querySelector('#horas-extra-list .dynamic-row')){ const ex=extrasFromRecord(rec); if(ex.length) setExtraRows(ex); }
@@ -5784,7 +6091,8 @@ function protectHora(existing,data,extra,dibujos){
     const sv=sf[i]; if(d.isBreak||!sv) return d; const o={...d};
     if(!_hTouch.ids.has('hora-fab-'+i) && !d.fabricadas && parseInt(sv.fabricadas)>0) o.fabricadas=parseInt(sv.fabricadas);
     if(!_hTouch.ids.has('hora-dan-'+i) && !d.danadas && parseInt(sv.danadas)>0) o.danadas=parseInt(sv.danadas);
-    if(!_hTouch.ids.has('hora-motivo-'+i) && !d.motivo && sv.motivo) o.motivo=sv.motivo;
+    if(!_hTouch.ids.has('hora-motivo-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !d.motivo && sv.motivo) o.motivo=sv.motivo;
+    if(!_hTouch.ids.has('hora-rt-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !(o.retrabajo&&o.retrabajo.length) && Array.isArray(sv.retrabajo) && sv.retrabajo.length){ o.retrabajo=sv.retrabajo; if(!o.motivo) o.motivo=rtMotivoResumen(sv.retrabajo); }
     return o;
   });
   if(!extra.length && !_hTouch.extra){ const ex=extrasFromRecord(existing); if(ex.length) extra=ex; }
@@ -5839,16 +6147,22 @@ function renderHoraFranjas(machine, turno){
       <div style="border-bottom:0.5px solid var(--border)">
         <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:5px 8px">
           <span style="font-size:12px;color:var(--text2);font-weight:500">${f}</span>
-          <input type="number" id="hora-fab-${i}" min="0" placeholder="0" ${dis} oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
+          <input type="number" id="hora-fab-${i}" min="0" placeholder="0" ${dis} oninput="toggleMotivoRow(${i});scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
-          <input type="number" id="hora-dan-${i}" min="0" placeholder="0" ${dis} oninput="scheduleLiveSync();calcHoraTotales('${machine}','${turno}');toggleMotivoRow(${i})"
+          <input type="number" id="hora-dan-${i}" min="0" placeholder="0" ${dis} oninput="toggleMotivoRow(${i});scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:#f06060;text-align:center;width:100%">
         </div>
-        <div id="hora-motivo-row-${i}" style="display:none;padding:3px 8px 6px;padding-left:118px">
+        ${usaRetrabajo(machine)?`<div id="hora-motivo-row-${i}" class="rt-wrap" style="display:none">
+          <button type="button" class="rt-head" onclick="rtToggle(${i})"><span class="rt-caret">▾</span>⚠ Registro de retrabajo<span class="ap-badge" id="rt-count-${i}">0</span><span class="rt-warn" id="rt-warn-${i}"></span><span class="rt-sum" id="rt-sum-${i}"></span></button>
+          <div class="rt-body">
+            <div id="hora-rt-list-${i}"></div>
+            <button type="button" class="rt-add" onclick="rtAdd(${i})" ${canCapture?'':'disabled'}>+ Agregar otro modelo / pieza</button>
+          </div>
+        </div>`:`<div id="hora-motivo-row-${i}" style="display:none;padding:3px 8px 6px;padding-left:118px">
           <input type="text" id="hora-motivo-${i}" placeholder="Motivo del rechazo..." ${dis}
             style="font-size:12px;font-family:'IBM Plex Sans',monospace;padding:4px 8px;border:1px solid rgba(240,96,96,.3);border-radius:var(--radius);background:rgba(240,96,96,.06);color:var(--text);width:100%;transition:border-color .15s"
             onfocus="this.style.borderColor='#f06060'" onblur="this.style.borderColor='rgba(240,96,96,.3)'">
-        </div>
+        </div>`}
       </div>`;
   }).join('');
 
@@ -5874,6 +6188,7 @@ function renderHoraFranjas(machine, turno){
       if(fabEl && saved.fabricadas) fabEl.value=saved.fabricadas;
       if(danEl && saved.danadas) danEl.value=saved.danadas;
       if(motEl && saved.motivo) motEl.value=saved.motivo;
+      if(usaRetrabajo(machine)) setRetrabajoRows(i,saved.retrabajo);
       if(saved.danadas>0) toggleMotivoRow(i);
     });
   }
@@ -5890,6 +6205,95 @@ function toggleMotivoRow(i){
   const dan = parseInt(document.getElementById('hora-dan-'+i)?.value)||0;
   const row = document.getElementById('hora-motivo-row-'+i);
   if(row) row.style.display = dan>0 ? 'block' : 'none';
+  if(row && document.getElementById('hora-rt-list-'+i)) syncRetrabajoPanel(i,dan);
+}
+
+// ── REGISTRO DE RETRABAJO (piezas rechazadas, máquinas de tubular) ──
+// En GW1/GW2, al registrar piezas dañadas en una franja se despliega este registro (contraíble) en lugar del
+// campo de motivo: modelo, medida de tubular, largo de pieza, consumo extra (tramos), causa y operador.
+const MAQUINAS_RETRABAJO=['GW1','GW2'];
+const RETRABAJO_CAUSAS=['Error en dibujo de corte (Ingeniería)','Error de operación (Estructura)','Material rayado','Material oxidado','Material fuera de especificación'];
+const RT_OTRO='Otro (especificar)';
+function usaRetrabajo(machine){ return MAQUINAS_RETRABAJO.includes(machine); }
+function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// Consumo extra en tramos = piezas rechazadas × largo de pieza ÷ largo del tramo
+function rtConsumo(tub,largo,n){ return (tub&&largo>0&&n>0)?Math.round(n*largo/tuboLargoCm(tub)*1000)/1000:0; }
+function rtEntries(i){ return Array.from(document.querySelectorAll('#hora-rt-list-'+i+' .rt-entry')); }
+function rtGet(e,n){ const el=e.querySelector(`[data-f="${n}"]`); return el?el.value:''; }
+function rtEntryData(e){
+  const tub=rtGet(e,'tubular'), largo=parseFloat(rtGet(e,'largoPza'))||0, n=parseInt(rtGet(e,'nPz'))||0;
+  return {modelo:rtGet(e,'modelo').trim(),tubular:tub,largoPza:largo,nPz:n,consumo:rtConsumo(tub,largo,n),causa:rtGet(e,'causa'),causaOtro:rtGet(e,'causaOtro').trim(),operador:e.dataset.op||''};
+}
+function rtMeaningful(x){ return !!(x.modelo||x.largoPza>0||x.causa); }
+function getRetrabajo(i){ return rtEntries(i).map(rtEntryData).filter(rtMeaningful); }
+function rtCausaTxt(x){ return x.causa===RT_OTRO?(x.causaOtro||'Otro'):x.causa; }
+function rtMotivoResumen(list){ return Array.from(new Set((list||[]).map(rtCausaTxt).filter(Boolean))).join('; '); }
+function rtHasContent(i){ return rtEntries(i).some(e=>rtMeaningful(rtEntryData(e))); }
+function addRetrabajoRow(i,data){
+  const list=document.getElementById('hora-rt-list-'+i); if(!list) return null;
+  const dis=canCaptureHora()?'':'disabled';
+  const d=document.createElement('div'); d.className='rt-entry';
+  d.dataset.op=(data&&data.operador)||(currentUser&&currentUser.name)||'';
+  const f=(l,inner)=>`<label class="ped-f"><span>${l}</span>${inner}</label>`;
+  const T=`data-touch="hora-rt-${i}" oninput="rtChanged(${i})"`;
+  const tubOpts='<option value="">Selecciona…</option>'+tubulares.map(t=>`<option value="${escH(t.tipo)}">${escH(t.tipo)}</option>`).join('');
+  const causaOpts='<option value="">Selecciona causa…</option>'+RETRABAJO_CAUSAS.concat([RT_OTRO]).map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
+  d.innerHTML=`<div class="rt-l1">
+      ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. F.6630" ${T} ${dis}>`)}
+      ${f('Medida de tubular',`<select data-f="tubular" ${T} ${dis}>${tubOpts}</select>`)}
+      ${f('Largo de pza (cm)',`<input type="number" data-f="largoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Pzas rech.',`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" data-touch="hora-rt-${i}" oninput="this.dataset.auto='';rtChanged(${i})" ${dis}>`)}
+    </div>
+    <div class="rt-l2">
+      ${f('Causa / motivo de retrabajo',`<select data-f="causa" ${T} ${dis}>${causaOpts}</select><input type="text" data-f="causaOtro" placeholder="Especifica la causa" style="display:none;margin-top:4px" ${T} ${dis}>`)}
+      ${f('Consumo extra (tramos)',`<input type="text" data-f="consumo" readonly placeholder="auto" title="Piezas rechazadas × largo de pieza ÷ largo del tramo">`)}
+      ${f('Operador',`<input type="text" data-f="operador" readonly title="Según la cuenta de acceso">`)}
+      <button type="button" class="btn-del" style="align-self:end" title="Quitar" onclick="rtDel(${i},this)" ${dis}>×</button>
+    </div>`;
+  list.appendChild(d);
+  const set=(n,v)=>{ const el=d.querySelector(`[data-f="${n}"]`); if(el&&v!=null&&v!=='') el.value=v; };
+  if(data){
+    const sel=d.querySelector('[data-f="tubular"]');
+    if(data.tubular && !Array.from(sel.options).some(o=>o.value===data.tubular)){ const o=document.createElement('option'); o.value=data.tubular; o.textContent=data.tubular; sel.appendChild(o); }
+    const cs=d.querySelector('[data-f="causa"]');
+    if(data.causa && !Array.from(cs.options).some(o=>o.value===data.causa)){ const o=document.createElement('option'); o.value=data.causa; o.textContent=data.causa; cs.appendChild(o); }
+    set('modelo',data.modelo);set('tubular',data.tubular);set('largoPza',data.largoPza);set('nPz',data.nPz);set('causa',data.causa);set('causaOtro',data.causaOtro);
+  }
+  d.querySelector('[data-f="operador"]').value=d.dataset.op;
+  return d;
+}
+function setRetrabajoRows(i,list){
+  const box=document.getElementById('hora-rt-list-'+i); if(!box) return;
+  box.innerHTML='';
+  (list||[]).forEach(x=>addRetrabajoRow(i,x));
+  rtChanged(i,true);
+}
+// Muestra/oculta "Otro", recalcula consumo y resumen del encabezado. quiet = sin guardado en vivo.
+function rtChanged(i,quiet){
+  let tot=0,asig=0,n=0;
+  rtEntries(i).forEach(e=>{
+    const x=rtEntryData(e); n++; asig+=x.nPz; tot+=x.consumo;
+    const c=e.querySelector('[data-f="consumo"]'); if(c) c.value=x.consumo>0?x.consumo.toFixed(3):'';
+    const o=e.querySelector('[data-f="causaOtro"]'); if(o) o.style.display=(x.causa===RT_OTRO)?'':'none';
+  });
+  const dan=parseInt(document.getElementById('hora-dan-'+i)?.value)||0;
+  const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  set('rt-count-'+i,String(n));
+  set('rt-sum-'+i,tot>0?`Consumo extra: ${tot.toFixed(3)} tramos`:'');
+  set('rt-warn-'+i,(n>0&&asig!==dan)?`⚠ ${asig} de ${dan} pzas asignadas`:'');
+  if(!quiet){ try{ scheduleLiveSync(); }catch(e){} }
+}
+function rtToggle(i){ const w=document.getElementById('hora-motivo-row-'+i); if(w) w.classList.toggle('rt-closed'); }
+function rtAdd(i){ _hTouch.ids.add('hora-rt-'+i); const d=addRetrabajoRow(i); rtChanged(i); if(d){ const w=document.getElementById('hora-motivo-row-'+i); if(w) w.classList.remove('rt-closed'); const f=d.querySelector('input'); if(f) f.focus(); } }
+function rtDel(i,btn){ _hTouch.ids.add('hora-rt-'+i); const e=btn.closest('.rt-entry'); if(e) e.remove(); rtChanged(i); }
+// Al haber piezas dañadas el registro se despliega con un renglón listo; si solo hay uno y "Pzas rech." no se ha
+// tocado, sigue el número de piezas dañadas de la franja.
+function syncRetrabajoPanel(i,dan){
+  if(!(dan>0)){ return; }
+  let es=rtEntries(i);
+  if(!es.length){ const d=addRetrabajoRow(i); if(d){ d.querySelector('[data-f="nPz"]').dataset.auto='1'; } es=rtEntries(i); }
+  if(es.length===1){ const nz=es[0].querySelector('[data-f="nPz"]'); if(nz && (nz.dataset.auto==='1' || nz.value==='')){ nz.value=dan; nz.dataset.auto='1'; } }
+  rtChanged(i,true);
 }
 
 function getHoraData(machine, turno){
@@ -5900,7 +6304,13 @@ function getHoraData(machine, turno){
     fabricadas: f.includes('Comida') ? 0 : (parseInt(document.getElementById('hora-fab-'+i)?.value)||0),
     danadas: f.includes('Comida') ? 0 : (parseInt(document.getElementById('hora-dan-'+i)?.value)||0),
     motivo: f.includes('Comida') ? '' : (document.getElementById('hora-motivo-'+i)?.value.trim()||'')
-  }));
+  })).map((d,i)=>{
+    if(!d.isBreak && usaRetrabajo(machine) && document.getElementById('hora-rt-list-'+i)){
+      const rt=d.danadas>0?getRetrabajo(i):[];
+      d.retrabajo=rt; d.motivo=rtMotivoResumen(rt);
+    }
+    return d;
+  });
 }
 
 // ── SINCRONIZACIÓN EN VIVO (hora×hora y paros, sin esperar a "Guardar") ──
@@ -6347,6 +6757,7 @@ function renderHoraHist(){
   const fmachine = document.getElementById('hora-hist-machine')?.value||'';
   const fturno = document.getElementById('hora-hist-turno')?.value||'';
   const fstatus = document.getElementById('hora-hist-status')?.value||'';
+  try{ renderRetrabajoSemanal(fct,fmachine); }catch(e){ console.warn('renderRetrabajoSemanal',e); }
   let filtered = [...horaRecords].reverse().filter(r=>machineInRoster(r.machine));
   if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
@@ -6442,7 +6853,8 @@ function renderHoraHist(){
         ${dibujoSection}
         ${rechazadas.length>0?`<div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.1)">
           <div style="font-size:10px;font-weight:600;color:#f06060;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Rechazos registrados</div>
-          ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo?`<span style="color:var(--amber)">· ${f.motivo}</span>`:''}</div>`).join('')}
+          ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo&&!(f.retrabajo&&f.retrabajo.length)?`<span style="color:var(--amber)">· ${escH(f.motivo)}</span>`:''}${(f.retrabajo||[]).map(x=>`<div style="margin:2px 0 3px 14px;font-size:11px;line-height:1.5"><span style="font-family:'IBM Plex Mono',monospace">${escH(x.modelo||'–')}</span> · ${escH(x.tubular||'–')} · ${fmtN(x.largoPza,1)} cm × ${x.nPz} pza${x.nPz===1?'':'s'} → <b style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">${Number(x.consumo||0).toFixed(3)} tramos extra</b> · <span style="color:var(--amber)">${escH(rtCausaTxt(x)||'sin causa')}</span> · ${escH(x.operador||'')}</div>`).join('')}</div>`).join('')}
+          ${(()=>{ const t=rechazadas.reduce((s,f)=>s+(f.retrabajo||[]).reduce((a,x)=>a+(Number(x.consumo)||0),0),0); return t>0?`<div style="font-size:11px;font-weight:600;color:var(--amber);margin-top:4px">Consumo extra total por retrabajo: ${t.toFixed(3)} tramos</div>`:''; })()}
         </div>`:``}
       </div>
       <button onclick="toggleHoraDetail('${r.id}',this)" style="width:100%;text-align:center;padding:5px;font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">
