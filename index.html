@@ -999,7 +999,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Pedacera utilizada<span class="ap-badge" id="tub-recortes-count">0 pedaceras</span><button class="ap-add" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar pedacera</button></div>
-          <div class="ap-note">Registra los retazos de tubular que se usaron para producir piezas. Ahorro = largo total usado ÷ largo del tramo × costo del tramo. Si cada retazo equivale al 40% o más de un tramo, ya es parte del material explosionado y no cuenta como ahorro.</div>
+          <div class="ap-note">Registra los recortes de tubular que se usaron para producir piezas. Ahorro = largo total usado ÷ largo del tramo × costo del tramo. Si cada recorte equivale al 40% o más de un tramo, ya es parte del material explosionado y no cuenta como ahorro.</div>
           <div id="tub-recortes-list"></div>
           <div class="ap-empty" id="tub-recortes-empty">Sin pedacera registrada. Es opcional.</div>
         </div>
@@ -1532,8 +1532,19 @@ function canRegisterMachine(machine){
 // Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
 // la mini-barra) las páginas sin acceso, y dentro de cada página, las
 // pestañas sin acceso.
+// Un operador asignado solo al centro Laser (GW1/GW2) no captura lámina de Laser de Cama: se le oculta esa pestaña.
+function aprovSinLamina(){
+  const cts=(currentUser&&currentUser.cts)||[];
+  return !!currentUser && currentUser.role==='operador' && cts.includes('LASER') && !cts.includes('TROQUELES');
+}
 function applyUserPermissionsUI(){
   if(!currentUser) return;
+  try{
+    const sinLam=aprovSinLamina(), lb=document.getElementById('tab-lamina-btn');
+    if(lb) lb.style.display=sinLam?'none':'';
+    const lt=document.getElementById('tab-lamina');
+    if(sinLam && lt && lt.classList.contains('active')){ const tb=document.getElementById('tab-tubular-btn'); if(tb) switchTab('tab-tubular',tb); }
+  }catch(e){ console.warn('aprovSinLamina',e); }
   const perms=currentUser.permissions||defaultPermissions(currentUser.role);
   document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
     const m=(item.getAttribute('onclick')||'').match(/navigate\('(\w+)'/);
@@ -4277,7 +4288,7 @@ function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())retu
   const f=(lbl,inner)=>`<label class="ped-f"><span>${lbl}</span>${inner}</label>`;
   d.innerHTML=`<div class="ped-l1">
     ${f('Tubular',`<select data-f="tipo" onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select>`)}
-    ${f('Retazos (pz)',`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" oninput="calcTubular()">`)}
+    ${f('Recortes (pz)',`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" oninput="calcTubular()">`)}
     ${f('Largo c/u cm',`<input type="number" data-f="largoRet" min="0" step="any" placeholder="0" oninput="calcTubular()">`)}
     ${f('Pzas producidas',`<input type="number" data-f="piezasProd" min="0" step="1" placeholder="0" oninput="calcTubular()">`)}
     ${f('Largo pieza cm',`<input type="number" data-f="largoPieza" min="0" step="any" placeholder="0" oninput="calcTubular()" title="Largo de cada pieza terminada">`)}
@@ -4286,7 +4297,7 @@ function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())retu
   <div class="ped-l2">
     ${f('OP',`<input type="text" data-f="op" placeholder="Orden de producción" oninput="calcTubular()">`)}
     ${f('Modelo / pieza',`<input type="text" data-f="modelo" placeholder="Modelo" oninput="calcTubular()">`)}
-    ${f('Ubicación del retazo',`<input type="text" data-f="ubicacion" placeholder="Dónde quedó / de dónde se tomó" oninput="calcTubular()">`)}
+    ${f('Ubicación del recorte',`<select data-f="ubicacion" oninput="calcTubular()"><option value="">Selecciona…</option><option value="Rack material MP">Rack material MP</option><option value="Rack de recuperación">Rack de recuperación</option></select>`)}
   </div>
   <div class="ped-chips" data-f="chips"></div>`;
   document.getElementById('tub-recortes-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
@@ -4368,15 +4379,15 @@ function calcTubular(){
     const out=[];
     if(x.largoRet>0&&x.nPz>0){
       out.push(`<span class="ped-chip">Largo total usado: ${fmtN(x.largoTotal,1)} cm</span>`);
-      out.push(`<span class="ped-chip" title="Cada retazo de ${fmtN(x.largoRet,1)} cm ÷ tramo de ${fmtN(x.largoTramo,0)} cm">${x.pct}% del tramo c/u · ${fmtN(x.rec,3)} tramo${x.rec===1?'':'s'} equiv.</span>`);
+      out.push(`<span class="ped-chip" title="Cada recorte de ${fmtN(x.largoRet,1)} cm ÷ tramo de ${fmtN(x.largoTramo,0)} cm">${x.pct}% del tramo c/u · ${fmtN(x.rec,3)} tramo${x.rec===1?'':'s'} equiv.</span>`);
       out.push(x.cuenta?`<span class="ped-chip ped-ok" title="Menos de ${RECORTE_UMBRAL}% del tramo: cuenta como ahorro">Ahorro: $${fmtMoney(x.efectivo)}</span>`
                        :`<span class="ped-chip ped-no" title="${RECORTE_UMBRAL}% o más del tramo: es parte del material explosionado, no cuenta como ahorro">Explosión (no es ahorro)</span>`);
       if(x.costo<=0) out.push(`<span class="ped-warn">Este tubular no tiene costo configurado: el ahorro saldrá en $0.</span>`);
-    } else out.push(`<span class="ped-warn" style="color:var(--text3)">Captura N.º de retazos y largo c/u para calcular.</span>`);
+    } else out.push(`<span class="ped-warn" style="color:var(--text3)">Captura N.º de recortes y largo c/u para calcular.</span>`);
     if(x.piezasProd>0&&x.largoPieza>0){
       const usado=x.piezasProd*x.largoPieza;
       out.push(`<span class="ped-chip">Piezas: ${fmtN(usado,1)} cm</span>`);
-      if(x.largoTotal>0&&usado>x.largoTotal+0.01) out.push(`<span class="ped-warn">⚠ Las piezas (${fmtN(usado,1)} cm) suman más que los retazos (${fmtN(x.largoTotal,1)} cm). Revisa los datos.</span>`);
+      if(x.largoTotal>0&&usado>x.largoTotal+0.01) out.push(`<span class="ped-warn">⚠ Las piezas (${fmtN(usado,1)} cm) suman más que los recortes (${fmtN(x.largoTotal,1)} cm). Revisa los datos.</span>`);
     }
     chips.innerHTML=out.join('');
   });
@@ -4483,7 +4494,7 @@ function aprovExplKey(e){ return e.cal||e.tipo; }
 // por recuperación de recortes.
 // Regla de control de material: un recorte recuperado que equivale al 40% o más de una lámina (o de un tramo)
 // ya forma parte del material explosionado — no es ahorro. Por debajo del 40% sí se cuenta como ahorro.
-// Se evalúa por separado para cada recorte (en tubular, por cada retazo de la pedacera).
+// Se evalúa por separado para cada recorte (en tubular, por cada recorte de la pedacera).
 const RECORTE_UMBRAL=40;
 // Largo del tramo en cm a partir del nombre ("…6mts" → 600, "…5.65M…" → 565); 600 si el nombre no lo dice.
 function tuboLargoCm(tipo){
@@ -4491,7 +4502,7 @@ function tuboLargoCm(tipo){
   if(m){ const v=parseFloat(m[1].replace(',','.')); if(v>0&&v<=12) return Math.round(v*100); }
   return 600;
 }
-// eqP = equivalencia de UN recorte/retazo en láminas o tramos; eq = total de la fila.
+// eqP = equivalencia de UN recorte/recorte en láminas o tramos; eq = total de la fila.
 function aprovRecInfo(r,x){
   const isLam=r.tipo==='lamina', k=x.cal||x.tipo;
   const cfg=isLam?getLaminaByCal(k):getTubularByTipo(k);
@@ -4501,7 +4512,7 @@ function aprovRecInfo(r,x){
     else if(cfg&&cfg.costo>0&&Number(x.ahorro)>0) eqP=Number(x.ahorro)/cfg.costo;
   } else if(Number(x.largoRet)>0){
     n=Number(x.nPz)||1; eqP=Number(x.largoRet)/(Number(x.largoTramo)||tuboLargoCm(k));
-  } else { // registro tubular anterior (por peso): no se puede saber cuántos retazos eran, se respeta como estaba
+  } else { // registro tubular anterior (por peso): no se puede saber cuántos recortes eran, se respeta como estaba
     legacy=true; eqP=Number(x.rec)>0?Number(x.rec):((cfg&&cfg.peso>0&&Number(x.peso)>0)?Number(x.peso)/cfg.peso:0);
   }
   const pct=Math.round(eqP*100);
@@ -4857,7 +4868,7 @@ function renderAprovHist(force){
           <span style="font-size:11px;color:var(--text3)">lun – vie</span>
           <span style="margin-left:auto;font-size:11px;color:var(--text3)">Ahorro teórico semanal</span>
           <b style="${mono};font-size:14px;color:${ahorroSem>=0?'#3ecf8e':'#f06060'}">$${fmtMoney(ahorroSem)}</b>
-          <button onclick="printWeeklyReport('${g.weekStart}')" title="Abrir el reporte semanal para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal</button>
+          <button onclick="printWeeklyReport('${g.weekStart}')" title="Reporte semanal único: aprovechamiento (consumo vs. explosión, Laser de Cama y tubular) y retrabajo" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal (aprovechamiento + retrabajo)</button>
         </div>`;
       }
       const tipoBadge=g.tipo==='lamina'
@@ -4992,7 +5003,7 @@ function saveExplosionEdit(id){
 }
 
 // ── REPORTE SEMANAL IMPRIMIBLE ──────────────────────────────────────
-// Pedacera utilizada (tubular): detalle de retazos del grupo semanal
+// Pedacera utilizada (tubular): detalle de recortes del grupo semanal
 function pedaceraReportHtml(g,esc,money){
   const rows=[];
   [...g.recs].reverse().forEach(r=>(r.recortesDetalle||[]).forEach(x=>{
@@ -5001,7 +5012,7 @@ function pedaceraReportHtml(g,esc,money){
     rows.push(`<tr><td>${dayLabel(r.fecha)}</td><td>${esc(x.tipo)}</td><td class="n">${fmt2(x.nPz)} × ${fmt2(x.largoRet)} cm</td><td class="n">${I.pct}%</td><td class="n">${(Number(x.piezasProd)>0&&Number(x.largoPieza)>0)?fmt2(x.piezasProd)+' × '+fmt2(x.largoPieza)+' cm':'—'}</td><td>${esc([x.op,x.modelo,x.ubicacion].filter(Boolean).join(' · '))}</td><td class="n ${I.cuenta?'pos':''}">${I.cuenta?money(Number(x.ahorro)||0):'<span class="muted">explosión</span>'}</td></tr>`);
   }));
   if(!rows.length) return '';
-  return `<div style="margin-top:8px"><table><thead><tr><th>Pedacera · día</th><th>Tubular</th><th class="n">Retazos</th><th class="n">% tramo</th><th class="n">Piezas</th><th>OP · modelo · ubicación</th><th class="n">Ahorro</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
+  return `<div style="margin-top:8px"><table><thead><tr><th>Pedacera · día</th><th>Tubular</th><th class="n">Recortes</th><th class="n">% tramo</th><th class="n">Piezas</th><th>OP · modelo · ubicación</th><th class="n">Ahorro</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
 }
 const WEEKLY_REPORT_CSS=`<style>
 @page{size:letter;margin:12mm}
@@ -5039,6 +5050,7 @@ tr.tot td{font-weight:700;border-top:1px solid #8a90a0;background:#fafbfc}
 .sign{display:flex;gap:40px;margin-top:26px;font-size:10px;color:#556}
 .sign div{flex:1;border-top:1px solid #8a90a0;padding-top:4px;text-align:center}
 footer{margin-top:10px;font-size:9px;color:#889}
+h3.part{font-size:12px;margin:16px 0 8px;padding:5px 9px;background:#1b1f2a;color:#fff;border-radius:4px;letter-spacing:.2px;page-break-after:avoid}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0;padding:0;max-width:none}.bar{display:none}}
 </style>`;
 function buildWeeklyReportHtml(ws){
@@ -5060,6 +5072,7 @@ function buildWeeklyReportHtml(ws){
   const quien=currentUser?currentUser.name:'';
   const ahora=new Date();
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const RT=retrabajoReportParts(ws);
   const sections=groups.map(g=>{
     const st=g.st, isLam=g.tipo==='lamina';
     const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
@@ -5079,12 +5092,13 @@ function buildWeeklyReportHtml(ws){
       <div class="line">${mermaTxt}</div>
       <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
     </section>`;
-  }).join('') || '<p class="muted">Sin registros en esta semana.</p>';
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de aprovechamiento — ${esc(weekLabelShort(ws))}</title>
+  }).join('') || '<p class="muted">Sin registros de aprovechamiento en esta semana.</p>';
+  const hayRT=RT.groups.length>0;
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de material — ${esc(weekLabelShort(ws))}</title>
 ${WEEKLY_REPORT_CSS}</head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
 <div class="page">
-<header><div><h1>Reporte semanal de aprovechamiento de material</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
+<header><div><h1>Reporte semanal de material — aprovechamiento y retrabajo</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
 <div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
 <div class="kpis">
   <div class="kpi"><div class="l">Material procesado</div><div class="v">${fmt2(totPeso)} kg</div><div class="s">${groups.reduce((s,g)=>s+g.recs.length,0)} registros</div></div>
@@ -5092,10 +5106,18 @@ ${WEEKLY_REPORT_CSS}</head><body>
   <div class="kpi"><div class="l">Aprovechamiento</div><div class="v">${pctMermaTot!=null?fmt2(100-pctMermaTot)+'%':'—'}</div><div class="s">${pendientes.length?'falta merma: '+esc(pendientes.join(', ')):'material aprovechado'}</div></div>
   <div class="kpi main"><div class="l">Ahorro teórico semanal</div><div class="v">${money(ahorroTot)}</div><div class="s">material ${money(totMat)} + recortes ${money(totRec)}</div></div>
 </div>
+${hayRT?`<div class="kpis">
+  <div class="kpi"><div class="l">Piezas con retrabajo</div><div class="v">${RT.totP}</div><div class="s">${RT.turnos} turno${RT.turnos===1?'':'s'} · tubular</div></div>
+  <div class="kpi"><div class="l">Consumo extra (retrabajo)</div><div class="v">${RT.totC.toFixed(3)} tramos</div><div class="s">${RT.totK>0?fmt2(RT.totK)+' kg equivalentes':'sin peso configurado'}</div></div>
+  <div class="kpi"><div class="l">Merma semanal (retrabajo)</div><div class="v">${RT.conMerma?fmt2(RT.totM)+' kg':'—'}</div><div class="s">${RT.pend.length?'falta merma: '+esc(RT.pend.join(', ')):'registrada'}</div></div>
+  <div class="kpi"><div class="l">Máquinas con retrabajo</div><div class="v">${RT.groups.length}</div><div class="s">${esc(RT.groups.map(g=>g.machine).join(', '))}</div></div>
+</div>`:''}
+<h3 class="part">1 · Aprovechamiento de material — consumo vs. explosión</h3>
 ${sections}
+${hayRT?`<h3 class="part">2 · Retrabajo — piezas rechazadas (tubular)</h3>${RT.sections}`:''}
 ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a la semana en que ocurrieron.</p>':''}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.</footer>
+<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.${hayRT?' Consumo extra por retrabajo = piezas rechazadas × largo de pieza ÷ largo del tramo; kg equivalentes = tramos extra × peso del tramo configurado.':''}</footer>
 </div></body></html>`;
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
@@ -5183,7 +5205,7 @@ function renderRetrabajoSemanal(fct,fmachine){
       html+=`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 12px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
         <span style="font-weight:700;font-size:13px">Semana ${weekLabel(g.ws)}</span><span style="font-size:11px;color:var(--text3)">lun – vie</span>
         <span style="margin-left:auto;font-size:11px;color:var(--text3)">Consumo extra</span><b style="${mono};font-size:13px;color:var(--amber)">${tc.toFixed(3)} tramos${tk>0?` · ${fmt2(tk)} kg`:''}</b>
-        <button onclick="printRetrabajoReport('${g.ws}')" title="Abrir el reporte semanal de retrabajo para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal</button>
+        <button onclick="printRetrabajoReport('${g.ws}')" title="Abrir el reporte semanal único (aprovechamiento de material y retrabajo) para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal (aprovechamiento + retrabajo)</button>
       </div>`;
     }
     const mermaHtml=st.merma!=null
@@ -5236,13 +5258,12 @@ function saveRtMerma(gid,ws,maquina){
   input.defaultValue=input.value;
   renderRetrabajoSemanal(document.getElementById('hora-hist-ct')?.value||'',document.getElementById('hora-hist-machine')?.value||'');
 }
-function buildRetrabajoReportHtml(ws){
-  const esc=escH, r2=n=>Math.round(n*100)/100;
+// Partes del reporte de retrabajo (se incluyen dentro del reporte semanal único)
+function retrabajoReportParts(ws){
+  const esc=escH;
   const groups=rtBuildGroups(rtCollect().filter(e=>e.ws===ws));
-  let totP=0,totC=0,totK=0,totM=0,conMerma=0; const pend=[];
-  groups.forEach(g=>{ g.st=rtGroupStats(g); totP+=g.st.pzas; totC+=g.st.cons; totK+=g.st.kg; if(g.st.merma!=null){ totM+=g.st.merma; conMerma++; } else pend.push(g.machine); });
-  const quien=currentUser?currentUser.name:''; const ah=new Date();
-  const generado=`${ah.getDate()} de ${MESES_ES[ah.getMonth()]} de ${ah.getFullYear()}, ${String(ah.getHours()).padStart(2,'0')}:${String(ah.getMinutes()).padStart(2,'0')}`;
+  let totP=0,totC=0,totK=0,totM=0,conMerma=0,turnos=0; const pend=[];
+  groups.forEach(g=>{ g.st=rtGroupStats(g); totP+=g.st.pzas; totC+=g.st.cons; totK+=g.st.kg; turnos+=g.st.n; if(g.st.merma!=null){ totM+=g.st.merma; conMerma++; } else pend.push(g.machine); });
   const sections=groups.map(g=>{
     const st=g.st;
     const causaRows=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).map(([c,o])=>`<tr><td>${esc(c)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('');
@@ -5258,26 +5279,10 @@ function buildRetrabajoReportHtml(ws){
       <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Modelo</th><th>Tubular</th><th class="n">Largo cm</th><th class="n">Pzas</th><th class="n">Tramos extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${detRows}</tbody></table></div>
       <div class="line">${mermaTxt}</div>
     </section>`;
-  }).join('')||'<p class="muted">Sin retrabajo registrado en esta semana.</p>';
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de retrabajo — ${esc(weekLabelShort(ws))}</title>
-${WEEKLY_REPORT_CSS}
-</head><body>
-<div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
-<div class="page">
-<header><div><h1>Reporte semanal de retrabajo — tubular</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
-<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
-<div class="kpis">
-  <div class="kpi"><div class="l">Piezas con retrabajo</div><div class="v">${totP}</div><div class="s">${(n=>n+' turno'+(n===1?'':'s'))(groups.reduce((s,g)=>s+g.st.n,0))}</div></div>
-  <div class="kpi main"><div class="l">Consumo extra</div><div class="v">${totC.toFixed(3)} tramos</div><div class="s">${totK>0?fmt2(totK)+' kg equivalentes':'sin peso configurado'}</div></div>
-  <div class="kpi"><div class="l">Merma semanal</div><div class="v">${conMerma?fmt2(totM)+' kg':'—'}</div><div class="s">${conMerma?'registrada':'sin capturar'}</div></div>
-  <div class="kpi"><div class="l">Máquinas</div><div class="v">${groups.length}</div><div class="s">${pend.length?'falta merma: '+esc(pend.join(', ')):'merma capturada'}</div></div>
-</div>
-${sections}
-<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Consumo extra = piezas rechazadas × largo de pieza ÷ largo del tramo. kg equivalentes = tramos extra × peso del tramo configurado.</footer>
-</div></body></html>`;
+  }).join('');
+  return {groups,sections,totP,totC:Math.round(totC*1000)/1000,totK:Math.round(totK*100)/100,totM,conMerma,pend,turnos};
 }
-function printRetrabajoReport(ws){ openPrintHtml(buildRetrabajoReportHtml(ws)); }
+function printRetrabajoReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
 
 // ── HISTORIAL OEE ──
 function renderHistory(){
@@ -5564,6 +5569,7 @@ function switchTabScoped(id, el, scopeClass){
 }
 
 function switchTab(id,el){
+  if(id==='tab-lamina' && aprovSinLamina()) return;
   // Defensa adicional: si esta pestaña es una de las controladas por el
   // árbol de permisos y la cuenta no tiene acceso, no hacer nada — aunque
   // de alguna forma se le haga click (el botón ya debería estar oculto).
