@@ -353,6 +353,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .dynamic-row{display:grid;gap:8px;align-items:center;margin-bottom:8px}
 .dynamic-row-hojas{grid-template-columns:1.3fr 0.8fr 1fr 1fr 32px}
 .dynamic-row-lam{grid-template-columns:1.1fr 0.75fr 0.75fr 0.9fr 0.9fr 32px}
+.dynamic-row-lamr{grid-template-columns:1fr .7fr .7fr .8fr .8fr 1.35fr 32px}
 .dynamic-row-tub{grid-template-columns:minmax(0,2.2fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,.9fr) 32px}
 /* ── Aprovechamiento: formulario compacto y dinámico ── */
 .ap-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.6rem .85rem;margin-bottom:.7rem}
@@ -383,6 +384,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .rt-entry{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:7px 9px;margin-bottom:6px}
 .rt-l1,.rt-l2{display:grid;gap:7px;align-items:end}
 .rt-l1{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.6fr)}
+.rt-l1-lam{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.6fr)}
 .rt-l2{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr) 30px;margin-top:6px}
 .rt-entry input,.rt-entry select{font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;box-sizing:border-box;min-width:0}
 .rt-entry input[readonly]{background:var(--bg);color:var(--text2)}
@@ -808,7 +810,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:var(--radius);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">
               <span>Hora</span><span style="text-align:center">Piezas prod.</span><span style="text-align:center">Piezas dañadas</span>
             </div>
-            <div style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2) o un campo para el motivo (otras máquinas).</div>
+            <div style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2/Laser de Cama) o un campo para el motivo (otras máquinas).</div>
             <div id="hora-franjas-list"></div>
           </div>
           <!-- Horas extra -->
@@ -968,8 +970,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-recortes-count">0 recortes</span><button class="ap-add" id="btn-add-lam-recorte" onclick="addLamRecorte()">+ Agregar recorte</button></div>
-          <div class="ap-note">Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro.</div>
-          <div class="dynamic-row-header dynamic-row-lam" id="lam-recortes-head" style="display:none"><span>Calibre</span><span>Ancho cm</span><span>Largo cm</span><span>Peso (kg)</span><span>Ahorro ($)</span><span></span></div>
+          <div class="ap-note">Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro. Si es de una pieza fuera de programa (prototipo, vacuna…), márcalo en «Destino del recorte».</div>
+          <div class="dynamic-row-header dynamic-row-lamr" id="lam-recortes-head" style="display:none"><span>Calibre</span><span>Ancho cm</span><span>Largo cm</span><span>Peso (kg)</span><span>Ahorro ($)</span><span title="Si el recorte viene de una pieza fuera de programa (prototipo, vacuna…), márcalo">Destino del recorte</span><span></span></div>
           <div id="lam-recortes-list"></div>
           <div class="ap-empty" id="lam-recortes-empty">Sin recortes recuperados. Es opcional.</div>
         </div>
@@ -1810,7 +1812,7 @@ function saveChecklist(){
     completedBy:currentUser.username, completedByName:currentUser.name, completedAt:new Date().toISOString(), updatedAt:new Date().toISOString()};
   checklistRecords.push(rec);
   saveChecklistRecordsLS();
-  cloudWriteRow('Checklist_Arranque', {...rec, items:JSON.stringify(items)});
+  cloudUpsertRow('Checklist_Arranque', {...rec, items:JSON.stringify(items)});   // con cola de reintentos
   renderChecklist();
   const msg=document.getElementById('checklist-save-msg');
   if(msg){ msg.textContent='✓ Checklist confirmado'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',3000); }
@@ -2617,11 +2619,13 @@ const SK_OUTBOX='oee_outbox_v1';
 let _outbox={};
 try{ _outbox=JSON.parse(localStorage.getItem(SK_OUTBOX))||{}; }catch(e){ _outbox={}; }
 let _outboxBusy=false;
-function outboxSave(){ try{ localStorage.setItem(SK_OUTBOX,JSON.stringify(_outbox)); }catch(e){ /* sin espacio: no bloquea el guardado normal */ } }
+function outboxSave(){ try{ localStorage.setItem(SK_OUTBOX,JSON.stringify(_outbox)); }catch(e){ /* sin espacio: no bloquea el guardado normal */ } try{ updateCloudBadge(); }catch(e){} }
+function outboxCount(){ return Object.keys(_outbox).length; }
+function outboxFailedCount(){ return Object.values(_outbox).filter(e=>(e.srvErr||0)>5).length; }
 function outboxAdd(action,sheet,id,record){
   if(id===undefined||id===null||id==='') return null;
   const json=record?JSON.stringify(record):'';
-  if(json.length>60000) return null;              // registros enormes (programa del día) no se encolan
+  if(json.length>250000) return null;             // solo registros descomunales no se encolan
   const key=sheet+'|'+id, ts=Date.now()+'_'+Math.random().toString(36).slice(2,6);
   const prev=_outbox[key];
   _outbox[key]={action,sheet,id,record:record||null,ts,srvErr:prev?(prev.srvErr||0):0};
@@ -2642,6 +2646,10 @@ function outboxRetry(){
     const k=keys.shift();
     if(!k){ clearTimeout(watchdog); _outboxBusy=false; return; }
     const e=_outbox[k]; if(!e){ next(); return; }
+    // Un registro que el servidor rechazó varias veces NO se descarta (sería perder datos): se conserva y se
+    // reintenta cada 10 min mientras alguien corrige la causa (p. ej. Apps Script desactualizado).
+    if((e.srvErr||0)>5 && Date.now()-(e.lastTry||0)<600000){ next(); return; }
+    e.lastTry=Date.now();
     const ts=e.ts;
     // Los reintentos van con ifNewer: el script no pisa una versión MÁS NUEVA que ya esté en la hoja
     const params=e.action==='delete'
@@ -2650,9 +2658,8 @@ function outboxRetry(){
     gasRequest(params,
       ()=>{ const cur=_outbox[k]; if(cur&&cur.ts===ts){ delete _outbox[k]; outboxSave(); } next(); },
       (err)=>{
-        // Sin red: se conserva para siempre hasta que haya conexión. Si el servidor la rechaza,
-        // se reintenta unas veces y luego se descarta para no insistir eternamente.
-        if(String(err)!=='Network error'){ const cur=_outbox[k]; if(cur&&cur.ts===ts){ cur.srvErr=(cur.srvErr||0)+1; if(cur.srvErr>5) delete _outbox[k]; outboxSave(); } }
+        // Sin red o rechazado por el servidor: se conserva hasta que la nube lo confirme.
+        if(String(err)!=='Network error'){ const cur=_outbox[k]; if(cur&&cur.ts===ts){ cur.srvErr=(cur.srvErr||0)+1; cur.lastErr=String(err).slice(0,200); outboxSave(); } }
         next();
       });
   };
@@ -2768,8 +2775,17 @@ function updateCloudBadge(){
     el.innerHTML='<span style="color:var(--amber)" title="El Google Apps Script no tiene el código más reciente — vuelve a pegar/guardar el archivo Codigo_GoogleSheet.gs">⚠ Backend desactualizado</span>';
     return;
   }
+  const pend=(typeof outboxCount==='function')?outboxCount():0, fail=(typeof outboxFailedCount==='function')?outboxFailedCount():0;
+  if(fail>0){
+    el.innerHTML=`<span style="color:var(--red)" title="La nube rechazó ${fail} registro${fail===1?'':'s'}. Siguen guardados en este equipo y se reintentan cada 10 min. Revisa que el Apps Script (Codigo_GoogleSheet.gs) esté actualizado.">⚠ ${fail} sin subir al Sheet</span>`;
+    return;
+  }
   if(lastSyncHadErrors){
-    el.innerHTML='<span style="color:var(--amber)" title="Se conectó a la nube pero algunos datos no se pudieron sincronizar">● Conectado — sync parcial</span>';
+    el.innerHTML='<span style="color:var(--amber)" title="Se conectó a la nube pero algunos datos no se pudieron sincronizar">● Conectado — sync parcial</span>'+(pend?`<br><span style="color:var(--amber)">⏳ ${pend} por subir</span>`:'');
+    return;
+  }
+  if(pend>0){
+    el.innerHTML=`<span style="color:var(--amber)" title="Estos cambios ya están guardados en este equipo y se están enviando al Sheet. No cierres sesión hasta que desaparezca el aviso.">⏳ Subiendo ${pend} cambio${pend===1?'':'s'} al Sheet…</span>`;
     return;
   }
   const hhmm=lastSyncTime?lastSyncTime.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
@@ -4143,7 +4159,7 @@ function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.
 function getLaminaOptionsShort(){return laminas.map(l=>`<option value="${l.cal}">${l.cal}</option>`).join('');}
 function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
 function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
-function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-lam';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
+function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row dynamic-row-lamr';d.id=id;d.innerHTML=`<select data-f="cal" onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><select data-f="fp" onchange="calcLamina()" title="¿Sobró de una pieza fuera de programa?"><option value="">En programa</option><option value="Prototipo">Fuera de prog.: Prototipo</option><option value="Vacuna">Fuera de prog.: Vacuna</option><option value="Otro">Fuera de prog.: Otro</option></select><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE LÁMINA (localStorage) ──
 // Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
 // página se recargaba antes de presionar "Guardar registro" — a
@@ -4194,7 +4210,7 @@ function saveLamDraft(){
     }),
     recortes: Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
       const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-      return {cal: sel?.value, ancho: ins[0]?.value, largo: ins[1]?.value};
+      return {cal: sel?.value, ancho: ins[0]?.value, largo: ins[1]?.value, fp: row.querySelector('[data-f="fp"]')?.value||''};
     }),
   };
   try{ localStorage.setItem(SK_LAM_DRAFT, JSON.stringify(draft)); }catch(e){}
@@ -4230,6 +4246,7 @@ function restoreLamDraft(){
     if(sel && r.cal) sel.value=r.cal;
     if(ins[0] && r.ancho) ins[0].value=r.ancho;
     if(ins[1] && r.largo) ins[1].value=r.largo;
+    const fpEl=row.querySelector('[data-f="fp"]'); if(fpEl && r.fp) fpEl.value=r.fp;
   });
   calcLamina();
   const msg=document.getElementById('lam-save-msg');
@@ -4275,7 +4292,8 @@ function saveLamina(){
   // Recortes recuperados (calibre, medidas, peso y ahorro de cada uno)
   const recortesDetalle=Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.dataset.gross)||0};
+    const fp=row.querySelector('[data-f="fp"]')?.value||'';
+    return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.dataset.gross)||0, fueraProg: fp};
   }).filter(x=>x.cal && x.ancho>0 && x.largo>0);
   const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
   aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
@@ -4518,6 +4536,55 @@ function aprovRecInfo(r,x){
   const pct=Math.round(eqP*100);
   return {eqP,n,eq:eqP*n,pct,legacy,cuenta:legacy?true:pct<RECORTE_UMBRAL};
 }
+// Equivalencia (en láminas) del RETRABAJO de Laser de Cama (hora×hora) del mismo día y turno, por calibre.
+// Si hay varios registros de lámina del mismo día/turno/máquina, solo el primero (por id) usa ese retrabajo.
+function aprovRtEqByCal(r){
+  if(r.tipo!=='lamina') return {};
+  const sib=aprovRecords.filter(x=>x.tipo==='lamina'&&x.maquina===r.maquina&&x.fecha===r.fecha&&x.turno===r.turno)
+    .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
+  if(sib.length&&String(sib[0].id)!==String(r.id)) return {};
+  const out={};
+  rtCollect().forEach(e=>{ if(e.tipo!=='lamina'||e.machine!==r.maquina||e.fecha!==r.fecha||e.turno!==r.turno||!e.calibre) return; out[e.calibre]=(out[e.calibre]||0)+(Number(e.consumo)||0); });
+  return out;
+}
+// Recortes de lámina por calibre (solo los que cuentan como ahorro por la regla del 40%): q/v = equivalencia y valor;
+// qf/vf = lo que viene de piezas fuera de programa; w = equivalencia del retrabajo del día.
+function aprovRecGroups(r){
+  const g={};
+  if(r.tipo!=='lamina') return g;
+  (r.recortesDetalle||[]).forEach(x=>{
+    const k=x.cal; if(!k) return;
+    const I=aprovRecInfo(r,x); if(!I.cuenta) return;
+    const o=g[k]||(g[k]={q:0,v:0,qf:0,vf:0,w:0});
+    const v=Number(x.ahorro)||0; o.q+=I.eq; o.v+=v;
+    if(x.fueraProg){ o.qf+=I.eq; o.vf+=v; }
+  });
+  const w=aprovRtEqByCal(r);
+  Object.keys(w).forEach(k=>{ const o=g[k]||(g[k]={q:0,v:0,qf:0,vf:0,w:0}); o.w=w[k]; });
+  return g;
+}
+// Reglas de control del material (por calibre, dentro de cada registro):
+//  1) El material explosionado que NO se consumió (dif +) y los recortes recuperados del mismo calibre se compensan:
+//     la parte que ambos cubren es material de la explosión, no ahorro. Solo cuenta el sobrante de cada lado.
+//  2) Si queda diferencia y el material que pidió el RETRABAJO (hora×hora, mismo día y turno) la explica, esa
+//     diferencia deja de ser ahorro (lo que cubra) y, si la cubre completa, los recortes marcados «fuera de
+//     programa» tampoco cuentan.
+function aprovAjuste(groups,difBy,costoBy){
+  const rows=[]; let matAdj=0,recAdj=0;
+  Object.keys(groups).forEach(k=>{
+    const g=groups[k], dif=difBy[k]; if(dif==null||isNaN(dif)) return;
+    const pos=dif>0?dif:0, costo=costoBy[k]||0, EPS=0.005;
+    const cover1=Math.min(pos,g.q), fr1=g.q>0?cover1/g.q:0;
+    const D1=Math.max(0,pos-cover1), W=g.w||0;
+    const full=D1>EPS && W>=D1-EPS;
+    const cover2=Math.min(D1,W);
+    const recA=g.v*fr1+(full?g.vf*(1-fr1):0);
+    const matA=(cover1+cover2)*costo;
+    if(cover1>EPS||cover2>EPS||full) rows.push({key:k,dif,q:g.q,cover1,D1,w:W,cover2,full,qf:g.qf,matA,recA});
+    matAdj+=matA; recAdj+=recA;
+  });
+  return {rows,matAdj,recAdj};
+}
 function aprovTotals(r){
   const r2=n=>Math.round(n*100)/100;
   const items=aprovItems(r);
@@ -4531,8 +4598,16 @@ function aprovTotals(r){
   let bruto=0,efectivo=0;
   if(recs.length){ recs.forEach(x=>{ const a=Number(x.ahorro)||0; bruto+=a; if(aprovRecInfo(r,x).cuenta) efectivo+=a; }); }
   else { bruto=efectivo=Number(r.ahorro)||0; }
-  const ahorroRec=r2(efectivo);
-  return {items,any,totReal:r2(totReal),totExpl:r2(totExpl),totDif:r2(totDif),valor:r2(valor),ahorroRec,ahorroRecBruto:r2(bruto),cubierto:r2(bruto-efectivo),ahorroTeorico:r2(valor+ahorroRec)};
+  // Compensación entre material no consumido, recortes y retrabajo (solo lámina)
+  const groups=aprovRecGroups(r), difBy={}, costoBy={};
+  items.forEach(it=>{ if(it.dif!==undefined){ difBy[it.key]=it.dif; costoBy[it.key]=it.costo; } });
+  const aj=aprovAjuste(groups,difBy,costoBy);
+  const valorFinal=valor-aj.matAdj, recFinal=Math.max(0,efectivo-aj.recAdj);
+  return {items,any,totReal:r2(totReal),totExpl:r2(totExpl),totDif:r2(totDif),
+    valorBruto:r2(valor),valor:r2(valorFinal),ahorroRec:r2(recFinal),ahorroRecBruto:r2(bruto),
+    cubierto:r2(bruto-efectivo),                         // recortes ≥40% (parte de la explosión)
+    compMat:r2(aj.matAdj),compRec:r2(aj.recAdj),ajustes:aj.rows,recEfectivo40:r2(efectivo),
+    ahorroTeorico:r2(valorFinal+recFinal)};
 }
 
 // Panel desplegable de un registro: láminas/tubulares registrados,
@@ -4594,13 +4669,14 @@ function aprovDetailHtml(r){
         const val=I.cuenta?`<span style="${mono};color:#3ecf8e">$${fmtMoney(x.ahorro)}</span>`
                           :`<span style="${mono};color:var(--text3);text-decoration:line-through" title="No cuenta como ahorro">$${fmtMoney(x.ahorro)}</span>`;
         return `<div style="padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap"><span style="font-weight:500">${x.cal||x.tipo}</span>${I.legacy?'':pill(I.cuenta)}</span>${val}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap"><span style="font-weight:500">${x.cal||x.tipo}</span>${I.legacy?'':pill(I.cuenta)}${x.fueraProg?`<span style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:8px;background:rgba(160,120,255,.15);color:#a78bfa;white-space:nowrap" title="Recorte de una pieza fuera de programa">FUERA DE PROG. · ${escH(x.fueraProg)}</span>`:''}</span>${val}</div>
           <div style="${mono};color:var(--text2);font-size:11px;margin-top:2px">${medidas}${eqTxt?' · '+eqTxt:''}</div>
           ${extra?`<div style="color:var(--text3);font-size:11px;margin-top:1px">${extra}</div>`:''}
         </div>`;
-      }).join('')
+      }).join('')+(isLam?`<div id="rcov-${id}" style="margin-top:8px"></div>`:'')
     : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
-  const ahorroRec=T.ahorroRec;
+  const ahorroRec=T.recEfectivo40;
+  const rqData=isLam?JSON.stringify(aprovRecGroups(r)).replace(/'/g,'&#39;'):'{}';
   return `<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start">
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">${isLam?'Láminas consumidas vs. explosionadas':'Tubulares consumidos vs. explosionados'}</div>
@@ -4611,8 +4687,8 @@ function aprovDetailHtml(r){
         ${recHtml}
       </div>
     </div>
-    <div id="sum-${id}" data-rec="${ahorroRec}" data-lam="${isLam?1:0}" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius)">
-      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Material no consumido (explosión − registrado)</div><div id="sum-mat-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
+    <div id="sum-${id}" data-rec="${ahorroRec}" data-rq='${rqData}' data-lam="${isLam?1:0}" style="display:flex;gap:22px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius)">
+      <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Material no consumido (explosión − registrado) <span id="sum-matnote-${id}" style="text-transform:none;letter-spacing:0"></span></div><div id="sum-mat-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Recortes recuperados <span id="sum-recnote-${id}" style="text-transform:none;letter-spacing:0"></span></div><div id="sum-rec-${id}" style="${mono};font-size:14px;font-weight:700;color:#3ecf8e">$${fmtMoney(T.ahorroRec)}</div></div>
       <div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Ahorro teórico</div><div id="sum-tot-${id}" style="${mono};font-size:14px;font-weight:700">–</div></div>
     </div>
@@ -4652,10 +4728,27 @@ function recalcAprovDetail(id){
   set(document.getElementById(`tot-${id}-val`),any?money(totVal):'–',any?colV:'var(--text3)');
   const sum=document.getElementById('sum-'+id);
   if(sum){
-    const rec=parseFloat(sum.dataset.rec)||0;
-    const mat=any?totVal:0;
-    set(document.getElementById('sum-mat-'+id),any?money(mat):'–',any?colV:'var(--text3)');
+    const recBase=parseFloat(sum.dataset.rec)||0;
+    let groups={}; try{ groups=JSON.parse(sum.dataset.rq||'{}'); }catch(x){ groups={}; }
+    const difBy={}, costoBy={};
+    inputs.forEach(inp=>{ if(inp.value===''||inp.closest('[data-removed]')) return; const kk=inp.dataset.key; difBy[kk]=r2((difBy[kk]||0)+((parseFloat(inp.value)||0)-(parseFloat(inp.dataset.real)||0))); costoBy[kk]=parseFloat(inp.dataset.costo)||0; });
+    const aj=aprovAjuste(groups,difBy,costoBy);
+    const matAdj=any?aj.matAdj:0;
+    const mat=any?totVal-matAdj:0;
+    const rec=Math.max(0,r2(recBase-aj.recAdj));
+    set(document.getElementById('sum-mat-'+id),any?money(r2(mat)):'–',any?(mat>0?G:mat<0?R:'var(--text2)'):'var(--text3)');
+    const mn=document.getElementById('sum-matnote-'+id); if(mn) mn.textContent=matAdj>0?`(de ${money(r2(totVal))} − $${fmtMoney(r2(matAdj))} compensados)`:'';
     set(document.getElementById('sum-rec-'+id),'$'+fmtMoney(rec),'#3ecf8e');
+    const note=document.getElementById('sum-recnote-'+id); if(note) note.textContent=aj.recAdj>0?`(de $${fmtMoney(recBase)} − $${fmtMoney(r2(aj.recAdj))} compensados)`:'';
+    const box=document.getElementById('rcov-'+id);
+    if(box){
+      box.innerHTML=aj.rows.map(x=>{
+        const l=[];
+        if(x.cover1>0.0049) l.push(`<b>${escH(x.key)}</b>: no consumido <b style="${APROV_MONO}">${fmt2(x.dif)}</b> lám. y recortes ≈ <b style="${APROV_MONO}">${fmt2(x.q)}</b> lám. se compensan: <b style="${APROV_MONO}">${fmt2(x.cover1)}</b> lám. pasa a explosión (no es ahorro)${x.D1>0.0049?` · sobrante de diferencia <b style="${APROV_MONO}">${fmt2(x.D1)}</b> lám.`:''}`);
+        if(x.cover2>0.0049||x.full) l.push(`<b>${escH(x.key)}</b>: el retrabajo del día pidió ≈ <b style="${APROV_MONO}">${fmt2(x.w)}</b> lám. y explica ${x.full?'toda':'<b style="'+APROV_MONO+'">'+fmt2(x.cover2)+'</b> lám. de'} la diferencia restante${x.full&&x.qf>0?' → los recortes <b>fuera de programa</b> tampoco cuentan':''}`);
+        return `<div style="font-size:11px;color:var(--amber);line-height:1.5;padding:3px 0">${l.join('<br>')}</div>`;
+      }).join('');
+    }
     const tot=r2(mat+rec);
     set(document.getElementById('sum-tot-'+id),money(tot),tot>=0?G:R);
   }
@@ -4815,22 +4908,22 @@ function aprovWeeklyMerma(g){
 }
 function aprovGroupStats(g){
   const r2=n=>Math.round(n*100)/100;
-  let peso=0,ahorroRec=0,valorMat=0,noExpl=0,cubierto=0; const map={}, order=[];
+  let peso=0,ahorroRec=0,valorMat=0,noExpl=0,cubierto=0,compMat=0,compRec=0,compFp=0; const map={}, order=[];
   g.recs.forEach(r=>{
     const T=aprovTotals(r);
-    peso+=Number(r.pesoTotal)||0; ahorroRec+=T.ahorroRec; valorMat+=T.valor; cubierto+=T.cubierto;
+    peso+=Number(r.pesoTotal)||0; ahorroRec+=T.ahorroRec; valorMat+=T.valor; cubierto+=T.cubierto; compMat+=T.compMat; compRec+=T.compRec; T.ajustes.forEach(a=>{ if(a.full&&a.qf>0) compFp+=1; });
     if(T.items.length && !T.any) noExpl++;
     T.items.forEach(it=>{
       let m=map[it.key];
       if(!m){ m=map[it.key]={key:it.key,real:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false,extra:true}; order.push(m); }
       if(!it.extra) m.extra=false;
       m.real+=it.real;
-      if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.real; m.expl+=it.expl; m.dif+=it.dif; m.valor+=it.valorRaw; }
+      if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.real; m.expl+=it.expl; m.dif+=it.dif; const aj=T.ajustes.find(a=>a.key===it.key); m.adj=(m.adj||0)+(aj?aj.matA:0); m.valor+=it.valorRaw-(aj?aj.matA:0); }
     });
   });
   const merma=aprovWeeklyMerma(g);
   const pctMerma=(merma&&peso>0)?merma.kg/peso*100:null;
-  return {peso:r2(peso),ahorroRec:r2(ahorroRec),cubierto:r2(cubierto),valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
+  return {peso:r2(peso),ahorroRec:r2(ahorroRec),cubierto:r2(cubierto),compMat:r2(compMat),compRec:r2(compRec),compFp,valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
           items:order.map(m=>({...m,real:r2(m.real),realCmp:r2(m.realCmp),expl:r2(m.expl),dif:r2(m.dif),valor:r2(m.valor)})),
           merma,pctMerma,pctAprov:pctMerma==null?null:100-pctMerma,n:g.recs.length};
 }
@@ -5090,7 +5183,7 @@ function buildWeeklyReportHtml(ws){
       </div>
       ${isLam?'':pedaceraReportHtml(g,esc,money)}
       <div class="line">${mermaTxt}</div>
-      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
+      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${(st.compMat>0||st.compRec>0)?` <span class="muted">· compensación por calibre: ${money(st.compMat)} de material no consumido y ${money(st.compRec)} de recortes no se cuentan como ahorro (los recortes del mismo calibre cubren lo no consumido, o el retrabajo/pieza fuera de programa lo explica)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
     </section>`;
   }).join('') || '<p class="muted">Sin registros de aprovechamiento en esta semana.</p>';
   const hayRT=RT.groups.length>0;
@@ -5107,17 +5200,17 @@ ${WEEKLY_REPORT_CSS}</head><body>
   <div class="kpi main"><div class="l">Ahorro teórico semanal</div><div class="v">${money(ahorroTot)}</div><div class="s">material ${money(totMat)} + recortes ${money(totRec)}</div></div>
 </div>
 ${hayRT?`<div class="kpis">
-  <div class="kpi"><div class="l">Piezas con retrabajo</div><div class="v">${RT.totP}</div><div class="s">${RT.turnos} turno${RT.turnos===1?'':'s'} · tubular</div></div>
-  <div class="kpi"><div class="l">Consumo extra (retrabajo)</div><div class="v">${RT.totC.toFixed(3)} tramos</div><div class="s">${RT.totK>0?fmt2(RT.totK)+' kg equivalentes':'sin peso configurado'}</div></div>
+  <div class="kpi"><div class="l">Piezas con retrabajo</div><div class="v">${RT.totP}</div><div class="s">${RT.turnos} turno${RT.turnos===1?'':'s'}</div></div>
+  <div class="kpi"><div class="l">Consumo extra (retrabajo)</div><div class="v">${[RT.totC>0||RT.totL===0?RT.totC.toFixed(3)+' tramos':'',RT.totL>0?RT.totL.toFixed(3)+' láminas':''].filter(Boolean).join(' + ')}</div><div class="s">${RT.totK>0?fmt2(RT.totK)+' kg equivalentes':'sin peso configurado'}</div></div>
   <div class="kpi"><div class="l">Merma semanal (retrabajo)</div><div class="v">${RT.conMerma?fmt2(RT.totM)+' kg':'—'}</div><div class="s">${RT.pend.length?'falta merma: '+esc(RT.pend.join(', ')):'registrada'}</div></div>
   <div class="kpi"><div class="l">Máquinas con retrabajo</div><div class="v">${RT.groups.length}</div><div class="s">${esc(RT.groups.map(g=>g.machine).join(', '))}</div></div>
 </div>`:''}
 <h3 class="part">1 · Aprovechamiento de material — consumo vs. explosión</h3>
 ${sections}
-${hayRT?`<h3 class="part">2 · Retrabajo — piezas rechazadas (tubular)</h3>${RT.sections}`:''}
+${hayRT?`<h3 class="part">2 · Retrabajo — piezas rechazadas</h3>${RT.sections}`:''}
 ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a la semana en que ocurrieron.</p>':''}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.${hayRT?' Consumo extra por retrabajo = piezas rechazadas × largo de pieza ÷ largo del tramo; kg equivalentes = tramos extra × peso del tramo configurado.':''}</footer>
+<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.${hayRT?' Consumo extra por retrabajo: tubular = piezas rechazadas × largo de pieza ÷ largo del tramo; lámina = piezas rechazadas × peso de la pieza ÷ peso de la lámina. kg equivalentes = consumo extra × peso configurado.':''}</footer>
 </div></body></html>`;
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
@@ -5152,9 +5245,10 @@ function rtCollect(){
       if(!f||f.isBreak||!Array.isArray(f.retrabajo)) return;
       f.retrabajo.forEach(x=>{
         if(!x) return;
-        const tub=getTubularByTipo(x.tubular);
-        const cons=Number(x.consumo)>0?Number(x.consumo):rtConsumo(x.tubular,Number(x.largoPza)||0,Number(x.nPz)||0);
-        out.push({...x,consumo:cons,kg:cons*(tub&&tub.peso>0?tub.peso:0),machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:f.franja,ws,turnoKey:r.fecha+'|'+r.turno});
+        const lam=rtLam(r.machine);
+        const tub=lam?getLaminaByCal(x.calibre):getTubularByTipo(x.tubular);
+        const cons=Number(x.consumo)>0?Number(x.consumo):(lam?rtConsumoLam(x.calibre,Number(x.anchoPza)||0,Number(x.largoPza)||0,Number(x.nPz)||0):rtConsumo(x.tubular,Number(x.largoPza)||0,Number(x.nPz)||0));
+        out.push({...x,tipo:lam?'lamina':'tubular',consumo:cons,kg:cons*(tub&&tub.peso>0?tub.peso:0),machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:f.franja,ws,turnoKey:r.fecha+'|'+r.turno});
       });
     });
   });
@@ -5174,11 +5268,11 @@ function rtGroupStats(g){
   g.entries.forEach(e=>{
     pzas+=Number(e.nPz)||0; cons+=e.consumo; kg+=e.kg; turnos.add(e.turnoKey);
     const c=rtCausaTxt(e)||'Sin causa'; const o=causas[c]||(causas[c]={pzas:0,cons:0,kg:0}); o.pzas+=Number(e.nPz)||0; o.cons+=e.consumo; o.kg+=e.kg;
-    const mk=(e.modelo||'Sin modelo')+'||'+(e.tubular||'—'); const m=modelos[mk]||(modelos[mk]={modelo:e.modelo||'Sin modelo',tubular:e.tubular||'—',pzas:0,cons:0,kg:0}); m.pzas+=Number(e.nPz)||0; m.cons+=e.consumo; m.kg+=e.kg;
+    const mat=e.tipo==='lamina'?(e.calibre||'—'):(e.tubular||'—'); const mk=(e.modelo||'Sin modelo')+'||'+mat; const m=modelos[mk]||(modelos[mk]={modelo:e.modelo||'Sin modelo',tubular:mat,pzas:0,cons:0,kg:0}); m.pzas+=Number(e.nPz)||0; m.cons+=e.consumo; m.kg+=e.kg;
   });
   const ex=mermaSemanalRecs.find(m=>m.id==='ms_'+g.gid);
   const merma=(ex&&!isNaN(Number(ex.merma)))?Number(ex.merma):null;
-  return {pzas,cons:r3(cons),kg:r2(kg),n:turnos.size,causas,modelos,merma};
+  return {pzas,cons:r3(cons),kg:r2(kg),n:turnos.size,causas,modelos,merma,lam:rtLam(g.machine),unit:rtLam(g.machine)?'láminas':'tramos'};
 }
 function renderRetrabajoSemanal(fct,fmachine){
   const box=document.getElementById('hora-rt-semanal'); if(!box) return;
@@ -5187,8 +5281,8 @@ function renderRetrabajoSemanal(fct,fmachine){
   if(fmachine) ents=ents.filter(e=>e.machine===fmachine);
   if(!ents.length){
     // Sin retrabajo aún: se deja visible el bloque (vacío) para que se sepa dónde aparecerá.
-    const aplica=(!fct||fct==='LASER')&&(!fmachine||usaRetrabajo(fmachine))&&machines.some(m=>usaRetrabajo(m.name)&&machineInRoster(m.name));
-    box.innerHTML=aplica?`<div style="border:1px dashed rgba(240,96,96,.3);border-radius:var(--radius-lg);margin-bottom:.75rem;padding:9px 12px;font-size:12px;color:var(--text3)"><b style="color:#f06060">⚠ Retrabajo por semana — tubular (GW1 / GW2)</b> &nbsp;·&nbsp; Aún no hay retrabajo registrado. Aparecerá aquí, con su reporte semanal y su merma, en cuanto se capturen piezas dañadas con su registro de retrabajo en GW1 o GW2.</div>`:'';
+    const aplica=(!fct||fct==='LASER'||fct==='TROQUELES')&&(!fmachine||usaRetrabajo(fmachine))&&machines.some(m=>usaRetrabajo(m.name)&&machineInRoster(m.name));
+    box.innerHTML=aplica?`<div style="border:1px dashed rgba(240,96,96,.3);border-radius:var(--radius-lg);margin-bottom:.75rem;padding:9px 12px;font-size:12px;color:var(--text3)"><b style="color:#f06060">⚠ Retrabajo por semana — GW1 / GW2 / Laser de Cama</b> &nbsp;·&nbsp; Aún no hay retrabajo registrado. Aparecerá aquí, con su reporte semanal y su merma, en cuanto se capturen piezas dañadas con su registro de retrabajo en GW1, GW2 o Laser de Cama.</div>`:'';
     return;
   }
   const open=box.dataset.open!=='0';
@@ -5198,7 +5292,7 @@ function renderRetrabajoSemanal(fct,fmachine){
   const dirty=Array.from(box.querySelectorAll('input')).some(i=>i.value!==i.defaultValue);
   if(dirty) return;
   let html=`<div style="border:1px solid rgba(240,96,96,.25);border-radius:var(--radius-lg);margin-bottom:.75rem;overflow:hidden">
-    <button type="button" onclick="rtSemToggle()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(240,96,96,.05);border:none;cursor:pointer;padding:9px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#f06060;text-align:left"><span style="font-size:10px">${open?'▾':'▸'}</span>⚠ Retrabajo por semana — tubular (GW1 / GW2)<span class="ap-badge">${new Set(groups.map(g=>g.ws)).size} semana${new Set(groups.map(g=>g.ws)).size===1?'':'s'}</span></button>
+    <button type="button" onclick="rtSemToggle()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(240,96,96,.05);border:none;cursor:pointer;padding:9px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;color:#f06060;text-align:left"><span style="font-size:10px">${open?'▾':'▸'}</span>⚠ Retrabajo por semana — GW1 / GW2 / Laser de Cama<span class="ap-badge">${new Set(groups.map(g=>g.ws)).size} semana${new Set(groups.map(g=>g.ws)).size===1?'':'s'}</span></button>
     <div style="display:${open?'block':'none'}">`;
   let last=null;
   groups.forEach(g=>{
@@ -5206,10 +5300,11 @@ function renderRetrabajoSemanal(fct,fmachine){
     if(g.ws!==last){
       last=g.ws;
       const wk=groups.filter(x=>x.ws===g.ws).map(rtGroupStats);
-      const tc=wk.reduce((s,x)=>s+x.cons,0), tk=wk.reduce((s,x)=>s+x.kg,0);
+      const tcT=wk.filter(x=>!x.lam).reduce((s,x)=>s+x.cons,0), tcL=wk.filter(x=>x.lam).reduce((s,x)=>s+x.cons,0), tk=wk.reduce((s,x)=>s+x.kg,0);
+      const tcTxt=[tcT>0?tcT.toFixed(3)+' tramos':'',tcL>0?tcL.toFixed(3)+' láminas':''].filter(Boolean).join(' + ')||'0';
       html+=`<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:9px 12px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
         <span style="font-weight:700;font-size:13px">Semana ${weekLabel(g.ws)}</span><span style="font-size:11px;color:var(--text3)">lun – vie</span>
-        <span style="margin-left:auto;font-size:11px;color:var(--text3)">Consumo extra</span><b style="${mono};font-size:13px;color:var(--amber)">${tc.toFixed(3)} tramos${tk>0?` · ${fmt2(tk)} kg`:''}</b>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3)">Consumo extra</span><b style="${mono};font-size:13px;color:var(--amber)">${tcTxt}${tk>0?` · ${fmt2(tk)} kg`:''}</b>
         <button onclick="printRetrabajoReport('${g.ws}')" title="Abrir el reporte semanal único (aprovechamiento de material y retrabajo) para imprimir" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif">🖨 Imprimir reporte semanal (aprovechamiento + retrabajo)</button>
       </div>`;
     }
@@ -5218,14 +5313,14 @@ function renderRetrabajoSemanal(fct,fmachine){
       :(canMerma?`<button onclick="openRtMerma('${g.gid}')" style="font-size:11px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:var(--amber);border-radius:4px;cursor:pointer;padding:3px 10px;font-family:'IBM Plex Sans',sans-serif">+ Registrar merma semanal</button>`:`<span style="font-size:11px;color:var(--text3)">Merma semanal pendiente</span>`);
     const top=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).slice(0,3).map(([c,o])=>`${escH(c)} (${o.pzas})`).join(' · ');
     html+=`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 12px 8px 22px;border-bottom:0.5px solid var(--border);font-size:12px">
-        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(62,207,142,.12);color:#3ecf8e">TUBULAR</span><b>${escH(g.machine)}</b>
+        <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;${st.lam?'background:rgba(74,158,255,.12);color:#4a9eff':'background:rgba(62,207,142,.12);color:#3ecf8e'}">${st.lam?'LÁMINA':'TUBULAR'}</span><b>${escH(g.machine)}</b>
         <span style="color:var(--text3);font-size:11px">${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</span>
         <span style="color:var(--text3);font-size:11px">${top}</span>
         <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto">${mermaHtml}</span>
-        <span style="${mono};font-size:11px;color:var(--amber);font-weight:700">${st.cons.toFixed(3)} tramos${st.kg>0?` · ${fmt2(st.kg)} kg`:''}</span>
+        <span style="${mono};font-size:11px;color:var(--amber);font-weight:700">${st.cons.toFixed(3)} ${st.unit}${st.kg>0?` · ${fmt2(st.kg)} kg`:''}</span>
       </div>
       <div id="rtms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.ws)} — Retrabajo tubular · ${escH(g.machine)}. Consumo extra por retrabajo: <b style="${mono}">${st.cons.toFixed(3)} tramos${st.kg>0?` (${fmt2(st.kg)} kg)`:''}</b>. Se captura <b>una sola vez</b> por semana.</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.ws)} — Retrabajo ${st.lam?'lámina':'tubular'} · ${escH(g.machine)}. Consumo extra por retrabajo: <b style="${mono}">${st.cons.toFixed(3)} ${st.unit}${st.kg>0?` (${fmt2(st.kg)} kg)`:''}</b>. Se captura <b>una sola vez</b> por semana.</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--text2)">Merma de la semana (kg):</span>
           <input type="number" id="rtms-input-${g.gid}" min="0" step="any" value="${st.merma!=null?st.merma:''}" placeholder="0.00" style="width:110px;font-size:12px;${mono};padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
@@ -5267,25 +5362,26 @@ function saveRtMerma(gid,ws,maquina){
 function retrabajoReportParts(ws){
   const esc=escH;
   const groups=rtBuildGroups(rtCollect().filter(e=>e.ws===ws));
-  let totP=0,totC=0,totK=0,totM=0,conMerma=0,turnos=0; const pend=[];
-  groups.forEach(g=>{ g.st=rtGroupStats(g); totP+=g.st.pzas; totC+=g.st.cons; totK+=g.st.kg; turnos+=g.st.n; if(g.st.merma!=null){ totM+=g.st.merma; conMerma++; } else pend.push(g.machine); });
+  let totP=0,totC=0,totL=0,totK=0,totM=0,conMerma=0,turnos=0; const pend=[];
+  groups.forEach(g=>{ g.st=rtGroupStats(g); totP+=g.st.pzas; if(g.st.lam) totL+=g.st.cons; else totC+=g.st.cons; totK+=g.st.kg; turnos+=g.st.n; if(g.st.merma!=null){ totM+=g.st.merma; conMerma++; } else pend.push(g.machine); });
   const sections=groups.map(g=>{
     const st=g.st;
     const causaRows=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).map(([c,o])=>`<tr><td>${esc(c)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('');
+    const U=st.lam?'Láminas':'Tramos';
     const modRows=Object.values(st.modelos).sort((a,b)=>b.cons-a.cons).map(m=>`<tr><td>${esc(m.modelo)}</td><td>${esc(m.tubular)}</td><td class="n">${m.pzas}</td><td class="n">${m.cons.toFixed(3)}</td></tr>`).join('');
-    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(e.tubular||'—')}</td><td class="n">${fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
+    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(st.lam?e.calibre||'—':e.tubular||'—')}</td><td class="n">${st.lam?fmt2(e.anchoPza)+' × '+fmt2(e.largoPza):fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
     const mermaTxt=st.merma!=null?`Merma semanal registrada: <b>${fmt2(st.merma)} kg</b>`:`<span class="warn">Merma semanal pendiente de captura</span>`;
     return `<section>
-      <h2><span class="tag tub">TUBULAR</span> ${esc(g.machine)} <small>${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</small></h2>
+      <h2><span class="tag ${st.lam?'lam':'tub'}">${st.lam?'LÁMINA':'TUBULAR'}</span> ${esc(g.machine)} <small>${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</small></h2>
       <div class="cols">
-        <table><thead><tr><th>Causa / motivo</th><th class="n">Pzas</th><th class="n">Tramos extra</th><th class="n">kg</th></tr></thead><tbody>${causaRows}<tr class="tot"><td>Total</td><td class="n">${st.pzas}</td><td class="n">${st.cons.toFixed(3)}</td><td class="n">${st.kg>0?fmt2(st.kg):'—'}</td></tr></tbody></table>
-        <table><thead><tr><th>Modelo</th><th>Tubular</th><th class="n">Pzas</th><th class="n">Tramos extra</th></tr></thead><tbody>${modRows}</tbody></table>
+        <table><thead><tr><th>Causa / motivo</th><th class="n">Pzas</th><th class="n">${U} extra</th><th class="n">kg</th></tr></thead><tbody>${causaRows}<tr class="tot"><td>Total</td><td class="n">${st.pzas}</td><td class="n">${st.cons.toFixed(3)}</td><td class="n">${st.kg>0?fmt2(st.kg):'—'}</td></tr></tbody></table>
+        <table><thead><tr><th>Modelo</th><th>${st.lam?'Calibre':'Tubular'}</th><th class="n">Pzas</th><th class="n">${U} extra</th></tr></thead><tbody>${modRows}</tbody></table>
       </div>
-      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Modelo</th><th>Tubular</th><th class="n">Largo cm</th><th class="n">Pzas</th><th class="n">Tramos extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${detRows}</tbody></table></div>
+      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Modelo</th><th>${st.lam?'Calibre':'Tubular'}</th><th class="n">${st.lam?'Ancho × largo cm':'Largo cm'}</th><th class="n">Pzas</th><th class="n">${U} extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${detRows}</tbody></table></div>
       <div class="line">${mermaTxt}</div>
     </section>`;
   }).join('');
-  return {groups,sections,totP,totC:Math.round(totC*1000)/1000,totK:Math.round(totK*100)/100,totM,conMerma,pend,turnos};
+  return {groups,sections,totP,totL:Math.round(totL*1000)/1000,totC:Math.round(totC*1000)/1000,totK:Math.round(totK*100)/100,totM,conMerma,pend,turnos};
 }
 function printRetrabajoReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
 
@@ -6166,7 +6262,7 @@ function renderHoraFranjas(machine, turno){
         ${usaRetrabajo(machine)?`<div id="hora-motivo-row-${i}" class="rt-wrap" style="display:none">
           <button type="button" class="rt-head" onclick="rtToggle(${i})"><span class="rt-caret">▾</span>⚠ Registro de retrabajo<span class="ap-badge" id="rt-count-${i}">0</span><span class="rt-warn" id="rt-warn-${i}"></span><span class="rt-sum" id="rt-sum-${i}"></span></button>
           <div class="rt-body">
-            <div id="hora-rt-list-${i}"></div>
+            <div id="hora-rt-list-${i}" data-kind="${rtLam(machine)?'lam':'tub'}"></div>
             <button type="button" class="rt-add" onclick="rtAdd(${i})" ${canCapture?'':'disabled'}>+ Agregar otro modelo / pieza</button>
           </div>
         </div>`:`<div id="hora-motivo-row-${i}" style="display:none;padding:3px 8px 6px;padding-left:118px">
@@ -6222,16 +6318,27 @@ function toggleMotivoRow(i){
 // ── REGISTRO DE RETRABAJO (piezas rechazadas, máquinas de tubular) ──
 // En GW1/GW2, al registrar piezas dañadas en una franja se despliega este registro (contraíble) en lugar del
 // campo de motivo: modelo, medida de tubular, largo de pieza, consumo extra (tramos), causa y operador.
-const MAQUINAS_RETRABAJO=['GW1','GW2'];
+const MAQUINAS_RETRABAJO=['GW1','GW2','Laser de Cama'];   // GW1/GW2: tubular · Laser de Cama: lámina
 const RETRABAJO_CAUSAS=['Error en dibujo de corte (Ingeniería)','Error de operación (Estructura)','Material rayado','Material oxidado','Material fuera de especificación'];
 const RT_OTRO='Otro (especificar)';
 function usaRetrabajo(machine){ return MAQUINAS_RETRABAJO.includes(machine); }
+function rtLam(machine){ return machine==='Laser de Cama'; }
+// Consumo extra en láminas (equivalencia): piezas × (peso de la pieza ÷ peso de la lámina completa)
+function rtConsumoLam(cal,ancho,largo,n){
+  const lam=getLaminaByCal(cal); if(!(lam&&lam.peso>0&&ancho>0&&largo>0&&n>0)) return 0;
+  const pesoPza=ancho*largo*lam.esp*7.85/1000;
+  return Math.round(n*pesoPza/lam.peso*1000)/1000;
+}
 function escH(v){ return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // Consumo extra en tramos = piezas rechazadas × largo de pieza ÷ largo del tramo
 function rtConsumo(tub,largo,n){ return (tub&&largo>0&&n>0)?Math.round(n*largo/tuboLargoCm(tub)*1000)/1000:0; }
 function rtEntries(i){ return Array.from(document.querySelectorAll('#hora-rt-list-'+i+' .rt-entry')); }
 function rtGet(e,n){ const el=e.querySelector(`[data-f="${n}"]`); return el?el.value:''; }
 function rtEntryData(e){
+  if(e.dataset.kind==='lam'){
+    const cal=rtGet(e,'calibre'), ancho=parseFloat(rtGet(e,'anchoPza'))||0, largo=parseFloat(rtGet(e,'largoPza'))||0, n=parseInt(rtGet(e,'nPz'))||0;
+    return {modelo:rtGet(e,'modelo').trim(),calibre:cal,anchoPza:ancho,largoPza:largo,nPz:n,consumo:rtConsumoLam(cal,ancho,largo,n),causa:rtGet(e,'causa'),causaOtro:rtGet(e,'causaOtro').trim(),operador:e.dataset.op||''};
+  }
   const tub=rtGet(e,'tubular'), largo=parseFloat(rtGet(e,'largoPza'))||0, n=parseInt(rtGet(e,'nPz'))||0;
   return {modelo:rtGet(e,'modelo').trim(),tubular:tub,largoPza:largo,nPz:n,consumo:rtConsumo(tub,largo,n),causa:rtGet(e,'causa'),causaOtro:rtGet(e,'causaOtro').trim(),operador:e.dataset.op||''};
 }
@@ -6244,12 +6351,26 @@ function addRetrabajoRow(i,data){
   const list=document.getElementById('hora-rt-list-'+i); if(!list) return null;
   const dis=canCaptureHora()?'':'disabled';
   const d=document.createElement('div'); d.className='rt-entry';
+  const isLam=list.dataset.kind==='lam'; d.dataset.kind=isLam?'lam':'tub';
   d.dataset.op=(data&&data.operador)||(currentUser&&currentUser.name)||'';
   const f=(l,inner)=>`<label class="ped-f"><span>${l}</span>${inner}</label>`;
   const T=`data-touch="hora-rt-${i}" oninput="rtChanged(${i})"`;
   const tubOpts='<option value="">Selecciona…</option>'+tubulares.map(t=>`<option value="${escH(t.tipo)}">${escH(t.tipo)}</option>`).join('');
   const causaOpts='<option value="">Selecciona causa…</option>'+RETRABAJO_CAUSAS.concat([RT_OTRO]).map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
-  d.innerHTML=`<div class="rt-l1">
+  const calOpts='<option value="">Selecciona…</option>'+laminas.map(l=>`<option value="${escH(l.cal)}">${escH(l.cal)}</option>`).join('');
+  d.innerHTML=isLam?`<div class="rt-l1 rt-l1-lam">
+      ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. F.6630" ${T} ${dis}>`)}
+      ${f('Calibre de lámina',`<select data-f="calibre" ${T} ${dis}>${calOpts}</select>`)}
+      ${f('Ancho de pza (cm)',`<input type="number" data-f="anchoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Largo de pza (cm)',`<input type="number" data-f="largoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Pzas rech.',`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" data-touch="hora-rt-${i}" oninput="this.dataset.auto='';rtChanged(${i})" ${dis}>`)}
+    </div>
+    <div class="rt-l2">
+      ${f('Causa / motivo de retrabajo',`<select data-f="causa" ${T} ${dis}>${causaOpts}</select><input type="text" data-f="causaOtro" placeholder="Especifica la causa" style="display:none;margin-top:4px" ${T} ${dis}>`)}
+      ${f('Consumo extra (láminas)',`<input type="text" data-f="consumo" readonly placeholder="auto" title="Piezas rechazadas × peso de la pieza ÷ peso de la lámina completa">`)}
+      ${f('Operador',`<input type="text" data-f="operador" readonly title="Según la cuenta de acceso">`)}
+      <button type="button" class="btn-del" style="align-self:end" title="Quitar" onclick="rtDel(${i},this)" ${dis}>×</button>
+    </div>`:`<div class="rt-l1">
       ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. F.6630" ${T} ${dis}>`)}
       ${f('Medida de tubular',`<select data-f="tubular" ${T} ${dis}>${tubOpts}</select>`)}
       ${f('Largo de pza (cm)',`<input type="number" data-f="largoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
@@ -6264,11 +6385,11 @@ function addRetrabajoRow(i,data){
   list.appendChild(d);
   const set=(n,v)=>{ const el=d.querySelector(`[data-f="${n}"]`); if(el&&v!=null&&v!=='') el.value=v; };
   if(data){
-    const sel=d.querySelector('[data-f="tubular"]');
-    if(data.tubular && !Array.from(sel.options).some(o=>o.value===data.tubular)){ const o=document.createElement('option'); o.value=data.tubular; o.textContent=data.tubular; sel.appendChild(o); }
+    const sel=d.querySelector(isLam?'[data-f="calibre"]':'[data-f="tubular"]'), sv=isLam?data.calibre:data.tubular;
+    if(sv && !Array.from(sel.options).some(o=>o.value===sv)){ const o=document.createElement('option'); o.value=sv; o.textContent=sv; sel.appendChild(o); }
     const cs=d.querySelector('[data-f="causa"]');
     if(data.causa && !Array.from(cs.options).some(o=>o.value===data.causa)){ const o=document.createElement('option'); o.value=data.causa; o.textContent=data.causa; cs.appendChild(o); }
-    set('modelo',data.modelo);set('tubular',data.tubular);set('largoPza',data.largoPza);set('nPz',data.nPz);set('causa',data.causa);set('causaOtro',data.causaOtro);
+    set('modelo',data.modelo);set('tubular',data.tubular);set('calibre',data.calibre);set('anchoPza',data.anchoPza);set('largoPza',data.largoPza);set('nPz',data.nPz);set('causa',data.causa);set('causaOtro',data.causaOtro);
   }
   d.querySelector('[data-f="operador"]').value=d.dataset.op;
   return d;
@@ -6290,7 +6411,8 @@ function rtChanged(i,quiet){
   const dan=parseInt(document.getElementById('hora-dan-'+i)?.value)||0;
   const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
   set('rt-count-'+i,String(n));
-  set('rt-sum-'+i,tot>0?`Consumo extra: ${tot.toFixed(3)} tramos`:'');
+  const lamK=document.getElementById('hora-rt-list-'+i)?.dataset.kind==='lam';
+  set('rt-sum-'+i,tot>0?`Consumo extra: ${tot.toFixed(3)} ${lamK?'láminas':'tramos'}`:'');
   set('rt-warn-'+i,(n>0&&asig!==dan)?`⚠ ${asig} de ${dan} pzas asignadas`:'');
   if(!quiet){ try{ scheduleLiveSync(); }catch(e){} }
 }
@@ -6864,8 +6986,8 @@ function renderHoraHist(){
         ${dibujoSection}
         ${rechazadas.length>0?`<div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.1)">
           <div style="font-size:10px;font-weight:600;color:#f06060;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Rechazos registrados</div>
-          ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo&&!(f.retrabajo&&f.retrabajo.length)?`<span style="color:var(--amber)">· ${escH(f.motivo)}</span>`:''}${(f.retrabajo||[]).map(x=>`<div style="margin:2px 0 3px 14px;font-size:11px;line-height:1.5"><span style="font-family:'IBM Plex Mono',monospace">${escH(x.modelo||'–')}</span> · ${escH(x.tubular||'–')} · ${fmtN(x.largoPza,1)} cm × ${x.nPz} pza${x.nPz===1?'':'s'} → <b style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">${Number(x.consumo||0).toFixed(3)} tramos extra</b> · <span style="color:var(--amber)">${escH(rtCausaTxt(x)||'sin causa')}</span> · ${escH(x.operador||'')}</div>`).join('')}</div>`).join('')}
-          ${(()=>{ const t=rechazadas.reduce((s,f)=>s+(f.retrabajo||[]).reduce((a,x)=>a+(Number(x.consumo)||0),0),0); return t>0?`<div style="font-size:11px;font-weight:600;color:var(--amber);margin-top:4px">Consumo extra total por retrabajo: ${t.toFixed(3)} tramos</div>`:''; })()}
+          ${rechazadas.map(f=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#f06060;font-family:'IBM Plex Mono',monospace">${f.franja}</span> — ${f.danadas} pza${f.danadas>1?'s':''} ${f.motivo&&!(f.retrabajo&&f.retrabajo.length)?`<span style="color:var(--amber)">· ${escH(f.motivo)}</span>`:''}${(f.retrabajo||[]).map(x=>`<div style="margin:2px 0 3px 14px;font-size:11px;line-height:1.5"><span style="font-family:'IBM Plex Mono',monospace">${escH(x.modelo||'–')}</span> · ${escH(x.calibre||x.tubular||'–')} · ${x.calibre?`${fmtN(x.anchoPza,1)} × ${fmtN(x.largoPza,1)} cm`:`${fmtN(x.largoPza,1)} cm`} × ${x.nPz} pza${x.nPz===1?'':'s'} → <b style="font-family:'IBM Plex Mono',monospace;color:var(--amber)">${Number(x.consumo||0).toFixed(3)} ${x.calibre?'láminas':'tramos'} extra</b> · <span style="color:var(--amber)">${escH(rtCausaTxt(x)||'sin causa')}</span> · ${escH(x.operador||'')}</div>`).join('')}</div>`).join('')}
+          ${(()=>{ const t=rechazadas.reduce((s,f)=>s+(f.retrabajo||[]).reduce((a,x)=>a+(Number(x.consumo)||0),0),0); const u=rechazadas.some(f=>(f.retrabajo||[]).some(x=>x.calibre))?'láminas':'tramos'; return t>0?`<div style="font-size:11px;font-weight:600;color:var(--amber);margin-top:4px">Consumo extra total por retrabajo: ${t.toFixed(3)} ${u}</div>`:''; })()}
         </div>`:``}
       </div>
       <button onclick="toggleHoraDetail('${r.id}',this)" style="width:100%;text-align:center;padding:5px;font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:color .15s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">
