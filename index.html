@@ -577,6 +577,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <span>Historial</span>
     </div>
+    <div class="nav-item" onclick="navigate('reportes',this)" data-label="Reportes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="17" x2="8" y2="13"/><line x1="12" y1="17" x2="12" y2="11"/><line x1="16" y1="17" x2="16" y2="15"/></svg>
+      <span>Reportes</span>
+    </div>
     <div class="nav-item" onclick="navigate('config',this)" data-label="Configuración">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       <span>Configuración</span>
@@ -611,6 +615,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   </div>
   <div class="nav-item-mini" onclick="navigate('historial',this)" data-label="Historial" title="Historial">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  </div>
+  <div class="nav-item-mini" onclick="navigate('reportes',this)" data-label="Reportes" title="Reportes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="17" x2="8" y2="13"/><line x1="12" y1="17" x2="12" y2="11"/><line x1="16" y1="17" x2="16" y2="15"/></svg>
   </div>
   <div class="nav-item-mini" onclick="navigate('config',this)" data-label="Configuración" title="Configuración">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -726,10 +733,18 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card" id="reg-dia-card" style="display:none">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Cierre del día — piezas totales <span id="reg-dia-maquina" style="color:var(--text3);font-weight:400;margin-left:6px"></span></div>
         <div id="dia-ayuda" style="font-size:12px;color:var(--text2);margin-bottom:.9rem;line-height:1.5">Esta máquina no se registra hora por hora. Captura aquí el <b>total de piezas producidas en el día</b>, al terminar.</div>
-        <div class="form-grid-3">
+        <div class="form-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
           <div class="form-group"><label>Piezas totales del día</label><input type="number" id="dia-piezas" min="0" step="1" placeholder="0" oninput="onDiaInput()" onblur="setTimeout(flushDiaSave,350)" onkeydown="if(event.key==='Enter'){event.preventDefault();saveDiaTotal();}" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:center"></div>
+          <div class="form-group"><label>Piezas programadas</label><input type="number" id="dia-prog" min="0" step="1" placeholder="0" oninput="onDiaInput()" onblur="setTimeout(flushDiaSave,350)" onkeydown="if(event.key==='Enter'){event.preventDefault();saveDiaTotal();}" title="Meta de piezas del día para esta máquina" style="font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;text-align:center;color:#4a9eff"></div>
           <div class="form-group"><label>Estado</label><div id="dia-estado" style="font-size:13px;padding:10px 0;color:var(--text3)">–</div></div>
           <div class="form-group"><label>&nbsp;</label><div class="btn-actions" style="margin:0;justify-content:flex-start"><button class="btn btn-primary" id="btn-guardar-dia" onclick="saveDiaTotal()">Guardar piezas del día</button></div></div>
+        </div>
+        <div id="dia-cumpl" style="margin-top:.6rem;font-size:12px"></div>
+        <div id="dia-atraso" style="display:none;margin-top:.7rem;padding:.7rem .85rem;border:1px solid rgba(240,96,96,.3);background:rgba(240,96,96,.05);border-radius:var(--radius-lg)">
+          <div style="font-size:12px;font-weight:600;color:#f06060;margin-bottom:6px">⚠ Atraso en producción <span id="dia-atraso-txt" style="font-weight:500;color:var(--text2);margin-left:6px"></span></div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Indica el motivo del atraso junto con el modelo o folio afectado (puedes agregar varios).</div>
+          <div id="dia-atraso-list"></div>
+          <button type="button" class="rt-add" onclick="diaAddAtraso()" id="btn-dia-atraso-add">+ Agregar modelo / folio</button>
         </div>
         <div class="save-msg" id="dia-save-msg" style="margin-top:6px"></div>
         <div id="dia-hist" style="margin-top:.75rem"></div>
@@ -1043,6 +1058,22 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="card"><div class="tbl-wrap">
       <table class="tbl"><thead><tr><th>Fecha</th><th>Centro</th><th>Máquina</th><th>Turno</th><th>Operador</th><th>Prog.</th><th>Prod.</th><th>Rechazo</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th></th></tr></thead><tbody id="history-body"></tbody></table>
     </div><div id="history-empty" class="empty-state" style="display:none">Sin registros.</div></div>
+  </div>
+</div>
+<div id="page-reportes" class="page">
+  <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
+  <div class="content">
+    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div></div>
+    <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
+      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
+      <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
+      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(1)" title="Siguiente">▶</button>
+      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 12px" onclick="repHoy()">Hoy</button>
+      <select id="rep-ct" onchange="renderReportes()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
+      <button class="btn btn-primary" style="margin-left:auto;font-size:12px;padding:7px 14px" onclick="repPrint()">🖨 Imprimir / PDF</button>
+    </div>
+    <div id="rep-old" style="display:none;margin:.5rem 0;padding:8px 12px;border:1px solid rgba(245,166,35,.35);background:rgba(245,166,35,.07);border-radius:var(--radius);font-size:12px;color:var(--text2)">Este periodo es anterior a los últimos 45 días que la plataforma descarga al iniciar. <button class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text)" onclick="repCargarHistorial()">Cargar del Sheet</button> <span id="rep-old-msg" style="margin-left:6px"></span></div>
+    <iframe id="rep-frame" title="Reporte" onload="window.repFit&&repFit(this)" style="width:100%;height:700px;border:1px solid var(--border);border-radius:var(--radius-lg);background:#e9ebf0"></iframe>
   </div>
 </div>
 <!-- CONFIGURACIÓN -->
@@ -1486,6 +1517,7 @@ const PERMISSIONS_TREE=[
     {key:'tab-aprov-hist', label:'Historial'},
   ]},
   {key:'historial', label:'Historial OEE'},
+  {key:'reportes', label:'Reportes'},
   {key:'config', label:'Configuración', children:[
     {key:'cfg-laminas', label:'Calibres de lámina'},
     {key:'cfg-tubulares', label:'Tipos de tubular'},
@@ -1511,6 +1543,9 @@ function defaultPermissions(role){
   }
   return perms;
 }
+// Menú nuevo «Reportes»: una cuenta con permisos guardados antes de que existiera lo ve si es Líder o Ingeniería
+// (el Operador no, salvo que se le habilite en Configuración → Usuarios).
+function permAllows(perms,key){ if(perms[key]===undefined && key==='reportes') return !!currentUser && currentUser.role!=='operador'; return perms[key]!==false; }
 // Helper corto para el resto del código: ¿la cuenta activa puede capturar
 // (escribir/guardar) piezas fabricadas/dañadas por franja horaria?
 // ── PERMISO DE CAPTURA ────────────────────────────────────────────────
@@ -1551,7 +1586,7 @@ function applyUserPermissionsUI(){
   document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
     const m=(item.getAttribute('onclick')||'').match(/navigate\('(\w+)'/);
     if(!m) return;
-    item.style.display = perms[m[1]]!==false ? '' : 'none';
+    item.style.display = permAllows(perms,m[1]) ? '' : 'none';
   });
   PERMISSIONS_TREE.forEach(p=>{
     (p.children||[]).forEach(c=>{
@@ -3049,7 +3084,8 @@ function getCTDiaToday(ct){
 function diaHasPiezas(r){ return !!r && r.piezas!=null && r.piezas!=='' && !isNaN(Number(r.piezas)); }
 function normalizeDiaRow(r){
   const p=(r.piezas===''||r.piezas==null)?null:parseFloat(r.piezas);
-  return {...r,piezas:(p==null||isNaN(p))?null:Math.max(0,p),parosNoProg:Math.max(0,parseFloat(r.parosNoProg)||0)};
+  const pg=(r.programadas===''||r.programadas==null)?null:parseFloat(r.programadas);
+  return {...r,piezas:(p==null||isNaN(p))?null:Math.max(0,p),programadas:(pg==null||isNaN(pg))?null:Math.max(0,pg),parosNoProg:Math.max(0,parseFloat(r.parosNoProg)||0)};
 }
 function diaMsg(txt,color){ const m=document.getElementById('dia-save-msg'); if(!m) return; m.textContent=txt; m.style.color=color||'var(--green)'; if(txt) setTimeout(()=>{ if(m.textContent===txt) m.textContent=''; },3500); }
 // ── GUARDADO DEL CIERRE DEL DÍA ──────────────────────────────────────
@@ -3069,15 +3105,55 @@ function diaDraftKey(ct,machine,fecha){ return (currentUser?currentUser.id:'')+'
 function getDiaDraft(ct,machine,fecha){ return autoGuardadoActivo(ct)?null:(diaDrafts[diaDraftKey(ct,machine,fecha)]||null); }
 function hasUnsavedManual(){ const p=(currentUser?currentUser.id:'')+'|'; return Object.keys(diaDrafts).some(k=>k.indexOf(p)===0); }
 function updateUnsavedDot(){ const on=hasUnsavedManual(); document.querySelectorAll('.reg-unsaved-dot').forEach(el=>{ el.style.display=on?'':'none'; }); }
+// ── PIEZAS PROGRAMADAS Y ATRASO DEL CIERRE DEL DÍA ─────────────────
+// programadas = meta del día de la máquina. atrasoDetalle = [{ref (modelo o folio), motivo, pzas}] (JSON en la hoja).
+function diaAtrasoOf(r){ return r?safeParse(r.atrasoDetalle,[]).filter(x=>x&&(x.ref||x.motivo)):[]; }
+function diaAtrasoRows(){ return Array.from(document.querySelectorAll('#dia-atraso-list .dia-atr-row')); }
+function diaAtrasoRead(){
+  return diaAtrasoRows().map(r=>({ref:r.querySelector('[data-f=ref]').value.trim(),motivo:r.querySelector('[data-f=motivo]').value.trim(),pzas:parseInt(r.querySelector('[data-f=pzas]').value)||0})).filter(x=>x.ref||x.motivo);
+}
+function diaExtrasRead(){ return {prog:document.getElementById('dia-prog')?.value??'',atraso:diaAtrasoRead()}; }
+function diaAtrasoAddRow(d){
+  const list=document.getElementById('dia-atraso-list'); if(!list) return;
+  const dis=canCaptureDia()?'':'disabled';
+  const row=document.createElement('div'); row.className='dia-atr-row';
+  row.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) 90px 30px;gap:7px;margin-bottom:6px;align-items:center';
+  const st="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;box-sizing:border-box;min-width:0";
+  row.innerHTML=`<input type="text" data-f="ref" placeholder="Modelo / folio" style="${st}" oninput="onDiaInput()" ${dis}><input type="text" data-f="motivo" placeholder="Motivo del atraso" style="${st}" oninput="onDiaInput()" ${dis}><input type="number" data-f="pzas" min="0" placeholder="Pzas falt." title="Piezas que faltaron de este modelo/folio (opcional)" style="${st}" oninput="onDiaInput()" ${dis}><button type="button" class="btn-del" title="Quitar" onclick="this.parentNode.remove();onDiaInput()" ${dis}>×</button>`;
+  list.appendChild(row);
+  if(d){ row.querySelector('[data-f=ref]').value=d.ref||''; row.querySelector('[data-f=motivo]').value=d.motivo||''; row.querySelector('[data-f=pzas]').value=d.pzas>0?d.pzas:''; }
+  return row;
+}
+function diaAddAtraso(){ if(!canCaptureDia()) return; const r=diaAtrasoAddRow(); if(r) r.querySelector('input').focus(); }
+function diaSetAtrasoRows(list){ const box=document.getElementById('dia-atraso-list'); if(!box) return; box.innerHTML=''; (list||[]).forEach(x=>diaAtrasoAddRow(x)); }
+// Cumplimiento / atraso que se ve al capturar (lo escrito en pantalla)
+function diaRenderCumpl(){
+  const cum=document.getElementById('dia-cumpl'), panel=document.getElementById('dia-atraso'), txt=document.getElementById('dia-atraso-txt'); if(!cum||!panel) return;
+  const pv=document.getElementById('dia-piezas')?.value??'', gv=document.getElementById('dia-prog')?.value??'';
+  const prod=String(pv).trim()===''?null:Math.round(parseFloat(pv)||0), prog=String(gv).trim()===''?null:Math.round(parseFloat(gv)||0);
+  const hayRows=diaAtrasoRows().length>0;
+  if(prod!=null && prog!=null && prog>0){
+    const dif=prod-prog, pc=Math.round(prod/prog*100);
+    cum.innerHTML=dif>=0?`<span style="color:var(--green);font-weight:600">✓ Cumplimiento ${pc}%</span> <span style="color:var(--text3)">· ${dif===0?'justo la meta':'+'+dif+' pzas sobre lo programado'}</span>`
+      :`<span style="color:#f06060;font-weight:600">Cumplimiento ${pc}%</span> <span style="color:var(--text3)">· faltaron ${-dif} pza${-dif===1?'':'s'} contra lo programado</span>`;
+    panel.style.display=(dif<0||hayRows)?'block':'none';
+    if(txt) txt.textContent=dif<0?`faltaron ${-dif} pza${-dif===1?'':'s'} (${prod} de ${prog})`:'';
+  } else {
+    cum.innerHTML=(prog!=null&&prog>0&&prod==null)?'<span style="color:var(--text3)">Captura las piezas totales para ver el cumplimiento.</span>':'';
+    panel.style.display=hayRows?'block':'none'; if(txt) txt.textContent='';
+  }
+}
 // Guarda el borrador; si lo escrito ya es idéntico a lo guardado, no hay nada pendiente.
 function storeDiaDraft(snap){
   const key=diaDraftKey(snap.ct,snap.machine,snap.fecha);
   const rec=getDiaRecord(snap.ct,snap.machine,snap.fecha);
   const savedVal=diaHasPiezas(rec)?String(rec.piezas):'';
   const savedParos=rec?JSON.stringify(safeParse(rec.paros,[])):'[]';
-  const same=String(snap.value==null?'':snap.value).trim()===savedVal && JSON.stringify(snap.paros||[])===savedParos;
+  const savedProg=(rec&&rec.programadas!=null&&rec.programadas!=='')?String(rec.programadas):'';
+  const same=String(snap.value==null?'':snap.value).trim()===savedVal && JSON.stringify(snap.paros||[])===savedParos
+    && String(snap.prog==null?'':snap.prog).trim()===savedProg && JSON.stringify(snap.atraso||[])===JSON.stringify(diaAtrasoOf(rec));
   if(same) delete diaDrafts[key];
-  else diaDrafts[key]={value:String(snap.value==null?'':snap.value),paros:snap.paros||[],ts:Date.now()};
+  else diaDrafts[key]={value:String(snap.value==null?'':snap.value),paros:snap.paros||[],prog:String(snap.prog==null?'':snap.prog),atraso:snap.atraso||[],ts:Date.now()};
   saveDiaDrafts(); updateUnsavedDot();
 }
 // Mientras se escribe (piezas o paros), se recuerda el contexto (máquina/fecha) Y
@@ -3086,7 +3162,8 @@ function storeDiaDraft(snap){
 function onDiaInput(){
   if(!canCaptureDia()) return;
   const snap={ct:document.getElementById('reg-ct').value,machine:document.getElementById('reg-machine').value,fecha:document.getElementById('reg-fecha').value,
-              value:document.getElementById('dia-piezas')?.value??'',paros:getParos()};
+              value:document.getElementById('dia-piezas')?.value??'',paros:getParos(),...diaExtrasRead()};
+  try{ diaRenderCumpl(); }catch(e){}
   if(!autoGuardadoActivo(snap.ct)){       // guardado manual: solo borrador local; se guarda con el botón
     storeDiaDraft(snap);
     try{ renderDiaEstado(snap.ct,snap.machine,snap.fecha); }catch(e){}
@@ -3099,9 +3176,9 @@ function flushDiaSave(){
   clearTimeout(_diaTimer);
   if(!_diaPending) return;
   const p=_diaPending; _diaPending=null;
-  commitDiaTotal(p.ct,p.machine,p.fecha,p.value,false,p.paros);
+  commitDiaTotal(p.ct,p.machine,p.fecha,p.value,false,p.paros,{prog:p.prog,atraso:p.atraso});
 }
-function commitDiaTotal(ct,machine,fecha,raw,explicit,parosArg){
+function commitDiaTotal(ct,machine,fecha,raw,explicit,parosArg,extraArg){
   if(!canCaptureDia() || !ct || !machine || !fecha) return false;
   const prev=getDiaRecord(ct,machine,fecha);
   const txt=String(raw==null?'':raw).trim();
@@ -3109,19 +3186,29 @@ function commitDiaTotal(ct,machine,fecha,raw,explicit,parosArg){
   if(!paros.length && prev && !_hTouch.paros){ const sp=safeParse(prev.paros,[]); if(sp.length) paros=sp; }   // no borrar paros que la pantalla aún no mostraba
   let piezas=diaHasPiezas(prev)?Number(prev.piezas):null;
   if(txt!=='') piezas=Math.max(0,Math.round(parseFloat(txt)||0));
-  // No se crea un registro vacío: debe haber el total o al menos un paro
-  if(!prev && piezas==null && !paros.length) return false;
+  // Piezas programadas y atraso (motivo + modelo/folio): si no se mandan, se conserva lo ya guardado
+  let prog=(prev&&prev.programadas!=null&&prev.programadas!=='')?Number(prev.programadas):null;
+  let atraso=diaAtrasoOf(prev);
+  if(extraArg){
+    const g=String(extraArg.prog==null?'':extraArg.prog).trim();
+    prog=g===''?null:Math.max(0,Math.round(parseFloat(g)||0));
+    atraso=Array.isArray(extraArg.atraso)?extraArg.atraso:atraso;
+  }
+  // No se crea un registro vacío: debe haber el total, las programadas, un atraso o al menos un paro
+  if(!prev && piezas==null && !paros.length && prog==null && !atraso.length) return false;
   const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
   if(prev && !explicit){
     const samePiezas=(diaHasPiezas(prev)?Number(prev.piezas):null)===piezas;
     const sameParos=JSON.stringify(safeParse(prev.paros,[]))===JSON.stringify(paros);
-    if(samePiezas && sameParos) return true;
+    const sameProg=((prev.programadas!=null&&prev.programadas!=='')?Number(prev.programadas):null)===prog;
+    const sameAtr=JSON.stringify(diaAtrasoOf(prev))===JSON.stringify(atraso);
+    if(samePiezas && sameParos && sameProg && sameAtr) return true;
   }
   const id=prev?prev.id:diaId(ct,machine,fecha);
-  const rec={id,ct,machine,fecha,piezas,paros:JSON.stringify(paros),parosNoProg,op:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
+  const rec={id,ct,machine,fecha,piezas,programadas:prog,atrasoDetalle:JSON.stringify(atraso),paros:JSON.stringify(paros),parosNoProg,op:currentUser?currentUser.name:'',updatedAt:new Date().toISOString()};
   if(prev) diaRecords[diaRecords.indexOf(prev)]=rec; else diaRecords.push(rec);
   saveDiaLocal();
-  cloudUpsertRow('Cierre_Dia',{...rec,piezas:piezas==null?'':piezas});   // upsert: un solo registro por máquina y día
+  cloudUpsertRow('Cierre_Dia',{...rec,piezas:piezas==null?'':piezas,programadas:prog==null?'':prog});   // upsert: un solo registro por máquina y día
   const dk=diaDraftKey(ct,machine,fecha);                 // ya quedó guardado: el borrador sobra
   if(diaDrafts[dk]){ delete diaDrafts[dk]; saveDiaDrafts(); }
   updateUnsavedDot();
@@ -3133,10 +3220,14 @@ function saveDiaTotal(){
   if(!canCaptureDia()) return;
   const ct=document.getElementById('reg-ct').value, machine=document.getElementById('reg-machine').value, fecha=document.getElementById('reg-fecha').value;
   const v=document.getElementById('dia-piezas').value;
-  const paros=getParos();
-  if(String(v).trim()==='' && !paros.length){ diaMsg('⚠ Escribe el total de piezas del día (o un paro)','var(--amber)'); return; }
+  const paros=getParos(), ex=diaExtrasRead();
+  if(String(v).trim()==='' && !paros.length && String(ex.prog).trim()==='' && !ex.atraso.length){ diaMsg('⚠ Escribe el total de piezas del día (o un paro)','var(--amber)'); return; }
   _diaPending=null; clearTimeout(_diaTimer);
-  if(commitDiaTotal(ct,machine,fecha,v,true,paros)) diaMsg('✓ Guardado');
+  if(commitDiaTotal(ct,machine,fecha,v,true,paros,ex)){
+    const prod=String(v).trim()===''?null:Number(v), prog=String(ex.prog).trim()===''?null:Number(ex.prog);
+    const falta=(prod!=null&&prog!=null&&prod<prog&&!ex.atraso.some(a=>a.motivo));
+    diaMsg(falta?'✓ Guardado — ⚠ falta el motivo del atraso (modelo/folio)':'✓ Guardado',falta?'var(--amber)':undefined);
+  }
 }
 function renderDiaCard(){
   const card=document.getElementById('reg-dia-card'); if(!card||!currentUser) return;
@@ -3152,8 +3243,12 @@ function renderDiaCard(){
   const typing=!ctxChanged && _diaPending && _diaPending.machine===machine && _diaPending.fecha===fecha;
   const draft=getDiaDraft(ct,machine,fecha);
   if(ctxChanged || (!typing && document.activeElement!==inp)) inp.value=draft?draft.value:(diaHasPiezas(rec)?rec.piezas:'');
+  const pinp=document.getElementById('dia-prog');
+  if(pinp && (ctxChanged || (!typing && document.activeElement!==pinp))) pinp.value=draft?(draft.prog||''):((rec&&rec.programadas!=null&&rec.programadas!=='')?rec.programadas:'');
+  if(ctxChanged || (!typing && !document.activeElement.closest?.('#dia-atraso-list'))) diaSetAtrasoRows(draft?(draft.atraso||[]):diaAtrasoOf(rec));
   const canCap=canCaptureDia();
-  inp.disabled=!canCap; btn.disabled=!canCap;
+  inp.disabled=!canCap; btn.disabled=!canCap; if(pinp) pinp.disabled=!canCap;
+  try{ diaRenderCumpl(); }catch(e){}
   const why=canCap?'':'Tu cuenta no puede registrar: la captura es del Operador (o un permiso otorgado en Configuración → Usuarios → Accesos).';
   inp.title=why; btn.title=why; btn.style.opacity=canCap?'1':'.45';
   renderDiaEstado(ct,machine,fecha,rec);
@@ -5385,6 +5480,227 @@ function retrabajoReportParts(ws){
 }
 function printRetrabajoReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
 
+// ── REPORTES DE PRODUCCIÓN (diario y semanal) ───────────────────────
+// Se calculan en vivo con lo ya capturado (hora×hora, cierre del día, OEE y atrasos), por centro de trabajo y
+// máquina: piezas producidas vs. programadas, cumplimiento y atrasos con su motivo. Como no se guardan copias,
+// un día pasado se puede consultar siempre (los datos se conservan en el Sheet) y refleja correcciones posteriores.
+const REP_VENTANA_DIAS=45;      // días que la app descarga de la nube al iniciar
+function progTotalFromRecord(rec){
+  if(!rec||!rec.rows||!rec.rows.length) return null;
+  const header=rec.rows[0]||[]; const ci=header.findIndex(h=>String(h).trim().toLowerCase()==='cant.'); if(ci<0) return null;
+  return rec.rows.slice(1).reduce((s,row)=>{ const v=parseFloat(row[ci]); return s+(isNaN(v)?0:v); },0);
+}
+function repLatestBy(list,keyFn){ const m={}; list.forEach(r=>{ const k=keyFn(r); if(!m[k]||isNewerRecord(r,m[k])) m[k]=r; }); return Object.values(m); }
+// Un día de una máquina: producido, programado, cumplimiento, rechazos, OEE, paros y atrasos con motivo
+function repMachineDay(m,fecha){
+  const o={machine:m.name,ct:m.ct,fecha,modo:'sin',hasData:false,prog:null,prod:0,rech:0,oee:null,paros:0,turnos:0,atrasos:[],dif:null,pct:null,estado:'sin'};
+  if(LASER_MAQUINAS_HORA.includes(m.name)){
+    o.modo='hora';
+    const hs=repLatestBy(horaRecords.filter(r=>r&&r.ct===m.ct&&r.machine===m.name&&r.fecha===fecha),r=>r.turno);
+    const os=repLatestBy(records.filter(r=>r&&r.ct===m.ct&&r.machine===m.name&&r.fecha===fecha),r=>r.turno);
+    hs.forEach(r=>{ o.prod+=Number(r.totalFabricadas)||0; o.rech+=Number(r.totalDanadas)||0; });
+    o.turnos=Math.max(hs.length,os.length);
+    // Si no hay hora×hora pero sí OEE del turno, se usa lo capturado ahí
+    if(!hs.length && os.length){ os.forEach(r=>{ o.prod+=Number(r.piezasTotal)||0; o.rech+=Number(r.piezasRechazo)||0; }); }
+    const oees=os.map(r=>Number(r.oee)).filter(v=>!isNaN(v)&&v>0);
+    o.oee=oees.length?oees.reduce((a,b)=>a+b,0)/oees.length:null;
+    o.paros=os.reduce((s,r)=>s+(Number(r.parosNoProg)||0),0);
+    // Programadas: el programa del día (si se subió) es el total del día; si no, lo capturado por turno
+    const pt=progTotalFromRecord(PROGRAMA_MACHINES.includes(m.name)?getProgramaRecord(fecha,m.name):null);
+    const po=os.reduce((s,r)=>s+(Number(r.piezasProg)||0),0);
+    o.prog=pt!=null&&pt>0?pt:(po>0?po:null);
+    o.hasData=hs.length>0||os.length>0;
+  } else {
+    o.modo='dia';
+    const d=getDiaRecord(m.ct,m.name,fecha);
+    if(d){
+      o.hasData=true;
+      if(diaHasPiezas(d)) o.prod=Number(d.piezas);
+      o.paros=Number(d.parosNoProg)||0;
+      const pg=(d.programadas!=null&&d.programadas!=='')?Number(d.programadas):null;
+      o.prog=(pg!=null&&!isNaN(pg)&&pg>0)?pg:null;
+      o.atrasos=diaAtrasoOf(d).map(a=>({ref:a.ref||'',motivo:a.motivo||'',pzas:Number(a.pzas)||0}));
+      o.sinPiezas=!diaHasPiezas(d);
+    }
+  }
+  if(o.hasData && o.prog!=null){
+    o.dif=o.prod-o.prog; o.pct=Math.round(o.prod/o.prog*100);
+    o.estado=o.dif>=0?'ok':'atraso';
+  } else o.estado=o.hasData?'sinprog':'sin';
+  return o;
+}
+function repAtrasosCT(ct,fecha){ return atrasos.filter(a=>a&&a.ct===ct&&a.fecha===fecha&&(a.modelo||a.motivo)).map(a=>({ref:a.modelo||'',motivo:a.motivo||'',pzas:Number(a.piezasFaltantes)||0})); }
+function repCtList(ctFilter){ return ALL_CTS.filter(ct=>(!ctFilter||ct===ctFilter)&&getMachinesByCT(ct).some(m=>machineInRoster(m.name))); }
+function repSum(rows){
+  const t={prod:0,prodProg:0,prog:0,rech:0,paros:0,maq:0,conAtraso:0,sinMotivo:0};
+  rows.forEach(r=>{ if(!r.hasData) return; t.maq++; t.prod+=r.prod; t.rech+=r.rech; t.paros+=r.paros; if(r.prog!=null){ t.prog+=r.prog; t.prodProg+=r.prod; } if(r.estado==='atraso') t.conAtraso++; });
+  t.pct=t.prog>0?Math.round(t.prodProg/t.prog*100):null; t.dif=t.prog>0?t.prodProg-t.prog:null;
+  return t;
+}
+function repDay(fecha,ctFilter){
+  return repCtList(ctFilter).map(ct=>{
+    const rows=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)).map(m=>repMachineDay(m,fecha));
+    return {ct,rows,tot:repSum(rows),atrCT:repAtrasosCT(ct,fecha)};
+  });
+}
+function repWeekDays(ws){ const d=[]; for(let i=0;i<7;i++) d.push(isoAddDays(ws,i)); return d; }
+// Semana (lun–dom; sáb y dom solo si tuvieron registros)
+function repWeek(ws,ctFilter){
+  const days=repWeekDays(ws);
+  return repCtList(ctFilter).map(ct=>{
+    const ms=getMachinesByCT(ct).filter(m=>machineInRoster(m.name));
+    const perDay=days.map(f=>({fecha:f,rows:ms.map(m=>repMachineDay(m,f)),atrCT:repAtrasosCT(ct,f)}));
+    const activeDays=perDay.filter((d,i)=>i<5||d.rows.some(r=>r.hasData)||d.atrCT.length);
+    const machines=ms.map((m,mi)=>{
+      const byDay=activeDays.map(d=>d.rows[mi]);
+      const t=repSum(byDay);
+      return {machine:m.name,byDay,tot:t,rechTot:t.rech,diasAtraso:byDay.filter(r=>r.estado==='atraso').length,diasConDato:byDay.filter(r=>r.hasData).length,
+              oee:(()=>{ const v=byDay.map(r=>r.oee).filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; })()};
+    });
+    const allRows=[].concat(...activeDays.map(d=>d.rows));
+    return {ct,days:activeDays.map(d=>d.fecha),machines,tot:repSum(allRows),atrasosCT:[].concat(...activeDays.map(d=>d.atrCT.map(a=>({...a,fecha:d.fecha})))),perDay:activeDays};
+  });
+}
+const REP_EXTRA_CSS=`<style>
+.tag.ct{background:#e0e7ff;color:#3730a3}
+.pill{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:9px}
+.pill.ok{background:#d1fae5;color:#047857}.pill.at{background:#fee2e2;color:#b91c1c}.pill.sp{background:#e5e7eb;color:#4b5563}.pill.ns{background:#fef3c7;color:#92400e}
+.kpis.k3{grid-template-columns:repeat(4,1fr)}
+td.day{text-align:center;font-size:9.5px;white-space:nowrap}
+td.day.bad{background:#fef2f2;color:#b91c1c}td.day.good{color:#047857}
+.ctline{display:flex;gap:16px;flex-wrap:wrap;font-size:10.5px;margin:0 0 6px;color:#445}
+.ctline b{color:#1b1f2a}
+</style>`;
+function buildProdReportHtml(mode,key,ctFilter){
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
+  const pctTxt=p=>p==null?'—':p+'%';
+  const pcCls=p=>p==null?'':(p>=100?'pos':'neg');
+  const difTxt=d=>d==null?'—':(d>0?'+':d<0?'-':'')+nf(Math.abs(d));
+  const pill=r=>r.estado==='ok'?'<span class="pill ok">CUMPLIÓ</span>':r.estado==='atraso'?'<span class="pill at">ATRASO</span>':r.estado==='sinprog'?'<span class="pill sp">SIN PROGRAMA</span>':'<span class="pill ns">SIN REGISTRO</span>';
+  const quien=currentUser?currentUser.name:'';
+  const ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const weekly=mode==='semanal';
+  const data=weekly?repWeek(key,ctFilter):repDay(key,ctFilter);
+  const all=weekly?[].concat(...data.map(c=>[].concat(...c.perDay.map(d=>d.rows)))):[].concat(...data.map(c=>c.rows));
+  const T=repSum(all);
+  const atrasoRowsOf=(ct,rowsByDay)=>{
+    const out=[];
+    rowsByDay.forEach(({fecha,rows,atrCT})=>{
+      rows.forEach(r=>{
+        if(r.atrasos.length) r.atrasos.forEach(a=>out.push({fecha,machine:r.machine,ref:a.ref,motivo:a.motivo,pzas:a.pzas,falta:r.dif<0?-r.dif:0}));
+        else if(r.estado==='atraso'&&!atrCT.length) out.push({fecha,machine:r.machine,ref:'',motivo:'',pzas:0,falta:-r.dif,sinMotivo:true});   // si el centro registró un atraso ese día, ese es su motivo
+      });
+      atrCT.forEach(a=>out.push({fecha,machine:'(Centro de trabajo)',ref:a.ref,motivo:a.motivo,pzas:a.pzas,falta:0}));
+    });
+    return out;
+  };
+  const atrasoTable=(items)=>{
+    if(!items.length) return '<div class="line muted">Sin atrasos registrados.</div>';
+    return `<div style="margin-top:6px"><table><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Modelo / folio</th><th>Motivo del atraso</th><th class="n">Pzas faltantes</th></tr></thead><tbody>${items.map(a=>`<tr>${weekly?`<td>${esc(dayLabel(a.fecha))}</td>`:''}<td>${esc(a.machine)}</td><td>${esc(a.ref||'—')}</td><td>${a.sinMotivo||(!a.motivo)?'<span class="warn">Sin motivo registrado</span>':esc(a.motivo)}</td><td class="n">${a.pzas>0?nf(a.pzas):(a.falta>0&&!a.ref&&!a.motivo?nf(a.falta):'—')}</td></tr>`).join('')}</tbody></table></div>`;
+  };
+  let sections='';
+  if(!weekly){
+    sections=data.map(c=>{
+      const rows=c.rows.map(r=>`<tr><td><b>${esc(r.machine)}</b>${r.modo==='hora'&&r.turnos?` <span class="muted">${r.turnos} turno${r.turnos===1?'':'s'}</span>`:''}</td><td class="n">${r.prog!=null?nf(r.prog):'—'}</td><td class="n">${r.hasData?nf(r.prod):'—'}${r.sinPiezas?' <span class="muted">(falta total)</span>':''}</td><td class="n ${r.dif==null?'':(r.dif>=0?'pos':'neg')}">${difTxt(r.dif)}</td><td class="n ${pcCls(r.pct)}">${pctTxt(r.pct)}</td><td class="n">${r.hasData&&r.rech?nf(r.rech):(r.hasData&&r.modo==='hora'?'0':'—')}</td><td class="n">${r.oee!=null?r.oee.toFixed(1)+'%':'—'}</td><td class="n">${r.hasData&&r.paros?nf(r.paros):'—'}</td><td>${pill(r)}</td></tr>`).join('');
+      const t=c.tot;
+      const totRow=`<tr class="tot"><td>Total ${esc(ctLabel(c.ct))}</td><td class="n">${t.prog>0?nf(t.prog):'—'}</td><td class="n">${nf(t.prod)}</td><td class="n ${t.dif==null?'':(t.dif>=0?'pos':'neg')}">${difTxt(t.dif)}</td><td class="n ${pcCls(t.pct)}">${pctTxt(t.pct)}</td><td class="n">${nf(t.rech)}</td><td class="n">—</td><td class="n">${nf(t.paros)}</td><td></td></tr>`;
+      return `<section><h2><span class="tag ct">${esc(ctLabel(c.ct).toUpperCase())}</span> <small>${t.maq} máquina${t.maq===1?'':'s'} con registro${t.conAtraso?` · ${t.conAtraso} con atraso`:''}</small></h2>
+        <table><thead><tr><th>Máquina</th><th class="n">Programadas</th><th class="n">Producidas</th><th class="n">Diferencia</th><th class="n">Cumpl.</th><th class="n">Rechazo</th><th class="n">OEE</th><th class="n">Paros (min)</th><th>Estado</th></tr></thead><tbody>${rows}${totRow}</tbody></table>
+        <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,[{fecha:key,rows:c.rows,atrCT:c.atrCT}]))}
+      </section>`;
+    }).join('');
+  } else {
+    sections=data.map(c=>{
+      const heads=c.days.map(f=>`<th class="n">${esc(dayLabel(f))}</th>`).join('');
+      const rows=c.machines.map(m=>{
+        const cells=m.byDay.map(r=>`<td class="day ${r.estado==='atraso'?'bad':r.estado==='ok'?'good':''}">${r.hasData?`${nf(r.prod)}${r.prog!=null?' / '+nf(r.prog):''}`:'—'}</td>`).join('');
+        const t=m.tot;
+        return `<tr><td><b>${esc(m.machine)}</b></td>${cells}<td class="n">${t.prog>0?nf(t.prog):'—'}</td><td class="n">${t.maq?nf(t.prod):'—'}</td><td class="n ${t.dif==null?'':(t.dif>=0?'pos':'neg')}">${difTxt(t.dif)}</td><td class="n ${pcCls(t.pct)}">${pctTxt(t.pct)}</td><td class="n">${m.diasAtraso||'—'}</td><td class="n">${t.rech?nf(t.rech):'—'}</td><td class="n">${t.paros?nf(t.paros):'—'}</td></tr>`;
+      }).join('');
+      const t=c.tot;
+      const dayTot=c.perDay.map(d=>{ const s=repSum(d.rows); return `<td class="day ${s.dif!=null&&s.dif<0?'bad':''}">${s.maq?`${nf(s.prod)}${s.prog>0?' / '+nf(s.prog):''}`:'—'}</td>`; }).join('');
+      const totRow=`<tr class="tot"><td>Total ${esc(ctLabel(c.ct))}</td>${dayTot}<td class="n">${t.prog>0?nf(t.prog):'—'}</td><td class="n">${nf(t.prod)}</td><td class="n ${t.dif==null?'':(t.dif>=0?'pos':'neg')}">${difTxt(t.dif)}</td><td class="n ${pcCls(t.pct)}">${pctTxt(t.pct)}</td><td class="n">${c.machines.reduce((s,m)=>s+m.diasAtraso,0)||'—'}</td><td class="n">${nf(t.rech)}</td><td class="n">${nf(t.paros)}</td></tr>`;
+      return `<section><h2><span class="tag ct">${esc(ctLabel(c.ct).toUpperCase())}</span> <small>${t.maq} registro${t.maq===1?'':'s'} máquina-día${c.machines.reduce((s,m)=>s+m.diasAtraso,0)?` · ${c.machines.reduce((s,m)=>s+m.diasAtraso,0)} con atraso`:''}</small></h2>
+        <table><thead><tr><th>Máquina</th>${heads}<th class="n">Prog.</th><th class="n">Prod.</th><th class="n">Dif.</th><th class="n">Cumpl.</th><th class="n">Días atraso</th><th class="n">Rech.</th><th class="n">Paros min</th></tr></thead><tbody>${rows}${totRow}</tbody></table>
+        <div class="muted" style="margin-top:3px">Cada día: producidas / programadas. En rojo, día con atraso.</div>
+        <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,c.perDay))}
+      </section>`;
+    }).join('');
+  }
+  const atrTot=weekly?data.reduce((s,c)=>s+c.machines.reduce((a,m)=>a+m.diasAtraso,0),0):T.conAtraso;
+  const sinMot=(()=>{ let n=0; data.forEach(c=>{ const src=weekly?c.perDay:[{rows:c.rows}]; src.forEach(d=>d.rows.forEach(r=>{ if(r.estado==='atraso'&&!r.atrasos.some(a=>a.motivo)&&!(weekly?d.atrCT:c.atrCT).length) n++; })); }); return n; })();
+  const titulo=weekly?'Reporte semanal de producción':'Reporte diario de producción';
+  const periodo=weekly?`Semana del ${weekLabel(key)} <span style="font-weight:400;color:#667">(lunes a viernes${data.some(c=>c.days.length>5)?', incluye fin de semana con registros':''})</span>`:`${esc(dayLabel(key))} · ${esc(key)}`;
+  const sub=ctFilter?` · ${esc(ctLabel(ctFilter))}`:' · todos los centros de trabajo';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(weekly?weekLabelShort(key):key)}</title>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<header><div><h1>${titulo}</h1><div class="wk">${periodo}${sub}</div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi"><div class="l">Piezas producidas</div><div class="v">${nf(T.prod)}</div><div class="s">${T.maq} registro${T.maq===1?'':'s'} de máquina${weekly?'-día':''}</div></div>
+  <div class="kpi"><div class="l">Piezas programadas</div><div class="v">${T.prog>0?nf(T.prog):'—'}</div><div class="s">${T.prog>0?'de las máquinas con programa':'sin programa capturado'}</div></div>
+  <div class="kpi main"><div class="l">Cumplimiento</div><div class="v">${pctTxt(T.pct)}</div><div class="s">${T.dif==null?'':(T.dif>=0?'+':'-')+nf(Math.abs(T.dif))+' pzas vs. programado'}</div></div>
+  <div class="kpi"><div class="l">${weekly?'Máquina-días con atraso':'Máquinas con atraso'}</div><div class="v ${atrTot?'neg':'pos'}">${atrTot}</div><div class="s">${sinMot?`<span class="warn">${sinMot} sin motivo registrado</span>`:(atrTot?'con motivo registrado':'sin atrasos')}</div></div>
+</div>
+${sections||'<p class="muted">Sin información para este periodo.</p>'}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Cumplimiento = piezas producidas ÷ piezas programadas (solo máquinas con programa). Hora×hora: producidas = suma de las franjas de cada turno; programadas = programa del día (GW1, GW2, Laser de Cama) o lo capturado en el turno. Cierre del día: piezas totales y programadas capturadas al terminar el día. El reporte se calcula con los registros actuales.</footer>
+</div></body></html>`;
+}
+// ── Pantalla Reportes ──
+let repMode='diario';
+function repState(){ return {mode:repMode,fecha:document.getElementById('rep-fecha')?.value||todayStr(),ct:document.getElementById('rep-ct')?.value||''}; }
+function repSetMode(m,el){
+  repMode=m;
+  document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
+  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=m==='semanal'?'Semana que contiene el día':'Día';
+  renderReportes();
+}
+function repShift(n){
+  const inp=document.getElementById('rep-fecha'); if(!inp) return;
+  inp.value=isoAddDays(inp.value||todayStr(),repMode==='semanal'?7*n:n); renderReportes();
+}
+function repHoy(){ const inp=document.getElementById('rep-fecha'); if(inp){ inp.value=todayStr(); renderReportes(); } }
+function repKey(){ const s=repState(); return s.mode==='semanal'?getWeekRange(s.fecha).start:s.fecha; }
+function renderReportes(){
+  const fr=document.getElementById('rep-frame'); if(!fr) return;
+  const inp=document.getElementById('rep-fecha'); if(inp && !inp.value) inp.value=todayStr();
+  const s=repState();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha)) return;
+  let html=''; try{ html=buildProdReportHtml(s.mode,repKey(),s.ct); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
+  const shown=html.replace('<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>','');
+  // Solo se repinta si cambió el contenido (las sincronizaciones en segundo plano no mueven la pantalla)
+  const stamp=shown.replace(/Generado el [^<]*/,'');
+  if(fr._stamp!==stamp){ fr._stamp=stamp; fr.srcdoc=shown; }
+  const old=document.getElementById('rep-old'); 
+  const limite=isoAddDays(todayStr(),-REP_VENTANA_DIAS);
+  const ini=s.mode==='semanal'?repKey():s.fecha;
+  if(old){ old.style.display=(ini<limite)?'block':'none'; }
+}
+function repFit(f){ try{ const h=f.contentDocument.documentElement.scrollHeight; if(h>200) f.style.height=(h+10)+'px'; }catch(e){} }
+function repPrint(){ const s=repState(); openPrintHtml(buildProdReportHtml(s.mode,repKey(),s.ct)); }
+// Días fuera de lo que la app descarga al iniciar (últimos 45 días): se piden al Sheet bajo demanda
+function repCargarHistorial(){
+  const s=repState(), ini=isoAddDays(s.mode==='semanal'?repKey():s.fecha,-1);
+  const msg=document.getElementById('rep-old-msg'); if(msg) msg.textContent='Cargando del Sheet…';
+  const names=['Cierre_Dia','OEE_Registros','Atrasos','Programa_Dia',...ALL_CTS.map(ctSheet)];
+  gasRequest({action:'readAll',sheets:names.join(','),since:ini},(data)=>{
+    const R=(data&&data.results)||{};
+    const ok=n=>Array.isArray(R[n])?R[n]:[];
+    diaRecords=mergeRecordsById(diaRecords,ok('Cierre_Dia').filter(r=>r&&r.id).map(normalizeDiaRow)); saveDiaLocal();
+    records=mergeRecordsById(records,ok('OEE_Registros')); save('records');
+    atrasos=mergeRecordsById(atrasos,ok('Atrasos')); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
+    programaDia=mergeRecordsById(programaDia,ok('Programa_Dia').map(r=>({...r,rows:safeParse(r.rows,[])}))); saveProgramaDiaLS();
+    ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,d)]; });
+    try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
+    if(msg) msg.textContent='✓ Historial cargado'; renderReportes();
+  },(err)=>{ if(msg) msg.textContent='⚠ No se pudo cargar: '+err; });
+}
+
 // ── HISTORIAL OEE ──
 function renderHistory(){
   const fct=document.getElementById('filter-ct').value;const fm=document.getElementById('filter-machine').value;const ft=document.getElementById('filter-turno').value;
@@ -5611,7 +5927,7 @@ function navigate(page,el){
   if(!document.getElementById('page-'+page)) return;
   if(currentUser){
     const perms=currentUser.permissions||defaultPermissions(currentUser.role);
-    if(perms[page]===false) return;
+    if(!permAllows(perms,page)) return;
   }
   // Si hay una captura de hora×hora/paros pendiente de guardar (el
   // debounce de 1.5s aún no se disparó) y el usuario se va a OTRO menú,
@@ -5649,6 +5965,7 @@ function navigate(page,el){
   updateFullscreenBtnVisibility(page);
   const _w=(tag)=>(e)=>console.warn('navigate('+page+') — '+tag+':', e);
   try{ if(page==='dashboard')renderDashboard(); }catch(e){ _w('dashboard')(e); }
+  try{ if(page==='reportes'){ const i=document.getElementById('rep-fecha'); if(i&&!i.value) i.value=todayStr(); renderReportes(); } }catch(e){ _w('reportes')(e); }
   try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); updateEmptyRecordsBtn(); } }catch(e){ _w('historial')(e); }
   try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){ _w('config')(e); }
   try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){ _w('aprovHist')(e); }
@@ -5688,7 +6005,7 @@ function switchTab(id,el){
 // demás se siguen mostrando (antes, un error en una cortaba todas las
 // siguientes y dejaba la plataforma con datos "invisibles").
 function renderAll(){
-  [renderDashboard,renderHistory,updateFilterSelects,renderHoraHist,renderProgramaDia,updateFullscreenBtnVisibility,renderAprovHist].forEach(fn=>{
+  [renderDashboard,renderHistory,updateFilterSelects,renderHoraHist,renderProgramaDia,updateFullscreenBtnVisibility,renderAprovHist,()=>{ if(document.getElementById('page-reportes')?.classList.contains('active')) renderReportes(); }].forEach(fn=>{
     try{ fn(); }catch(e){ console.warn('renderAll: falló '+fn.name, e); }
   });
 }
