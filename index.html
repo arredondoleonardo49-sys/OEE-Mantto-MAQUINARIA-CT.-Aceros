@@ -351,7 +351,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .oee-b-val{font-size:17px;font-weight:600;font-family:'IBM Plex Mono',monospace}
 .oee-b-sub{font-size:10px;color:var(--text3);margin-top:2px}
 .dynamic-row{display:grid;gap:8px;align-items:center;margin-bottom:8px}
-.dynamic-row-hojas{grid-template-columns:1.3fr 0.8fr 1fr 1fr 32px}
+.dynamic-row-hojas{grid-template-columns:1.2fr 0.75fr 1.2fr 0.95fr 0.95fr 32px}
 .dynamic-row-lam{grid-template-columns:1.1fr 0.75fr 0.75fr 0.9fr 0.9fr 32px}
 .dynamic-row-lamr{grid-template-columns:1fr .7fr .7fr .8fr .8fr 1.35fr 32px}
 .dynamic-row-tub{grid-template-columns:minmax(0,2.2fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,.9fr) 32px}
@@ -594,7 +594,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="sidebar-user-role" id="sidebar-user-role">–</div>
       </div>
     </div>
-    <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px" id="cloud-badge">● Conectando...</div>
+    <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;cursor:pointer" id="cloud-badge" onclick="openSyncPanel()" title="Clic: ver el estado de sincronización con el Sheet">● Conectando...</div>
     <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px" id="sidebar-version">v5.2 · 3 CT</div>
     <button onclick="loadFromCloud()" style="width:100%;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:var(--radius);cursor:pointer;padding:5px 0;font-family:'IBM Plex Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'" title="Recargar datos desde la nube">↺ Sincronizar</button>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
@@ -979,7 +979,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="ap-cols">
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas<span class="ap-badge" id="lam-hojas-count">0 hojas</span><button class="ap-add" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button></div>
-          <div class="dynamic-row-header dynamic-row-hojas" id="lam-hojas-head" style="display:none"><span>Calibre</span><span>Hojas</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
+          <div class="dynamic-row-header dynamic-row-hojas" id="lam-hojas-head" style="display:none"><span>Calibre</span><span>Hojas</span><span title="De programa, o por eventualidad (no estaba en la explosión)">Origen</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
           <div id="lam-hojas-list"></div>
           <div class="ap-empty" id="lam-hojas-empty">Aún no hay calibres. Toca «+ Agregar calibre».</div>
         </div>
@@ -1002,7 +1002,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="tab-tubular" class="tab-content">
       <div class="ap-top">
-        <div class="form-group"><label>Máquina</label><select id="tub-machine"><option>GW1</option><option>GW2</option></select></div>
+        <div class="form-group"><label>Máquina</label><select id="tub-machine" onchange="_tubTouchedUid=currentUser&&currentUser.id"><option>GW1</option><option>GW2</option></select></div>
         <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha"></div>
         <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
         <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
@@ -1569,19 +1569,53 @@ function canRegisterMachine(machine){
 // Aplica los permisos de la cuenta activa: oculta del menú lateral (y de
 // la mini-barra) las páginas sin acceso, y dentro de cada página, las
 // pestañas sin acceso.
-// Un operador asignado solo al centro Laser (GW1/GW2) no captura lámina de Laser de Cama: se le oculta esa pestaña.
-function aprovSinLamina(){
-  const cts=(currentUser&&currentUser.cts)||[];
-  return !!currentUser && currentUser.role==='operador' && cts.includes('LASER') && !cts.includes('TROQUELES');
+// Alcance de Aprovechamiento para el operador, según su máquina predeterminada:
+//  · GW1/GW2 (centro Laser)  → solo ve Tubular
+//  · Laser de Cama           → solo ve Lámina
+//  · sin predeterminada      → si solo tiene asignado el centro Laser, solo Tubular; si no, ambas
+function aprovScope(){
+  if(!currentUser || currentUser.role!=='operador') return null;
+  const d=getDefaultMachine(currentUser.id);
+  if(d){
+    if(d.ct==='LASER') return 'tubular';
+    if(d.machine==='Laser de Cama') return 'lamina';
+  }
+  const cts=currentUser.cts||[];
+  if(cts.includes('LASER') && !cts.includes('TROQUELES')) return 'tubular';
+  return null;
+}
+function aprovSinLamina(){ return aprovScope()==='tubular'; }
+function aprovSinTubular(){ return aprovScope()==='lamina'; }
+let _tubTouchedUid=null;   // el operador ya eligió a mano la máquina del aprovechamiento tubular (no se vuelve a preseleccionar)
+// Preselecciona (sin bloquear) la máquina predeterminada en el aprovechamiento tubular.
+function tubPreselectDefault(){
+  try{
+    if(!currentUser || _tubTouchedUid===currentUser.id) return;
+    const sel=document.getElementById('tub-machine'); if(!sel) return;
+    if(document.querySelectorAll('#tub-tramos-list .dynamic-row, #tub-recortes-list .dynamic-row').length) return;
+    const d=getDefaultMachine(currentUser.id);
+    if(d && d.ct==='LASER' && Array.from(sel.options).some(o=>o.value===d.machine)) sel.value=d.machine;
+  }catch(e){ console.warn('tubPreselectDefault',e); }
+}
+// Muestra solo las pestañas de Aprovechamiento que le corresponden a la cuenta y deja la activa correcta.
+function aprovApplyScope(){
+  try{
+    if(!currentUser) return;
+    const sinLam=aprovSinLamina(), sinTub=aprovSinTubular();
+    const lb=document.getElementById('tab-lamina-btn'), tb=document.getElementById('tab-tubular-btn');
+    if(lb){ if(sinLam) lb.style.display='none'; else if(!lb.dataset.permHidden) lb.style.display=''; }
+    // el botón de Tubular también depende del árbol de permisos: solo se oculta aquí, nunca se vuelve a mostrar a la fuerza
+    if(tb){ if(sinTub) tb.style.display='none'; else if(!tb.dataset.permHidden) tb.style.display=''; }
+    const lt=document.getElementById('tab-lamina'), tt=document.getElementById('tab-tubular');
+    if(sinLam && lt && lt.classList.contains('active') && tb) switchTab('tab-tubular',tb);
+    if(sinTub && tt && tt.classList.contains('active') && lb) switchTab('tab-lamina',lb);
+    if(sinTub && lt && !lt.classList.contains('active') && lb) switchTab('tab-lamina',lb);
+    if(sinLam && tt && !tt.classList.contains('active') && tb) switchTab('tab-tubular',tb);
+    tubPreselectDefault();
+  }catch(e){ console.warn('aprovApplyScope',e); }
 }
 function applyUserPermissionsUI(){
   if(!currentUser) return;
-  try{
-    const sinLam=aprovSinLamina(), lb=document.getElementById('tab-lamina-btn');
-    if(lb) lb.style.display=sinLam?'none':'';
-    const lt=document.getElementById('tab-lamina');
-    if(sinLam && lt && lt.classList.contains('active')){ const tb=document.getElementById('tab-tubular-btn'); if(tb) switchTab('tab-tubular',tb); }
-  }catch(e){ console.warn('aprovSinLamina',e); }
   const perms=currentUser.permissions||defaultPermissions(currentUser.role);
   document.querySelectorAll('.nav-item[onclick], .nav-item-mini[onclick]').forEach(item=>{
     const m=(item.getAttribute('onclick')||'').match(/navigate\('(\w+)'/);
@@ -1591,9 +1625,10 @@ function applyUserPermissionsUI(){
   PERMISSIONS_TREE.forEach(p=>{
     (p.children||[]).forEach(c=>{
       const btn=document.getElementById(c.key+'-btn');
-      if(btn) btn.style.display = perms[c.key]!==false ? '' : 'none';
+      if(btn){ btn.style.display = perms[c.key]!==false ? '' : 'none'; if(btn.id==='tab-tubular-btn'||btn.id==='tab-lamina-btn'){ if(perms[c.key]===false) btn.dataset.permHidden='1'; else delete btn.dataset.permHidden; } }
     });
   });
+  aprovApplyScope();
 }
 // Si la cuenta tiene uno o más Centros de Trabajo asignados (Configuración
 // → Usuarios), ya no los selecciona manualmente uno por uno: el selector
@@ -1705,6 +1740,7 @@ function applyAprovUI(){
     const el=document.getElementById(id);
     if(el) el.disabled=!canCapture;
   });
+  aprovApplyScope();
   restoreLamDraft();
   restoreTubDraft();
 }
@@ -2733,20 +2769,21 @@ function cloudWriteRow(sheet,record){
 // (el turno "se borraba" aunque se había capturado completo). Si llegan más mientras una va en
 // camino, solo se envía la última.
 const _upQ={};
-function cloudUpsertRow(sheet,record){
+// onDone(ok,err): se avisa cuando el Sheet confirma (ok=true) o rechaza / no hay red (ok=false).
+function cloudUpsertRow(sheet,record,onDone){
   const h=outboxAdd('upsert',sheet,record&&record.id,record);
   const key=sheet+'|'+(record&&record.id);
   const q=_upQ[key]||(_upQ[key]={busy:false,next:null});
-  const send=(rec,hh)=>{
+  const send=(rec,hh,cb)=>{
     q.busy=true; let done=false;
-    const fin=()=>{ if(done) return; done=true; clearTimeout(wd); q.busy=false; if(q.next){ const n=q.next; q.next=null; send(n.rec,n.h); } };
-    const wd=setTimeout(fin,25000);
+    const fin=()=>{ if(done) return; done=true; clearTimeout(wd); q.busy=false; if(q.next){ const n=q.next; q.next=null; send(n.rec,n.h,n.cb); } };
+    const wd=setTimeout(()=>{ if(!done&&cb) try{ cb(false,'Sin respuesta del Sheet'); }catch(e){} fin(); },25000);
     gasRequest({action:'upsert',sheet,data:JSON.stringify(rec)},
-      ()=>{ outboxDone(hh); showCloudStatus('✓ Guardado en nube','ok'); fin(); },
-      (err)=>{ showCloudStatus('⚠ '+err,'err'); fin(); });
+      ()=>{ outboxDone(hh); showCloudStatus('✓ Guardado en nube','ok'); if(cb&&!done) try{ cb(true); }catch(e){} fin(); },
+      (err)=>{ showCloudStatus('⚠ '+err,'err'); const en=hh&&_outbox[hh.key]; if(en&&en.ts===hh.ts){ en.lastErr=String(err).slice(0,200); if(String(err)!=='Network error') en.srvErr=(en.srvErr||0)+1; outboxSave(); } if(cb&&!done) try{ cb(false,String(err)); }catch(e){} fin(); });
   };
-  if(q.busy && !(_unloading || document.visibilityState==='hidden')){ q.next={rec:record,h}; return; }
-  send(record,h);
+  if(q.busy && !(_unloading || document.visibilityState==='hidden')){ q.next={rec:record,h,cb:onDone}; return; }
+  send(record,h,onDone);
 }
 // Borra la fila con este "id" también en la nube — sin esto, la
 // sincronización automática la vuelve a traer y parece que "no se puede
@@ -2761,6 +2798,95 @@ function cloudWriteAll(sheet,records){
   gasRequest({action:'writeAll',sheet,data:JSON.stringify(records)},
     ()=>showCloudStatus('✓ Sincronizado','ok'),
     (err)=>showCloudStatus('⚠ '+err,'err'));
+}
+
+// ── CONFIRMACIÓN DE GUARDADO EN EL SHEET (Aprovechamiento) ─────────
+// Al guardar se dice si el registro YA está en el Sheet o solo en este equipo (en cola de envío).
+let _aprovLastSync='';
+function aprovSyncDone(ok,err){
+  _aprovLastSync=ok?'ok':('fail:'+(err||''));
+  ['lam-save-msg','tub-save-msg'].forEach(id=>{
+    const m=document.getElementById(id); if(!m||!m.dataset.syncing) return;
+    delete m.dataset.syncing;
+    if(ok){ m.textContent='✓ Guardado y confirmado en el Sheet'; m.style.color='var(--green)'; }
+    else { m.textContent='⚠ Guardado en este equipo, pero NO llegó al Sheet ('+(err||'sin conexión')+'). Se reintenta solo; toca el indicador de sincronización (abajo a la izquierda) para ver el detalle.'; m.style.color='var(--amber)'; }
+    setTimeout(()=>{ if(m.dataset.syncing) return; if(ok) m.textContent=''; },5000);
+  });
+}
+function aprovAfterSave(id){
+  const m=document.getElementById(id); if(!m) return;
+  if(_aprovLastSync==='ok'){ apMsg(id,'✓ Guardado y confirmado en el Sheet',false); return; }
+  m.textContent='✓ Guardado — enviando al Sheet…'; m.style.color='var(--green)'; m.dataset.syncing='1';
+  setTimeout(()=>{ if(m.dataset.syncing){ delete m.dataset.syncing; m.textContent='⚠ Guardado en este equipo; el Sheet aún no confirma. Se sigue reintentando (ver indicador de sincronización).'; m.style.color='var(--amber)'; } },30000);
+}
+// ── PANEL DE SINCRONIZACIÓN (clic en el indicador de la barra lateral) ──
+function syncRecentFilter(){ const since=isoAddDays(todayStr(),-REP_VENTANA_DIAS); return r=>String(r&&(r.fecha||r.weekStart)||'')>=since; }
+// Todo lo que este equipo tiene guardado de los últimos días, en el formato del Sheet
+function syncLocalSnapshot(){
+  const rc=syncRecentFilter();
+  const js=v=>Array.isArray(v)||(v&&typeof v==='object')?JSON.stringify(v):v;
+  return [
+    {sheet:'Aprovechamiento',rows:aprovRecords.filter(rc).map(aprovCloudRow)},
+    {sheet:'Merma_Semanal',rows:mermaSemanalRecs.filter(rc)},
+    {sheet:'Cierre_Dia',rows:diaRecords.filter(rc).map(r=>({...r,piezas:r.piezas==null?'':r.piezas,programadas:r.programadas==null?'':r.programadas,paros:js(r.paros)}))},
+    {sheet:'OEE_Registros',rows:records.filter(rc).map(r=>({...r,paros:js(r.paros)}))},
+    {sheet:'Atrasos',rows:atrasos.filter(rc)},
+    ...ALL_CTS.map(ct=>({sheet:ctSheet(ct),rows:horaRecords.filter(r=>r&&r.ct===ct&&rc(r)).map(r=>({...r,franjas:js(r.franjas),dibujos:js(r.dibujos)}))}))
+  ];
+}
+function syncPanelMsg(t,warn){ const m=document.getElementById('sync-panel-msg'); if(m){ m.textContent=t; m.style.color=warn?'var(--amber)':'var(--green)'; } }
+function syncRetryNow(){
+  Object.values(_outbox).forEach(e=>{ e.srvErr=0; e.lastTry=0; }); outboxSave(); _outboxBusy=false; outboxRetry();
+  syncPanelMsg('Reintentando el envío…'); setTimeout(()=>{ renderSyncPanel(); },3500);
+}
+// Compara lo de este equipo contra el Sheet y reenvía lo que falte (o esté más nuevo aquí)
+function syncResendLocal(){
+  const snap=syncLocalSnapshot(), names=snap.map(x=>x.sheet);
+  const since=isoAddDays(todayStr(),-REP_VENTANA_DIAS-1);
+  syncPanelMsg('Comparando con el Sheet…');
+  gasRequest({action:'readAll',sheets:names.join(','),since},(data)=>{
+    const R=(data&&data.results)||{}; let sent=0; const det=[];
+    snap.forEach(({sheet,rows})=>{
+      const cloud=Array.isArray(R[sheet])?R[sheet]:null; if(!cloud) return;   // hoja desconocida o con error: no se toca
+      const byId={}; cloud.forEach(c=>{ if(c&&c.id!=null) byId[String(c.id)]=c; });
+      let n=0;
+      rows.forEach(r=>{
+        if(!r||r.id==null) return;
+        const c=byId[String(r.id)];
+        const falta=!c || (r.updatedAt && c.updatedAt && String(r.updatedAt)>String(c.updatedAt));
+        if(falta){ cloudUpsertRow(sheet,r); n++; }
+      });
+      if(n){ sent+=n; det.push(sheet+': '+n); }
+    });
+    syncPanelMsg(sent?`Se reenviaron ${sent} registro${sent===1?'':'s'} al Sheet (${det.join(', ')}).`:'✓ Todo lo guardado en este equipo ya está en el Sheet.',false);
+    setTimeout(renderSyncPanel,3000);
+  },(err)=>syncPanelMsg('No se pudo consultar el Sheet: '+err,true));
+}
+function syncDownloadBackup(){
+  const data={generado:new Date().toISOString(),usuario:currentUser?currentUser.name:'',pendientes:_outbox,datos:Object.fromEntries(syncLocalSnapshot().map(x=>[x.sheet,x.rows]))};
+  const blob=new Blob([JSON.stringify(data,null,1)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='respaldo_OEE_'+todayStr()+'.json'; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500);
+}
+function closeSyncPanel(){ document.getElementById('sync-panel')?.remove(); }
+function openSyncPanel(){ if(!document.getElementById('sync-panel')){ const d=document.createElement('div'); d.id='sync-panel'; d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px'; d.onclick=e=>{ if(e.target===d) closeSyncPanel(); }; document.body.appendChild(d); } renderSyncPanel(); }
+function renderSyncPanel(){
+  const d=document.getElementById('sync-panel'); if(!d) return;
+  const keep=document.getElementById('sync-panel-msg')?.textContent||'', keepCol=document.getElementById('sync-panel-msg')?.style.color||'';
+  const items=Object.values(_outbox);
+  const rows=items.map(e=>{ const rec=e.record||{}; const desc=rec.maquina||rec.machine||rec.ct||''; return `<tr><td style="padding:4px 8px">${escH(e.sheet)}</td><td style="padding:4px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px">${escH(String(e.id).slice(0,38))}</td><td style="padding:4px 8px">${escH(desc)} ${escH(rec.fecha||'')}</td><td style="padding:4px 8px;color:${(e.srvErr||0)>0?'#f06060':'var(--amber)'}">${(e.srvErr||0)>0?escH(e.lastErr||'rechazado por el servidor')+' (×'+e.srvErr+')':'en espera de red'}</td></tr>`; }).join('');
+  const bs="font-size:12px;padding:7px 12px;border:1px solid var(--border);background:var(--bg3);color:var(--text);border-radius:var(--radius);cursor:pointer;font-family:'IBM Plex Sans',sans-serif";
+  d.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:760px;width:100%;max-height:88vh;overflow:auto;padding:18px 20px">
+    <div style="display:flex;align-items:center;margin-bottom:8px"><b style="font-size:15px">Sincronización con el Sheet</b><button onclick="closeSyncPanel()" style="margin-left:auto;background:transparent;border:none;color:var(--text3);font-size:20px;cursor:pointer">×</button></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${items.length?`<b style="color:var(--amber)">${items.length} registro${items.length===1?'':'s'} guardado${items.length===1?'':'s'} en este equipo que todavía no está${items.length===1?'':'n'} confirmado${items.length===1?'':'s'} en el Sheet:</b>`:'<b style="color:var(--green)">✓ No hay envíos pendientes en este equipo.</b>'}</div>
+    ${items.length?`<div style="overflow:auto;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase"><th style="padding:4px 8px">Hoja</th><th style="padding:4px 8px">Registro</th><th style="padding:4px 8px">Detalle</th><th style="padding:4px 8px">Estado</th></tr></thead><tbody>${rows}</tbody></table></div>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <button style="${bs}" onclick="syncRetryNow()">↻ Reintentar ahora</button>
+      <button style="${bs}" onclick="syncResendLocal()" title="Compara lo guardado en este equipo (últimos 45 días) con el Sheet y sube lo que falte">⇪ Reenviar al Sheet lo guardado en este equipo</button>
+      <button style="${bs}" onclick="syncDownloadBackup()">⬇ Descargar respaldo</button>
+    </div>
+    <div id="sync-panel-msg" style="font-size:12px;min-height:16px;color:${keepCol||'var(--green)'}">${escH(keep)}</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">«Reenviar» sube de este equipo lo que el Sheet no tenga (por ejemplo, un registro que no llegó por una falla de red) y no pisa versiones más nuevas del Sheet. Si un registro fue eliminado desde otro equipo, y este equipo aún lo conserva, volvería a aparecer.</div>
+  </div>`;
 }
 function showCloudStatus(msg,type){
   const el=document.getElementById('cloud-status');if(!el)return;
@@ -3255,9 +3381,26 @@ function renderDiaCard(){
   // Últimos días de esta máquina (clic para ver/corregir ese día)
   const hist=document.getElementById('dia-hist');
   if(hist){
-    const last=diaRecords.filter(r=>r.ct===ct&&r.machine===machine).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))).slice(0,7);
-    hist.innerHTML=last.length?`<div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">Últimos días de esta máquina</div>`+last.map(r=>`<div onclick="document.getElementById('reg-fecha').value='${r.fecha}';onFechaChange()" title="Ver o corregir este día" style="display:flex;gap:14px;align-items:center;padding:5px 8px;border-bottom:0.5px solid var(--border);font-size:12px;cursor:pointer;${r.fecha===fecha?'background:var(--bg3)':''}"><span style="width:84px">${dayLabel(r.fecha)}</span><b style="font-family:'IBM Plex Mono',monospace;width:90px">${diaHasPiezas(r)?r.piezas+' pzas':'sin total'}</b><span style="color:var(--amber);width:80px">${(Number(r.parosNoProg)||0)>0?r.parosNoProg+' min paros':''}</span><span style="color:var(--text3)">${r.op||''}</span></div>`).join(''):'';
+    hist.innerHTML=diaHistHtml(ct,machine,fecha);
   }
+}
+// «Últimos días de esta máquina»: semanas completas (lun–vie), la más reciente primero, con un encabezado por semana,
+// el acumulado semanal de piezas y, en cada día, el acumulado corrido de la semana hasta ese día.
+function diaHistHtml(ct,machine,fechaSel){
+  const recs=diaRecords.filter(r=>r.ct===ct&&r.machine===machine&&/^\d{4}-\d{2}-\d{2}$/.test(String(r.fecha)));
+  if(!recs.length) return '';
+  const weeks=[...new Set(recs.map(r=>aprovWeekStartOf(r.fecha)))].sort().reverse().slice(0,3);
+  const mono="font-family:'IBM Plex Mono',monospace";
+  let html=`<div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">Últimos días de esta máquina</div>`;
+  weeks.forEach(ws=>{
+    const wr=recs.filter(r=>aprovWeekStartOf(r.fecha)===ws).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha)));
+    let acc=0; const accBy={};
+    wr.forEach(r=>{ acc+=diaHasPiezas(r)?Number(r.piezas):0; accBy[r.fecha]=acc; });
+    const tot=acc;
+    html+=`<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;margin-top:8px;background:rgba(74,158,255,.08);border-left:3px solid var(--blue);border-radius:3px;font-size:11px"><b>Semana ${weekLabelShort(ws)}</b><span style="color:var(--text3)">lun – vie · ${wr.length} día${wr.length===1?'':'s'} con registro</span><span style="margin-left:auto;color:var(--text2)">Acumulado semanal</span><b style="${mono};font-size:13px;color:var(--blue)">${tot} pzas</b></div>`;
+    html+=[...wr].reverse().map(r=>`<div onclick="document.getElementById('reg-fecha').value='${r.fecha}';onFechaChange()" title="Ver o corregir este día" style="display:flex;gap:14px;align-items:center;padding:5px 8px;border-bottom:0.5px solid var(--border);font-size:12px;cursor:pointer;${r.fecha===fechaSel?'background:var(--bg3)':''}"><span style="width:84px">${dayLabel(r.fecha)}</span><b style="${mono};width:90px">${diaHasPiezas(r)?r.piezas+' pzas':'sin total'}</b><span style="color:var(--amber);width:80px">${(Number(r.parosNoProg)||0)>0?r.parosNoProg+' min paros':''}</span><span style="color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escH(r.op||'')}</span><span style="color:var(--text3);font-size:10px">acum. semana</span><b style="${mono};width:70px;text-align:right;color:var(--text2)">${accBy[r.fecha]}</b></div>`).join('');
+  });
+  return html;
 }
 // Estado de la tarjeta de cierre del día: ayuda, «Sin guardar» y resalte del botón (sin tocar lo que se escribe)
 function renderDiaEstado(ct,machine,fecha,rec){
@@ -3456,7 +3599,7 @@ function loadFromCloud(){
     // conoce esta hoja, no se marca como error de sincronización (la función sigue sirviendo en este equipo).
     // Catálogo de calibres de lámina / tipos de tubular compartido (opcional por la misma razón).
     {name:'Materiales_Config', optional:true, always:true, assign:(d)=>applyMaterialesConfig(d)},
-    {name:'Maquina_Predeterminada', optional:true, assign:(d)=>{ applyDefaultMachinesFromCloud(d); try{ refreshDefaultMachineUI(); }catch(e){} }},
+    {name:'Maquina_Predeterminada', optional:true, assign:(d)=>{ applyDefaultMachinesFromCloud(d); try{ refreshDefaultMachineUI(); }catch(e){} try{ aprovApplyScope(); }catch(e){} }},
     {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
     {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
     ...(canSeeAprov ? [
@@ -4253,7 +4396,7 @@ function saveTurno(){
 function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.cal} (${l.peso}kg)</option>`).join('');}
 function getLaminaOptionsShort(){return laminas.map(l=>`<option value="${l.cal}">${l.cal}</option>`).join('');}
 function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
-function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
+function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><select data-f="org" onchange="calcLamina()" title="De programa: está en la explosión. Eventualidad: no estaba programada; se resta del consumo del calibre al compararlo contra lo explosionado"><option value="programa">De programa</option><option value="eventualidad">Eventualidad</option></select><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row dynamic-row-lamr';d.id=id;d.innerHTML=`<select data-f="cal" onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><select data-f="fp" onchange="calcLamina()" title="¿Sobró de una pieza fuera de programa?"><option value="">En programa</option><option value="Prototipo">Fuera de prog.: Prototipo</option><option value="Vacuna">Fuera de prog.: Vacuna</option><option value="Otro">Fuera de prog.: Otro</option></select><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE LÁMINA (localStorage) ──
 // Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
@@ -4301,7 +4444,7 @@ function saveLamDraft(){
     merma: document.getElementById('lam-merma')?.value,
     hojas: Array.from(document.querySelectorAll('#lam-hojas-list .dynamic-row')).map(row=>{
       const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-      return {cal: sel?.value, hojas: ins[0]?.value};
+      return {cal: sel?.value, hojas: ins[0]?.value, org: row.querySelector('[data-f="org"]')?.value||'programa'};
     }),
     recortes: Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
       const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
@@ -4332,6 +4475,7 @@ function restoreLamDraft(){
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
     if(sel && h.cal) sel.value=h.cal;
     if(ins[0] && h.hojas) ins[0].value=h.hojas;
+    const og=row.querySelector('[data-f="org"]'); if(og && h.org) og.value=h.org;
   });
   (draft.recortes||[]).forEach(r=>{
     addLamRecorte(true);
@@ -4349,7 +4493,7 @@ function restoreLamDraft(){
 }
 function calcLamina(){
   apRefresh();
-  let pt=0;document.querySelectorAll('#lam-hojas-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const lam=getLaminaByCal(sel?sel.value:'');const h=parseFloat(ins[0]?.value)||0;const pw=lam?lam.peso:0;const pr=fmtN(h*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
+  let pt=0;document.querySelectorAll('#lam-hojas-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const lam=getLaminaByCal(sel?sel.value:'');const h=parseFloat(ins[0]?.value)||0;const pw=lam?lam.peso:0;const pr=fmtN(h*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';const og=row.querySelector('[data-f="org"]');if(og)og.style.color=og.value==='eventualidad'?'var(--amber)':'';pt+=pr;});
   document.getElementById('lam-peso-total').textContent=fmtN(pt,3);
   const merma=parseFloat(document.getElementById('lam-merma').value)||0;
   document.getElementById('lam-pct-merma').textContent=pt>0?fmtN((merma/pt)*100,2)+'%':'–';
@@ -4382,7 +4526,8 @@ function saveLamina(){
   // ahorro teórico (hojas de diferencia × costo de la lámina).
   const hojasDetalle=Array.from(document.querySelectorAll('#lam-hojas-list .dynamic-row')).map(row=>{
     const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    return {cal: sel?.value, hojas: parseFloat(ins[0]?.value)||0};
+    const ev=row.querySelector('[data-f="org"]')?.value==='eventualidad';
+    return {cal: sel?.value, hojas: parseFloat(ins[0]?.value)||0, origen: ev?'eventualidad':'programa'};
   }).filter(h=>h.cal && h.hojas>0);
   // Recortes recuperados (calibre, medidas, peso y ahorro de cada uno)
   const recortesDetalle=Array.from(document.querySelectorAll('#lam-recortes-list .dynamic-row')).map(row=>{
@@ -4391,10 +4536,10 @@ function saveLamina(){
     return {cal: sel?.value, ancho: parseFloat(ins[0]?.value)||0, largo: parseFloat(ins[1]?.value)||0, peso: parseFloat(ins[2]?.value)||0, ahorro: parseFloat(ins[3]?.dataset.gross)||0, fueraProg: fp};
   }).filter(x=>x.cal && x.ancho>0 && x.largo>0);
   const rec={id:Date.now(),tipo:'lamina',maquina:'Laser de Cama',ct:'TROQUELES',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,hojasDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
-  aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  aprovRecords.push(rec);save('aprovRecords');_aprovLastSync='pend';cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec),aprovSyncDone);
   clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
-  apMsg('lam-save-msg','✓ Guardado',false);renderAprovHist();
+  aprovAfterSave('lam-save-msg');renderAprovHist();
 }
 function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
 function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row ped-row';d.id=id;
@@ -4528,10 +4673,10 @@ function saveTubular(){
     return {tipo:x.tipo,op:x.op,modelo:x.modelo,ubicacion:x.ubicacion,nPz:x.nPz,largoRet:x.largoRet,piezasProd:x.piezasProd,largoPieza:x.largoPieza,largoTramo:x.largoTramo,largoTotal:x.largoTotal,rec:x.rec,peso:x.peso,ahorro:x.ahorro};
   }).filter(x=>x.tipo && x.nPz>0 && x.largoRet>0);
   const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,tramosDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
-  aprovRecords.push(rec);save('aprovRecords');cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  aprovRecords.push(rec);save('aprovRecords');_aprovLastSync='pend';cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec),aprovSyncDone);
   clearTubDraft();
   document.getElementById('tub-tramos-list').innerHTML='';document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
-  apMsg('tub-save-msg','✓ Guardado',false);renderAprovHist();
+  aprovAfterSave('tub-save-msg');renderAprovHist();
 }
 function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
   const canvas=document.getElementById(canvasId);if(!canvas)return;
@@ -4580,12 +4725,12 @@ const APROV_MONO="font-family:'IBM Plex Mono',monospace";
 const APROV_INPUT="width:100%;max-width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)";
 function aprovItems(r){
   const raw = r.tipo==='lamina'
-    ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0}))
+    ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0,ev:h.origen==='eventualidad'?(Number(h.hojas)||0):0}))
     : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0}));
   const map={}, out=[];
   raw.forEach(it=>{
     if(!it.key) return;
-    if(map[it.key]){ map[it.key].real+=it.real; return; }
+    if(map[it.key]){ map[it.key].real+=it.real; map[it.key].ev=(map[it.key].ev||0)+(it.ev||0); return; }
     const cfg=it.kind==='cal'?getLaminaByCal(it.key):getTubularByTipo(it.key);
     map[it.key]={...it,costo:(cfg&&cfg.costo)||0};
     out.push(map[it.key]);
@@ -4599,6 +4744,8 @@ function aprovItems(r){
     map[key]={key,kind,real:0,extra:true,costo:(cfg&&cfg.costo)||0};
     out.push(map[key]);
   });
+  // Láminas de eventualidad: no estaban en la explosión, así que se restan del consumo del calibre al comparar.
+  out.forEach(it=>{ it.ev=it.ev||0; it.realProg=Math.round((it.real-it.ev)*1000)/1000; });
   return out;
 }
 function aprovExplKey(e){ return e.cal||e.tipo; }
@@ -4687,7 +4834,7 @@ function aprovTotals(r){
   items.forEach(it=>{
     totReal+=it.real;
     const e=(r.explosionDetalle||[]).find(x=>aprovExplKey(x)===it.key);
-    if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=r2(it.expl-it.real); it.valorRaw=it.dif*it.costo; it.valor=r2(it.valorRaw); totExpl+=it.expl; totDif+=it.dif; valor+=it.valorRaw; }
+    if(e){ any=true; it.expl=Number(e.hojas)||0; it.dif=r2(it.expl-it.realProg); it.valorRaw=it.dif*it.costo; it.valor=r2(it.valorRaw); totExpl+=it.expl; totDif+=it.dif; valor+=it.valorRaw; }
   });
   const recs=r.recortesDetalle||[];
   let bruto=0,efectivo=0;
@@ -4724,8 +4871,8 @@ function aprovDetailHtml(r){
         : `<span style="font-weight:500">${it.key}</span>`;
       return `<div id="exrow-${id}-${i}" style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
         ${first}
-        <span style="${mono}">${fmt2(it.real)}</span>
-        <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.real}" data-costo="${it.costo}" data-row="${i}" ${it.extra?'data-extra="1"':''} value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
+        <span style="${mono}">${fmt2(it.real)}${it.ev>0?`<span style="display:block;color:var(--amber);font-size:10px;line-height:1.3" title="Láminas de eventualidad: no estaban en la explosión, se restan del consumo de este calibre">− ${fmt2(it.ev)} event. = ${fmt2(it.realProg)}</span>`:''}</span>
+        <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.realProg}" data-total="${it.real}" data-costo="${it.costo}" data-row="${i}" ${it.extra?'data-extra="1"':''} value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
         <span id="dif-${id}-${i}" style="${mono}">–</span>
         <span id="val-${id}-${i}" style="${mono}">–</span>
       </div>`;
@@ -4805,7 +4952,7 @@ function recalcAprovDetail(id){
   inputs.forEach((inp,i)=>{
     const real=parseFloat(inp.dataset.real)||0, costo=parseFloat(inp.dataset.costo)||0;
     const k=inp.dataset.row!==undefined?inp.dataset.row:i;
-    totReal+=real;
+    totReal+=(inp.dataset.total!==undefined?parseFloat(inp.dataset.total)||0:real);
     const dif=document.getElementById(`dif-${id}-${k}`), val=document.getElementById(`val-${id}-${k}`);
     if(inp.value===''){ set(dif,'–','var(--text3)'); set(val,'–','var(--text3)'); return; }
     const ex=parseFloat(inp.value)||0; any=true;
@@ -4977,13 +5124,18 @@ function dayLabel(iso){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return Stri
 function aprovWeekStartOf(fecha){ return /^\d{4}-\d{2}-\d{2}$/.test(String(fecha||''))?getWeekRange(fecha).start:'0000-00-00'; }
 function aprovGid(ws,tipo,maq){ return ws+'_'+tipo+'_'+String(maq||'').replace(/[^A-Za-z0-9]/g,''); }
 function aprovVisibleRecords(){ return aprovRecords.filter(r=>machineInRoster(r.maquina)); }
+// Tubular: la merma es una sola por semana para TODO el centro Laser (GW1 + GW2 juntas, comparten tubo y pedacera).
+// Lámina (Laser de Cama) sigue siendo por máquina.
+function aprovGroupGid(ws,tipo,maq){ return tipo==='tubular'?aprovGid(ws,'tubular','LASER'):aprovGid(ws,tipo,maq); }
+function aprovMaqLabel(list){ return Array.from(new Set(list.filter(Boolean))).sort().join(' + '); }
 function aprovBuildGroups(recs){
   const map={};
   recs.forEach(r=>{
-    const ws=aprovWeekStartOf(r.fecha), gid=aprovGid(ws,r.tipo,r.maquina);
+    const ws=aprovWeekStartOf(r.fecha), gid=aprovGroupGid(ws,r.tipo,r.maquina);
     (map[gid]=map[gid]||{gid,weekStart:ws,tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r);
   });
   const groups=Object.values(map);
+  groups.forEach(g=>{ g.maquinas=Array.from(new Set(g.recs.map(r=>r.maquina))).sort(); g.maquina=aprovMaqLabel(g.maquinas); g.combo=g.tipo==='tubular'; });
   groups.forEach(g=>g.recs.sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||String(b.id).localeCompare(String(a.id))));
   groups.sort((a,b)=>b.weekStart.localeCompare(a.weekStart)||(a.tipo===b.tipo?String(a.maquina).localeCompare(String(b.maquina)):(a.tipo==='lamina'?-1:1)));
   return groups;
@@ -4995,6 +5147,11 @@ function canEditWeeklyMerma(){ return !!currentUser && (currentUser.role!=='oper
 function aprovWeeklyMerma(g){
   const ex=mermaSemanalRecs.find(m=>m.id==='ms_'+g.gid);
   if(ex && !isNaN(Number(ex.merma))) return {kg:Number(ex.merma),src:'semanal'};
+  // Antes la merma tubular se capturaba por máquina: si aún no hay la combinada, se suman esas.
+  if(g.tipo==='tubular'){
+    const old=mermaSemanalRecs.filter(m=>m&&m.tipo==='tubular'&&m.weekStart===g.weekStart&&m.id!=='ms_'+g.gid&&!isNaN(Number(m.merma)));
+    if(old.length) return {kg:old.reduce((a,m)=>a+Number(m.merma),0),src:'semanal'};
+  }
   const ok=r=>r.merma!=null&&r.merma!==''&&!isNaN(Number(r.merma));
   const flagged=g.recs.find(r=>r.mermaSemanal&&ok(r));
   if(flagged) return {kg:Number(flagged.merma),src:'registro'};
@@ -5010,16 +5167,16 @@ function aprovGroupStats(g){
     if(T.items.length && !T.any) noExpl++;
     T.items.forEach(it=>{
       let m=map[it.key];
-      if(!m){ m=map[it.key]={key:it.key,real:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false,extra:true}; order.push(m); }
+      if(!m){ m=map[it.key]={key:it.key,real:0,ev:0,evCmp:0,realCmp:0,expl:0,dif:0,valor:0,anyExpl:false,extra:true}; order.push(m); }
       if(!it.extra) m.extra=false;
-      m.real+=it.real;
-      if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.real; m.expl+=it.expl; m.dif+=it.dif; const aj=T.ajustes.find(a=>a.key===it.key); m.adj=(m.adj||0)+(aj?aj.matA:0); m.valor+=it.valorRaw-(aj?aj.matA:0); }
+      m.real+=it.real; m.ev+=it.ev||0;
+      if(it.expl!=null){ m.anyExpl=true; m.realCmp+=it.realProg; m.evCmp+=it.ev||0; m.expl+=it.expl; m.dif+=it.dif; const aj=T.ajustes.find(a=>a.key===it.key); m.adj=(m.adj||0)+(aj?aj.matA:0); m.valor+=it.valorRaw-(aj?aj.matA:0); }
     });
   });
   const merma=aprovWeeklyMerma(g);
   const pctMerma=(merma&&peso>0)?merma.kg/peso*100:null;
   return {peso:r2(peso),ahorroRec:r2(ahorroRec),cubierto:r2(cubierto),compMat:r2(compMat),compRec:r2(compRec),compFp,valorMat:r2(valorMat),ahorroTeorico:r2(valorMat+ahorroRec),noExpl,
-          items:order.map(m=>({...m,real:r2(m.real),realCmp:r2(m.realCmp),expl:r2(m.expl),dif:r2(m.dif),valor:r2(m.valor)})),
+          items:order.map(m=>({...m,real:r2(m.real),ev:r2(m.ev),evCmp:r2(m.evCmp),realCmp:r2(m.realCmp),expl:r2(m.expl),dif:r2(m.dif),valor:r2(m.valor)})),
           merma,pctMerma,pctAprov:pctMerma==null?null:100-pctMerma,n:g.recs.length};
 }
 
@@ -5082,7 +5239,7 @@ function renderAprovHist(force){
           <span style="${mono};font-size:11px;color:${st.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro $${fmtMoney(st.ahorroTeorico)}</span>
         </div>
         <div id="ms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
-          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.weekStart)} — ${g.tipo==='lamina'?'Lámina':'Tubular'} · ${g.maquina}. Peso procesado en la semana: <b style="${mono}">${fmt2(st.peso)} kg</b>. Se captura <b>una sola vez</b> por semana (5 días hábiles).</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.weekStart)} — ${g.tipo==='lamina'?'Lámina':'Tubular'} · ${g.maquina}${g.combo&&g.maquinas.length>1?' <span style="color:var(--amber)">(un solo registro de merma para ambas máquinas)</span>':''}. Peso procesado en la semana: <b style="${mono}">${fmt2(st.peso)} kg</b>. Se captura <b>una sola vez</b> por semana (5 días hábiles).</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <span style="font-size:12px;color:var(--text2)">Merma de la semana (kg):</span>
             <input type="number" id="ms-input-${g.gid}" min="0" step="any" value="${st.merma&&st.merma.src==='semanal'?st.merma.kg:''}" placeholder="0.00" style="width:110px;font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
@@ -5263,10 +5420,10 @@ function buildWeeklyReportHtml(ws){
   const RT=retrabajoReportParts(ws);
   const sections=groups.map(g=>{
     const st=g.st, isLam=g.tipo==='lamina';
-    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.anyExpl&&it.realCmp!==it.real?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
+    const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.ev>0?` <span class="muted">(${fmt2(it.ev)} event.)</span>`:''}${it.anyExpl&&Math.abs(it.realCmp+it.evCmp-it.real)>0.004?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
       :`<tr><td colspan="5" class="muted">Registros sin desglose por ${isLam?'calibre':'tipo'}.</td></tr>`;
-    const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
-    const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
+    const totalRow=st.items.length?`<tr class="tot"><td>Total</td><td class="n">${fmt2(st.items.reduce((s,i)=>s+i.real,0))}${st.items.some(i=>i.anyExpl&&Math.abs(i.realCmp+i.evCmp-i.real)>0.004)?'*':''}</td><td class="n">${st.items.some(i=>i.anyExpl)?fmt2(st.items.reduce((s,i)=>s+i.expl,0)):'—'}</td><td class="n ${colr(st.items.reduce((s,i)=>s+i.dif,0))}">${st.items.some(i=>i.anyExpl)?sgn2(st.items.reduce((s,i)=>s+i.dif,0)):'—'}</td><td class="n ${colr(st.valorMat)}">${st.items.some(i=>i.anyExpl)?money(st.valorMat):'—'}</td></tr>`:'';
+    const dayRows=[...g.recs].reverse().map(r=>{ const T=aprovTotals(r); return `<tr><td>${dayLabel(r.fecha)}</td><td>${g.combo&&g.maquinas.length>1?esc(r.maquina)+' · ':''}${esc(shortTurno(r.turno))}</td><td class="n">${fmt2(r.pesoTotal)}</td><td class="n">${money(T.ahorroRec)}</td><td class="n ${colr(T.ahorroTeorico)}">${T.any||T.ahorroRec?money(T.ahorroTeorico):'—'}</td></tr>`; }).join('');
     const mermaTxt=st.merma
       ?`<b>${fmt2(st.merma.kg)} kg</b> de merma &nbsp;·&nbsp; <b>${fmt2(st.pctMerma)}%</b> del material procesado &nbsp;·&nbsp; Aprovechamiento: <b>${fmt2(st.pctAprov)}%</b>${st.merma.src==='diaria'?' <span class="muted">(suma de registros diarios)</span>':''}`
       :`<span class="warn">Merma semanal pendiente de captura</span>`;
@@ -5278,7 +5435,7 @@ function buildWeeklyReportHtml(ws){
       </div>
       ${isLam?'':pedaceraReportHtml(g,esc,money)}
       <div class="line">${mermaTxt}</div>
-      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${(st.compMat>0||st.compRec>0)?` <span class="muted">· compensación por calibre: ${money(st.compMat)} de material no consumido y ${money(st.compRec)} de recortes no se cuentan como ahorro (los recortes del mismo calibre cubren lo no consumido, o el retrabajo/pieza fuera de programa lo explica)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&i.realCmp!==i.real)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
+      <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${(st.compMat>0||st.compRec>0)?` <span class="muted">· compensación por calibre: ${money(st.compMat)} de material no consumido y ${money(st.compRec)} de recortes no se cuentan como ahorro (los recortes del mismo calibre cubren lo no consumido, o el retrabajo/pieza fuera de programa lo explica)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&Math.abs(i.realCmp+i.evCmp-i.real)>0.004)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
     </section>`;
   }).join('') || '<p class="muted">Sin registros de aprovechamiento en esta semana.</p>';
   const hayRT=RT.groups.length>0;
@@ -5305,7 +5462,7 @@ ${sections}
 ${hayRT?`<h3 class="part">2 · Retrabajo — piezas rechazadas</h3>${RT.sections}`:''}
 ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a la semana en que ocurrieron.</p>':''}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes.${hayRT?' Consumo extra por retrabajo: tubular = piezas rechazadas × largo de pieza ÷ largo del tramo; lámina = piezas rechazadas × peso de la pieza ÷ peso de la lámina. kg equivalentes = consumo extra × peso configurado.':''}</footer>
+<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes. Las láminas capturadas como «eventualidad» (no estaban en la explosión) se restan del consumo de su calibre antes de comparar.${hayRT?' Consumo extra por retrabajo: tubular = piezas rechazadas × largo de pieza ÷ largo del tramo; lámina = piezas rechazadas × peso de la pieza ÷ peso de la lámina. kg equivalentes = consumo extra × peso configurado.':''}</footer>
 </div></body></html>`;
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
@@ -5351,8 +5508,10 @@ function rtCollect(){
 }
 function rtBuildGroups(entries){
   const map={};
-  entries.forEach(e=>{ const gid=aprovGid(e.ws,'retrabajo',e.machine); (map[gid]=map[gid]||{gid,ws:e.ws,machine:e.machine,entries:[]}).entries.push(e); });
+  // Igual que la merma de aprovechamiento: una sola merma por semana para GW1 + GW2 (tubular); Laser de Cama aparte.
+  entries.forEach(e=>{ const gid=aprovGid(e.ws,'retrabajo',e.tipo==='tubular'?'LASERTUB':e.machine); (map[gid]=map[gid]||{gid,ws:e.ws,machine:e.machine,lam:e.tipo==='lamina',entries:[]}).entries.push(e); });
   const groups=Object.values(map);
+  groups.forEach(g=>{ g.machines=Array.from(new Set(g.entries.map(e=>e.machine))).sort(); g.machine=aprovMaqLabel(g.machines); });
   groups.forEach(g=>g.entries.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.franja).localeCompare(String(b.franja))));
   groups.sort((a,b)=>b.ws.localeCompare(a.ws)||String(a.machine).localeCompare(String(b.machine)));
   return groups;
@@ -5366,8 +5525,12 @@ function rtGroupStats(g){
     const mat=e.tipo==='lamina'?(e.calibre||'—'):(e.tubular||'—'); const mk=(e.modelo||'Sin modelo')+'||'+mat; const m=modelos[mk]||(modelos[mk]={modelo:e.modelo||'Sin modelo',tubular:mat,pzas:0,cons:0,kg:0}); m.pzas+=Number(e.nPz)||0; m.cons+=e.consumo; m.kg+=e.kg;
   });
   const ex=mermaSemanalRecs.find(m=>m.id==='ms_'+g.gid);
-  const merma=(ex&&!isNaN(Number(ex.merma)))?Number(ex.merma):null;
-  return {pzas,cons:r3(cons),kg:r2(kg),n:turnos.size,causas,modelos,merma,lam:rtLam(g.machine),unit:rtLam(g.machine)?'láminas':'tramos'};
+  let merma=(ex&&!isNaN(Number(ex.merma)))?Number(ex.merma):null;
+  if(merma==null && !g.lam){   // antes se capturaba por máquina: se suman
+    const old=mermaSemanalRecs.filter(m=>m&&m.tipo==='retrabajo'&&m.weekStart===g.ws&&m.id!=='ms_'+g.gid&&!rtLam(m.maquina)&&!isNaN(Number(m.merma)));
+    if(old.length) merma=old.reduce((a,m)=>a+Number(m.merma),0);
+  }
+  return {pzas,cons:r3(cons),kg:r2(kg),n:turnos.size,causas,modelos,merma,lam:!!g.lam,unit:g.lam?'láminas':'tramos'};
 }
 function renderRetrabajoSemanal(fct,fmachine){
   const box=document.getElementById('hora-rt-semanal'); if(!box) return;
@@ -5415,7 +5578,7 @@ function renderRetrabajoSemanal(fct,fmachine){
         <span style="${mono};font-size:11px;color:var(--amber);font-weight:700">${st.cons.toFixed(3)} ${st.unit}${st.kg>0?` · ${fmt2(st.kg)} kg`:''}</span>
       </div>
       <div id="rtms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.ws)} — Retrabajo ${st.lam?'lámina':'tubular'} · ${escH(g.machine)}. Consumo extra por retrabajo: <b style="${mono}">${st.cons.toFixed(3)} ${st.unit}${st.kg>0?` (${fmt2(st.kg)} kg)`:''}</b>. Se captura <b>una sola vez</b> por semana.</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.ws)} — Retrabajo ${st.lam?'lámina':'tubular'} · ${escH(g.machine)}${(!st.lam&&g.machines.length>1)?' <span style="color:var(--amber)">(un solo registro de merma para ambas máquinas)</span>':''}. Consumo extra por retrabajo: <b style="${mono}">${st.cons.toFixed(3)} ${st.unit}${st.kg>0?` (${fmt2(st.kg)} kg)`:''}</b>. Se captura <b>una sola vez</b> por semana.</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size:12px;color:var(--text2)">Merma de la semana (kg):</span>
           <input type="number" id="rtms-input-${g.gid}" min="0" step="any" value="${st.merma!=null?st.merma:''}" placeholder="0.00" style="width:110px;font-size:12px;${mono};padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">
@@ -5464,7 +5627,7 @@ function retrabajoReportParts(ws){
     const causaRows=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).map(([c,o])=>`<tr><td>${esc(c)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('');
     const U=st.lam?'Láminas':'Tramos';
     const modRows=Object.values(st.modelos).sort((a,b)=>b.cons-a.cons).map(m=>`<tr><td>${esc(m.modelo)}</td><td>${esc(m.tubular)}</td><td class="n">${m.pzas}</td><td class="n">${m.cons.toFixed(3)}</td></tr>`).join('');
-    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(st.lam?e.calibre||'—':e.tubular||'—')}</td><td class="n">${st.lam?fmt2(e.anchoPza)+' × '+fmt2(e.largoPza):fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
+    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${g.machines.length>1?esc(e.machine)+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(st.lam?e.calibre||'—':e.tubular||'—')}</td><td class="n">${st.lam?fmt2(e.anchoPza)+' × '+fmt2(e.largoPza):fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
     const mermaTxt=st.merma!=null?`Merma semanal registrada: <b>${fmt2(st.merma)} kg</b>`:`<span class="warn">Merma semanal pendiente de captura</span>`;
     return `<section>
       <h2><span class="tag ${st.lam?'lam':'tub'}">${st.lam?'LÁMINA':'TUBULAR'}</span> ${esc(g.machine)} <small>${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</small></h2>
@@ -5571,6 +5734,93 @@ td.day.bad{background:#fef2f2;color:#b91c1c}td.day.good{color:#047857}
 .ctline{display:flex;gap:16px;flex-wrap:wrap;font-size:10.5px;margin:0 0 6px;color:#445}
 .ctline b{color:#1b1f2a}
 </style>`;
+// Piezas rechazadas (hora×hora) y detalle del retrabajo, por centro de trabajo y periodo.
+function repRechazosHtml(ct,fechas,weekly,esc,dayLa){
+  const set=new Set(fechas), best={};
+  horaRecords.forEach(r=>{ if(!r||r.ct!==ct||!set.has(r.fecha)||!machineInRoster(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
+  const rows=[];
+  Object.values(best).forEach(r=>safeParse(r.franjas,[]).forEach(f=>{
+    if(!f||f.isBreak||!(Number(f.danadas)>0)) return;
+    const rt=(Array.isArray(f.retrabajo)?f.retrabajo:[]).filter(x=>x&&(x.modelo||x.causa||Number(x.nPz)>0));
+    const causas=Array.from(new Set(rt.map(x=>rtCausaTxt(x)).filter(Boolean)));
+    const motivo=(f.motivo&&String(f.motivo).trim())||causas.join('; ');
+    const modelos=Array.from(new Set(rt.map(x=>x.modelo).filter(Boolean)));
+    rows.push({fecha:r.fecha,machine:r.machine,turno:r.turno,franja:String(f.franja||'').replace(/⚡$/,''),n:Number(f.danadas)||0,motivo,modelos,rt});
+  }));
+  if(!rows.length) return '';
+  rows.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.turno).localeCompare(String(b.turno))||String(a.franja).localeCompare(String(b.franja)));
+  const tot=rows.reduce((s,x)=>s+x.n,0), sinMot=rows.filter(x=>!x.motivo).length;
+  const porMot={}; rows.forEach(x=>{ const m=x.motivo||'Sin motivo'; porMot[m]=(porMot[m]||0)+x.n; });
+  const top=Object.entries(porMot).sort((a,b)=>b[1]-a[1]);
+  let html=`<div class="line"><b>Piezas rechazadas</b> <span class="muted">${tot} pza${tot===1?'':'s'} en ${rows.length} franja${rows.length===1?'':'s'}${sinMot?` · <span class="warn">${sinMot} sin motivo</span>`:''}</span></div>`;
+  html+=`<div class="ctline" style="margin-top:2px">${top.map(([m,n])=>`<span>${esc(m)}: <b>${n}</b></span>`).join('')}</div>`;
+  html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th class="n">Pzas</th><th>Motivo</th><th>Modelo / folio</th></tr></thead><tbody>${rows.map(x=>`<tr>${weekly?`<td>${esc(dayLa(x.fecha))}</td>`:''}<td><b>${esc(x.machine)}</b></td><td>${esc(x.turno?'T'+x.turno+' · ':'')}${esc(x.franja)}</td><td class="n">${x.n}</td><td>${x.motivo?esc(x.motivo):'<span class="warn">sin motivo</span>'}</td><td>${x.modelos.length?esc(x.modelos.join(', ')):'—'}</td></tr>`).join('')}</tbody></table>`;
+  return html;
+}
+// ── Aprovechamiento y consumo de material dentro de los reportes de producción ──
+// Lámina (Laser de Cama, centro Troqueles) y tubular (GW1/GW2, centro Laser): consumo registrado vs. explosión,
+// eventualidades, recortes recuperados, ahorro teórico y, en el semanal, merma y % de aprovechamiento. Más el retrabajo.
+function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
+  const set=new Set(fechas);
+  const recs=aprovVisibleRecords().filter(r=>r&&r.ct===ct&&set.has(r.fecha));
+  const rts=rtCollect().filter(e=>e.ct===ct&&set.has(e.fecha));
+  if(!recs.length && !rts.length) return '';
+  const f2=n=>fmt2(n), money=v=>(Number(v)<0?'-':'')+'$'+fmtMoney(Math.abs(Number(v)||0));
+  const cl=v=>v>0.004?'pos':v<-0.004?'neg':'';
+  let order;
+  if(weekly){   // semanal: el tubular va junto (GW1 + GW2), con una sola merma
+    order=aprovBuildGroups(recs).map(g=>({tipo:g.tipo,maquina:g.maquina,recs:g.recs,g}));
+  } else {
+    const groups={};
+    recs.forEach(r=>{ const k=r.tipo+'|'+r.maquina; (groups[k]=groups[k]||{tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r); });
+    order=Object.values(groups).sort((a,b)=>(a.tipo===b.tipo?String(a.maquina).localeCompare(String(b.maquina)):(a.tipo==='lamina'?-1:1)));
+  }
+  let html=`<div class="line"><b>Aprovechamiento y consumo de material</b></div>`;
+  if(!order.length) html+='<div class="line muted">Sin registros de aprovechamiento en este periodo.</div>';
+  order.forEach(o=>{
+    const lam=o.tipo==='lamina';
+    const g=o.g||{gid:aprovGroupGid(aprovWeekStartOf(fechas[0]),o.tipo,o.maquina),weekStart:aprovWeekStartOf(fechas[0]),tipo:o.tipo,maquina:o.maquina,recs:o.recs};
+    const st=aprovGroupStats(g);
+    const unit=lam?'láminas':'tramos', keyLbl=lam?'Calibre':'Tubular';
+    let mermaTxt='';
+    if(weekly){
+      if(st.merma) mermaTxt=`${o.g&&o.g.combo&&o.g.maquinas.length>1?' · <span class="muted">una sola merma para ambas máquinas</span>':''} · Merma <b>${f2(st.merma.kg)} kg</b> (${st.pctMerma==null?'—':f2(st.pctMerma)+'%'}) · Aprovechamiento <b>${st.pctAprov==null?'—':f2(st.pctAprov)+'%'}</b>`;
+      else mermaTxt=' · <span class="warn">Merma semanal sin capturar</span>';
+    } else {
+      const ok=r=>r.merma!=null&&r.merma!==''&&!isNaN(Number(r.merma))&&!r.mermaSemanal;
+      const m=o.recs.reduce((a,r)=>a+(ok(r)?Number(r.merma):0),0);
+      mermaTxt=m>0?` · Merma del día <b>${f2(m)} kg</b>`:' · <span class="muted">La merma se captura por semana (ver reporte semanal)</span>';
+    }
+    html+=`<div style="margin-top:8px"><span class="tag ct">${lam?'LÁMINA':'TUBULAR'}</span> <b>${esc(o.maquina)}</b> <span class="muted">${st.n} registro${st.n===1?'':'s'} · ${f2(st.peso)} kg consumidos${mermaTxt}</span></div>`;
+    if(st.items.length){
+      const hasEv=st.items.some(i=>i.ev>0);
+      let tr=0,te=0,tx=0,td=0,tv=0,anyE=false;
+      const rows=st.items.map(i=>{
+        tr+=i.real; te+=i.ev; if(i.anyExpl){ anyE=true; tx+=i.expl; td+=i.dif; tv+=i.valor; }
+        return `<tr><td><b>${esc(i.key)}</b>${i.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${f2(i.real)}</td>${hasEv?`<td class="n">${i.ev>0?f2(i.ev):'—'}</td>`:''}<td class="n">${i.anyExpl?f2(i.expl):'—'}</td><td class="n ${i.anyExpl?cl(i.dif):''}">${i.anyExpl?sgn2(i.dif):'—'}</td><td class="n ${i.anyExpl?cl(i.valor):''}">${i.anyExpl?money(i.valor):'—'}</td></tr>`;
+      }).join('');
+      html+=`<table style="margin-top:4px"><thead><tr><th>${keyLbl}</th><th class="n">${lam?'Láminas':'Tramos'} registradas</th>${hasEv?'<th class="n">Eventuales</th>':''}<th class="n">Explosionadas</th><th class="n">Diferencia</th><th class="n">Valor ($)</th></tr></thead><tbody>${rows}
+        <tr class="tot"><td>Total</td><td class="n">${f2(tr)}</td>${hasEv?`<td class="n">${f2(te)}</td>`:''}<td class="n">${anyE?f2(tx):'—'}</td><td class="n ${anyE?cl(td):''}">${anyE?sgn2(td):'—'}</td><td class="n ${anyE?cl(tv):''}">${anyE?money(tv):'—'}</td></tr></tbody></table>`;
+      if(hasEv) html+=`<div class="muted" style="margin-top:2px">Eventuales: ${unit} que no estaban en la explosión; se restan del consumo del calibre antes de compararlo contra lo explosionado (diferencia = explosionadas − (registradas − eventuales)).</div>`;
+      if(st.noExpl) html+=`<div class="line"><span class="warn">${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: no se puede calcular la diferencia.</span></div>`;
+    } else html+='<div class="line muted">Sin desglose de material en estos registros.</div>';
+    html+=`<div class="ctline" style="margin-top:4px"><span>Recortes recuperados: <b>${money(st.ahorroRec)}</b>${st.cubierto>0?` <span class="muted">(${money(st.cubierto)} más ya forman parte de la explosión)</span>`:''}</span><span>Material no consumido: <b class="${cl(st.valorMat)}">${money(st.valorMat)}</b></span><span>Ahorro teórico: <b class="${cl(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b></span></div>`;
+    // Eventualidades del periodo (solo lámina)
+    if(lam){
+      const ev=[];
+      o.recs.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(r=>(r.hojasDetalle||[]).forEach(h=>{ if(h&&h.origen==='eventualidad'&&Number(h.hojas)>0) ev.push({fecha:r.fecha,cal:h.cal,n:Number(h.hojas),op:r.op||''}); }));
+      if(ev.length) html+=`<div class="line"><b>Láminas por eventualidad</b></div><table style="margin-top:4px"><thead><tr><th>Día</th><th>Calibre</th><th class="n">Láminas</th><th>Registró</th></tr></thead><tbody>${ev.map(e=>`<tr><td>${esc(dayLa(e.fecha))}</td><td>${esc(e.cal)}</td><td class="n">${f2(e.n)}</td><td>${esc(e.op)}</td></tr>`).join('')}</tbody></table>`;
+    }
+  });
+  // Retrabajo
+  if(rts.length){
+    const sorted=rts.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
+    html+=`<div class="line"><b>Retrabajo — detalle</b></div><table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Modelo / folio</th><th>Material</th><th class="n">Pzas</th><th class="n">Material extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${sorted.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(e.machine)}</b></td><td>${esc(e.modelo||'—')}</td><td>${esc(e.tipo==='lamina'?(e.calibre||'—'):(e.tubular||'—'))}</td><td class="n">${f2(Number(e.nPz)||0)}</td><td class="n">${(Math.round(e.consumo*1000)/1000)} ${e.tipo==='lamina'?'lám.':'tramos'}</td><td>${esc(rtCausaTxt(e)||'sin causa')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table>`;
+    const by={}; rts.forEach(e=>{ const b=by[e.machine]||(by[e.machine]={lam:e.tipo==='lamina',pzas:0,cons:0,kg:0,causas:{}}); b.pzas+=Number(e.nPz)||0; b.cons+=e.consumo; b.kg+=e.kg; const c=rtCausaTxt(e)||'Sin causa'; b.causas[c]=(b.causas[c]||0)+(Number(e.nPz)||0); });
+    html+=`<div class="line"><b>Retrabajo — resumen por máquina</b></div><table style="margin-top:4px"><thead><tr><th>Máquina</th><th class="n">Piezas</th><th class="n">Material extra</th><th class="n">Kg</th><th>Principales causas</th></tr></thead><tbody>${Object.entries(by).map(([m,b])=>`<tr><td><b>${esc(m)}</b></td><td class="n">${f2(b.pzas)}</td><td class="n">${(Math.round(b.cons*1000)/1000)} ${b.lam?'láminas':'tramos'}</td><td class="n">${b.kg>0?f2(b.kg):'—'}</td><td>${Object.entries(b.causas).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>esc(c)+' ('+n+')').join(' · ')}</td></tr>`).join('')}</tbody></table>`;
+  }
+  return html;
+}
 function buildProdReportHtml(mode,key,ctFilter){
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
@@ -5609,6 +5859,8 @@ function buildProdReportHtml(mode,key,ctFilter){
       return `<section><h2><span class="tag ct">${esc(ctLabel(c.ct).toUpperCase())}</span> <small>${t.maq} máquina${t.maq===1?'':'s'} con registro${t.conAtraso?` · ${t.conAtraso} con atraso`:''}</small></h2>
         <table><thead><tr><th>Máquina</th><th class="n">Programadas</th><th class="n">Producidas</th><th class="n">Diferencia</th><th class="n">Cumpl.</th><th class="n">Rechazo</th><th class="n">OEE</th><th class="n">Paros (min)</th><th>Estado</th></tr></thead><tbody>${rows}${totRow}</tbody></table>
         <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,[{fecha:key,rows:c.rows,atrCT:c.atrCT}]))}
+        ${repRechazosHtml(c.ct,[key],false,esc,dayLabel)}
+        ${repAprovCtBlock(c.ct,[key],false,esc,dayLabel)}
       </section>`;
     }).join('');
   } else {
@@ -5626,6 +5878,8 @@ function buildProdReportHtml(mode,key,ctFilter){
         <table><thead><tr><th>Máquina</th>${heads}<th class="n">Prog.</th><th class="n">Prod.</th><th class="n">Dif.</th><th class="n">Cumpl.</th><th class="n">Días atraso</th><th class="n">Rech.</th><th class="n">Paros min</th></tr></thead><tbody>${rows}${totRow}</tbody></table>
         <div class="muted" style="margin-top:3px">Cada día: producidas / programadas. En rojo, día con atraso.</div>
         <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,c.perDay))}
+        ${repRechazosHtml(c.ct,repWeekDays(key),true,esc,dayLabel)}
+        ${repAprovCtBlock(c.ct,repWeekDays(key),true,esc,dayLabel)}
       </section>`;
     }).join('');
   }
@@ -5648,7 +5902,7 @@ ${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
 </div>
 ${sections||'<p class="muted">Sin información para este periodo.</p>'}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Cumplimiento = piezas producidas ÷ piezas programadas (solo máquinas con programa). Hora×hora: producidas = suma de las franjas de cada turno; programadas = programa del día (GW1, GW2, Laser de Cama) o lo capturado en el turno. Cierre del día: piezas totales y programadas capturadas al terminar el día. El reporte se calcula con los registros actuales.</footer>
+<footer>Cumplimiento = piezas producidas ÷ piezas programadas (solo máquinas con programa). Hora×hora: producidas = suma de las franjas de cada turno; programadas = programa del día (GW1, GW2, Laser de Cama) o lo capturado en el turno. Cierre del día: piezas totales y programadas capturadas al terminar el día. El reporte se calcula con los registros actuales. Aprovechamiento: diferencia = explosionadas − (registradas − eventuales); ahorro teórico = material no consumido + recortes recuperados (con la compensación de recortes ≥40%).</footer>
 </div></body></html>`;
 }
 // ── Pantalla Reportes ──
@@ -5852,7 +6106,7 @@ function matMigrate(){
 // sin perder lo que el operador tenga seleccionado.
 function refreshMaterialSelects(){
   const set=(sel,html)=>document.querySelectorAll(sel).forEach(el=>{ const cur=el.value; el.innerHTML=html; if(cur && Array.from(el.options).some(o=>o.value===cur)) el.value=cur; });
-  set('#lam-hojas-list select',getLaminaOptions());
+  set('#lam-hojas-list select:not([data-f="org"])',getLaminaOptions());
   set('#lam-recortes-list select',getLaminaOptionsShort());
   set('#tub-tramos-list select',getTubularOptions());
   set('#tub-recortes-list select',getTubularOptions());
@@ -5988,6 +6242,7 @@ function switchTabScoped(id, el, scopeClass){
 
 function switchTab(id,el){
   if(id==='tab-lamina' && aprovSinLamina()) return;
+  if(id==='tab-tubular' && aprovSinTubular()) return;
   // Defensa adicional: si esta pestaña es una de las controladas por el
   // árbol de permisos y la cuenta no tiene acceso, no hacer nada — aunque
   // de alguna forma se le haga click (el botón ya debería estar oculto).
@@ -6825,6 +7080,7 @@ function setDefaultMachine(userId,ct,machine){
   saveDefaultMachinesLocal();
   cloudUpsertRow('Maquina_Predeterminada',rec);
   try{ refreshDefaultMachineUI(); }catch(e){}
+  try{ aprovApplyScope(); }catch(e){}
 }
 function applyDefaultMachinesFromCloud(rows){
   (rows||[]).forEach(r=>{
