@@ -437,6 +437,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-upload input[type=file]{display:none}
 .programa-upload-icon{width:36px;height:36px;border-radius:10px;background:rgba(74,158,255,.12);color:var(--blue);display:flex;align-items:center;justify-content:center;margin:0 auto .6rem}
 .programa-status-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.mat-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.mat-tbl th{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.mat-tbl td{padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--text2)}
+.mat-tbl td:first-child{color:var(--text);font-weight:500}
+.mat-tbl .n{text-align:right;font-family:'IBM Plex Mono',monospace}
+.mat-tbl td.tot{color:var(--text);font-weight:700}
+.mat-tbl tr.sum td{border-top:1px solid var(--border);border-bottom:none;font-weight:700;color:var(--text)}
+.programa-subtabs{margin-bottom:.75rem;align-items:center}
+.programa-subf{font-size:10px;font-weight:500;color:var(--text3);margin-left:4px}
+.programa-aviso{font-size:12px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin-bottom:8px;line-height:1.5}
+.programa-done-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;border-radius:var(--radius);background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.25);font-size:12px;color:var(--text2)}
+.programa-done-bar>span{flex:1;min-width:220px}
+.programa-done-bar.ready{background:rgba(74,158,255,.1);border-color:rgba(74,158,255,.35)}
+.programa-cortado-check:disabled{opacity:.55;cursor:not-allowed}
 .programa-status-chip{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px}
 .programa-status-chip.ok{background:rgba(62,207,142,.1);color:#3ecf8e;border:1px solid rgba(62,207,142,.25)}
 .programa-status-chip.pend{background:rgba(139,143,168,.1);color:var(--text3);border:1px solid var(--border)}
@@ -655,7 +669,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <!-- Gráfica OEE por máquina del CT -->
     <div class="chart-card" id="dash-chart-card">
       <div class="chart-title" id="dash-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span id="dash-chart-title-text">OEE por máquina</span></div>
-      <div style="position:relative;width:100%;height:260px"><canvas id="dashChart"></canvas></div>
+      <div style="position:relative;width:100%;height:260px" id="dash-chart-wrap"><canvas id="dashChart"></canvas></div>
+      <div id="dash-mat-panel" style="display:none;padding:2px 0 4px"></div>
     </div>
     <!-- Detalle por máquina colapsable -->
     <div class="ct-section">
@@ -873,11 +888,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
     <!-- TAB: PROGRAMA DEL DÍA -->
     <div id="reg-tab-programa" class="tab-content">
+      <div class="tab-row programa-subtabs" id="programa-subtabs">
+        <div class="tab active" id="prog-sub-hoy" onclick="setProgSub('hoy')">Programa del día <span id="prog-sub-hoy-f" class="programa-subf"></span></div>
+        <div class="tab" id="prog-sub-sig" onclick="setProgSub('sig')">Programa siguiente <span id="prog-sub-sig-f" class="programa-subf"></span></div>
+        <span id="prog-sig-date-wrap" style="display:none;margin-left:auto;align-items:center;gap:6px;font-size:11px;color:var(--text3)">Fecha del programa <input type="date" id="prog-sig-fecha" onchange="setProgSigFecha(this.value)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></span>
+      </div>
+      <div class="programa-status-row" id="programa-summary" style="margin:0 0 .75rem"></div>
       <div class="form-card" id="programa-upload-card" style="display:none">
-        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Subir programa del día</div>
+        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="programa-upload-head">Subir programa del día</span></div>
         <label class="programa-upload" for="programa-file-input">
           <div class="programa-upload-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <div style="font-size:13px;font-weight:600;color:var(--text)">Selecciona el archivo Excel del programa de hoy</div>
+          <div id="programa-upload-title" style="font-size:13px;font-weight:600;color:var(--text)">Selecciona el archivo Excel del programa de hoy</div>
           <div style="font-size:11px;color:var(--text3);margin-top:4px">Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong></div>
           <input type="file" id="programa-file-input" accept=".xlsx,.xls" onchange="handleProgramaUpload(event)">
         </label>
@@ -1001,9 +1022,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
     </div>
     <div id="tab-tubular" class="tab-content">
+      <div class="ap-card" id="tub-total-card" style="margin-bottom:12px">
+        <div class="ap-card-h" style="cursor:pointer" onclick="toggleTubTotCard()"><span id="tub-total-caret" style="width:12px">▾</span> Total de tubulares — Laser (GW1 + GW2) <span id="tub-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
+        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Almacén surte por centro de trabajo: aquí se suman los tramos que registran las dos máquinas, por tipo de tubular.</div>
+        <div id="tub-total-body"></div>
+      </div>
       <div class="ap-top">
         <div class="form-group"><label>Máquina</label><select id="tub-machine" onchange="_tubTouchedUid=currentUser&&currentUser.id"><option>GW1</option><option>GW2</option></select></div>
-        <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha"></div>
+        <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha" onchange="renderTubTotals()"></div>
         <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
         <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
       </div>
@@ -1390,10 +1416,7 @@ function saveChecklistRecordsLS(){ localStorage.setItem(SK_CHECKLIST_RECORDS, JS
 // ── PROGRAMA DEL DÍA (persistencia local) ──
 function loadProgramaDiaLS(){
   try{
-    programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).map(r=>({
-      ...r,
-      rows: safeParse(r.rows,[])
-    }));
+    programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).map(r=>normProgRec(r));
   }catch(e){ programaDia=[]; }
 }
 function saveProgramaDiaLS(){ localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia)); }
@@ -2010,6 +2033,232 @@ function extractSheetTable(ws){
   }
   return {header, dataRows, obsColIdx};
 }
+// ── Programa: cortes → hora por hora, programa siguiente y programa completado ─────────────────
+// Cada fila del programa se marca como «cortada» (solo el Operador). Esa marca suma las piezas (columna Cant.)
+// a la franja del hora por hora en que se cortó, y queda en el Sheet con su bitácora (fecha, turno, franja).
+// Líder e Ingeniería ven y suben programas y consultan el avance, pero no registran cortes ni observaciones.
+const PROG_GRUPO={'GW1':['GW1','GW2'],'GW2':['GW1','GW2'],'Laser de Cama':['Laser de Cama']};
+let progSub='hoy';            // 'hoy' = programa del día · 'sig' = programa siguiente (se adelanta)
+let progSigOverride='';       // fecha elegida a mano para el programa siguiente
+const progShowDone={};        // programas completados que se están viendo desplegados
+function progRegFecha(){ return document.getElementById('reg-fecha')?.value||todayStr(); }
+function progNextWorkday(iso){ let d=isoAddDays(iso,1); while(isoDow(d)===0||isoDow(d)===6) d=isoAddDays(d,1); return d; }
+function progTargetFecha(){
+  const base=progRegFecha();
+  if(progSub!=='sig') return base;
+  return (progSigOverride && progSigOverride>base)?progSigOverride:progNextWorkday(base);
+}
+function ymd(iso){ return String(iso||'').replace(/-/g,''); }
+function isoFromYmd(v){ v=String(v||''); return /^\d{8}$/.test(v)?v.slice(0,4)+'-'+v.slice(4,6)+'-'+v.slice(6,8):''; }
+// Bitácora de cortes: "fila,1|0,piezas,AAAAMMDD,turno,franja,marca;…" (compacta: viaja en la URL del Sheet)
+function progCortesParse(str){
+  const m={};
+  String(str||'').split(';').forEach(p=>{
+    if(!p) return; const a=p.split(','); const r=parseInt(a[0]); if(isNaN(r)) return;
+    m[r]={on:a[1]==='1',q:Number(a[2])||0,f:a[3]||'',t:parseInt(a[4])||0,i:parseInt(a[5])||0,ts:a[6]||''};
+  });
+  return m;
+}
+function progCortesStr(m){
+  return Object.keys(m).map(Number).sort((a,b)=>a-b).map(r=>{ const c=m[r]; return [r,c.on?1:0,c.q,c.f,c.t,c.i,c.ts].join(','); }).join(';');
+}
+function progTs(x){ return parseInt(String(x||'0'),36)||0; }
+function progCantCol(rec){ const h=(rec&&rec.rows&&rec.rows[0])||[]; return h.findIndex(x=>String(x).trim().toLowerCase()==='cant.'); }
+function progQty(rec,r){ const ci=progCantCol(rec); if(ci<0) return 0; const v=parseFloat(((rec.rows||[])[r+1]||[])[ci]); return (isNaN(v)||v<0)?0:v; }
+function progIsCompleted(rec){ return !!rec && String(rec.completado)==='1'; }
+function progStats(rec){
+  const body=(rec&&rec.rows||[]).slice(1), ci=rec&&rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
+  let done=0,pz=0,pzDone=0;
+  body.forEach((row,r)=>{ const q=progQty(rec,r); pz+=q; if(row[ci]===true){ done++; pzDone+=q; } });
+  return {total:body.length,done,pz,pzDone};
+}
+function normProgRec(r){
+  const o={...r,rows:safeParse(r.rows,[])};
+  o.cortes=r.cortes==null?'':String(r.cortes);
+  o.completado=(String(r.completado)==='1')?'1':'';
+  return o;
+}
+// Mezcla del Programa: dos personas pueden marcar a la vez; se combina fila por fila (gana la marca más reciente).
+function mergeProgRec(a,b){
+  const t=x=>x&&x.updatedAt?new Date(x.updatedAt).getTime():0;
+  if(String(a.uploadedAt)!==String(b.uploadedAt) || (a.rows||[]).length!==(b.rows||[]).length) return t(b)>=t(a)?b:a;   // otro archivo: gana el más reciente
+  const newer=t(b)>=t(a)?b:a, older=newer===b?a:b;
+  const out={...newer,rows:(newer.rows||[]).map(r=>r.slice())};
+  const ca=progCortesParse(a.cortes), cb=progCortesParse(b.cortes), m={};
+  new Set([...Object.keys(ca),...Object.keys(cb)]).forEach(k=>{
+    const x=ca[k], y=cb[k]; m[k]=!x?y:!y?x:(progTs(y.ts)>=progTs(x.ts)?y:x);
+  });
+  out.cortes=progCortesStr(m);
+  const ci=out.cortadoColIdx!=null?out.cortadoColIdx:0;
+  Object.keys(m).forEach(k=>{ if(out.rows[+k+1]) out.rows[+k+1][ci]=!!m[k].on; });
+  // observaciones: las del registro más reciente
+  if(out.obsColIdx!=null && out.obsColIdx>=0) out.rows.forEach((row,i)=>{ if(i>0 && newer.rows[i]) row[out.obsColIdx]=newer.rows[i][out.obsColIdx]; });
+  // completado: la última decisión (completar / reabrir)
+  const ra=String(a.compTs||''), rb=String(b.compTs||'');
+  const w=rb>ra?b:a; out.completado=(String(w.completado)==='1')?'1':''; out.compTs=w.compTs||''; out.compBy=w.compBy||'';
+  return out;
+}
+function mergeProgramaDia(local,incoming){
+  const map=new Map((local||[]).map(r=>[r.id,r]));
+  (incoming||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map.get(r.id); map.set(r.id,cur?mergeProgRec(cur,r):r); });
+  return Array.from(map.values());
+}
+function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||''}; }
+function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progCloudRow(rec)); }
+// Solo el Operador (con permiso de captura) registra cortes y observaciones.
+function canCutPrograma(){ return !!currentUser && currentUser.role==='operador' && canCaptureHora(); }
+function progGroupInfo(fecha,machine){
+  const names=PROG_GRUPO[machine]||[machine];
+  const recs=names.map(n=>getProgramaRecord(fecha,n)).filter(Boolean);
+  const full=r=>{ const st=progStats(r); return st.total>0 && st.done===st.total; };
+  return {names,recs,missing:names.filter(n=>!getProgramaRecord(fecha,n)),
+    complete:recs.length>0&&recs.every(full), completado:recs.length>0&&recs.every(progIsCompleted)};
+}
+// ── Franja del hora por hora según la hora de pared (dentro del turno elegido) ──
+function progParseHora(h){
+  const m=String(h).trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i); if(!m) return null;
+  let hh=parseInt(m[1])%12; if(/pm/i.test(m[3])) hh+=12; return hh*60+parseInt(m[2]||'0');
+}
+function progFranjaRanges(turno){
+  let prev=-1; const out=[];
+  (LASER_FRANJAS[turno]||[]).forEach((f,i)=>{
+    const parts=f.replace(/\s*⏸.*$/,'').split('–'); const s0=progParseHora(parts[0]), e0=progParseHora(parts[1]);
+    if(s0==null||e0==null){ out.push(null); return; }
+    let a=s0,b=e0; while(a<prev) a+=1440; while(b<=a) b+=1440; prev=a; out.push({i,s:a,e:b,brk:f.includes('Comida')});
+  });
+  return out;
+}
+function progFranjaIdx(turno,date){
+  const rs=progFranjaRanges(turno).filter(Boolean); if(!rs.length) return -1;
+  const m=(date||new Date()).getHours()*60+(date||new Date()).getMinutes();
+  for(const mm of [m,m+1440]){
+    const k=rs.findIndex(r=>mm>=r.s&&mm<r.e);
+    if(k>=0){ if(!rs[k].brk) return rs[k].i; for(let j=k-1;j>=0;j--) if(!rs[j].brk) return rs[j].i; return rs.find(r=>!r.brk).i; }
+  }
+  const prod=rs.filter(r=>!r.brk); const S=prod[0].s%1440, E=prod[prod.length-1].e%1440;
+  const dStart=(S-m+1440)%1440, dEnd=(m-E+1440)%1440;
+  return dStart<=dEnd?prod[0].i:prod[prod.length-1].i;
+}
+function progFranjaLabel(turno,i){ return String((LASER_FRANJAS[turno]||[])[i]||'').replace(/\s*⏸.*$/,''); }
+function progCtx(){
+  return {ct:document.getElementById('reg-ct')?.value,machine:document.getElementById('reg-machine')?.value,
+    turno:document.getElementById('reg-turno')?.value,fecha:progRegFecha(),op:document.getElementById('reg-op')?.value||'–'};
+}
+function progHoraListo(c){ return !!(c.ct&&c.machine&&c.turno&&canCaptureHora()&&_gridKey===horaKey(c.ct,c.machine,c.turno,c.fecha)&&document.getElementById('hora-fab-0')); }
+// Suma/resta piezas a la franja en la cuadrícula del hora por hora y la guarda en el Sheet de inmediato.
+function progHoraDelta(c,idx,delta){
+  const el=document.getElementById('hora-fab-'+idx); if(!el) return false;
+  const cur=parseInt(el.value)||0, nv=Math.max(0,cur+delta);
+  el.value=nv>0?String(nv):'';
+  _hTouch.ids.add('hora-fab-'+idx);
+  try{ toggleMotivoRow(idx); }catch(e){}
+  try{ calcHoraTotales(c.machine,c.turno); }catch(e){}
+  clearTimeout(_liveSyncTimer);
+  liveSyncHoraAndParos(c);
+  return true;
+}
+function progMsg(t,color){
+  const m=document.getElementById('programa-obs-msg'); if(!m) return;
+  m.textContent=t; m.style.color=color||'var(--green)'; clearTimeout(m._t); m._t=setTimeout(()=>{ m.textContent=''; },4500);
+}
+// Marca / desmarca una fila como cortada
+function programaToggleCut(fecha,machine,rIdx,checked,el){
+  const revert=()=>{ if(el) el.checked=!checked; };
+  const amber='var(--amber)';
+  if(!canCutPrograma()){ revert(); progMsg('Solo el Operador registra cortes.',amber); return; }
+  const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]){ revert(); return; }
+  if(progIsCompleted(rec)){ revert(); progMsg('Este programa está completado: reábrelo para corregirlo.',amber); return; }
+  const c=progCtx(), ct=rec.ct||PROGRAMA_MACHINE_CT[machine];
+  if(c.machine!==machine||c.ct!==ct){ revert(); progMsg('Selecciona la máquina de este programa en Registro.',amber); return; }
+  const ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
+  const cortes=progCortesParse(rec.cortes), prev=cortes[rIdx], q=progQty(rec,rIdx);
+  const ti=(TURNOS_CT[ct]||[]).indexOf(c.turno);
+  let idx=0;
+  if(checked){
+    idx=progFranjaIdx(c.turno,new Date());
+    if(idx<0){ revert(); progMsg('No se pudo ubicar la franja del turno.',amber); return; }
+    if(q>0 && !progHoraListo(c)){ revert(); progMsg('Espera un momento: se está cargando el hora por hora de este turno.',amber); return; }
+    cortes[rIdx]={on:true,q,f:ymd(c.fecha),t:ti,i:idx,ts:Date.now().toString(36)};
+  } else {
+    const was=(prev&&prev.on)?prev:null;
+    if(was && was.q>0){
+      const tName=(TURNOS_CT[ct]||[])[was.t];
+      if(ymd(c.fecha)!==was.f || was.t!==ti){
+        revert(); progMsg(`Ese corte quedó en el hora por hora del ${isoFromYmd(was.f)} · ${tName||'otro turno'} · ${progFranjaLabel(tName,was.i)}. Cámbiate a ese turno y fecha para corregirlo.`,amber); return;
+      }
+      if(!progHoraListo(c)){ revert(); progMsg('Espera un momento: se está cargando el hora por hora de este turno.',amber); return; }
+    }
+    cortes[rIdx]={on:false,q:was?was.q:q,f:was?was.f:'',t:was?was.t:0,i:was?was.i:0,ts:Date.now().toString(36)};
+    idx=was?was.i:0;
+  }
+  rec.cortes=progCortesStr(cortes);
+  rec.rows[rIdx+1][ci]=!!checked;
+  rec.updatedAt=new Date().toISOString();
+  try{ progAutoFillContext(); }catch(e){}
+  const eff=checked?q:((prev&&prev.on)?prev.q:0);
+  if(eff>0) progHoraDelta(c,idx,checked?eff:-eff);
+  progSave(rec);
+  if(el) try{ el.blur(); }catch(e){}
+  progMsg(checked?`✓ Corte registrado${q>0?` · +${q} pzas en ${progFranjaLabel(c.turno,idx)}`:''}`:'✓ Corte desmarcado');
+  renderProgramaDia(true);
+  try{ renderDashboard(); }catch(e){}
+}
+function programaSetObs(fecha,machine,rIdx,value){
+  if(!canCutPrograma()){ progMsg('Solo el Operador captura observaciones.','var(--amber)'); renderProgramaDia(true); return; }
+  const rec=getProgramaRecord(fecha,machine); if(!rec||rec.obsColIdx==null||rec.obsColIdx<0||!rec.rows[rIdx+1]) return;
+  if(progIsCompleted(rec)) return;
+  rec.rows[rIdx+1][rec.obsColIdx]=value; rec.updatedAt=new Date().toISOString();
+  progSave(rec); progMsg('✓ Guardado');
+}
+function programaCompletar(fecha,machine){
+  const g=progGroupInfo(fecha,machine); if(!g.recs.length||!g.complete) return;
+  const ts=new Date().toISOString(), tsk=Date.now().toString(36);
+  g.recs.forEach(r=>{ r.completado='1'; r.compTs=ts; r.compBy=currentUser?currentUser.name:''; r.updatedAt=ts; progSave(r); });
+  progShowDone[fecha+'|'+machine]=false;
+  progMsg('✓ Programa completado: queda guardado y consultable'); renderProgramaDia(true);
+}
+function programaReabrir(fecha,machine){
+  const g=progGroupInfo(fecha,machine); if(!g.recs.length) return;
+  const ts=new Date().toISOString();
+  g.recs.forEach(r=>{ r.completado=''; r.compTs=ts; r.compBy=currentUser?currentUser.name:''; r.updatedAt=ts; progSave(r); });
+  progMsg('Programa reabierto'); renderProgramaDia(true);
+}
+function toggleProgDone(key){ progShowDone[key]=!progShowDone[key]; renderProgramaDia(true); }
+function setProgSub(v){
+  progSub=(v==='sig')?'sig':'hoy'; renderProgramaDia(true);
+  try{ refreshProgramaDiaFromCloud(); }catch(e){}
+}
+function setProgSigFecha(v){ progSigOverride=/^\d{4}-\d{2}-\d{2}$/.test(v||'')?v:''; renderProgramaDia(true); }
+// Piezas programadas efectivas de una máquina en un día: lo que se cortó por adelantado cuenta el día en que se cortó
+// (como programado y producido), y ya no vuelve a contar el día al que pertenecía el programa.
+function progProgramadasEfectivas(machine,fecha){
+  let total=0, any=false;
+  programaDia.forEach(rec=>{
+    if(!rec||rec.machine!==machine) return;
+    if(rec.fecha===fecha) any=true;
+    const ci=progCantCol(rec); if(ci<0) return;
+    const cortes=progCortesParse(rec.cortes);
+    (rec.rows||[]).slice(1).forEach((row,r)=>{
+      const q=parseFloat(row[ci]); if(!(q>0)) return;
+      const c=cortes[r], cutIso=(c&&c.on&&c.f)?isoFromYmd(c.f):'';
+      const eff=(cutIso&&cutIso<rec.fecha)?cutIso:rec.fecha;
+      if(eff===fecha){ total+=q; any=true; }
+    });
+  });
+  return any?total:null;
+}
+function progAutoFillContext(){
+  const input=document.getElementById('reg-programadas'); if(!input) return;
+  const machine=document.getElementById('reg-machine')?.value, fecha=progRegFecha();
+  if(!PROGRAMA_MACHINES.includes(machine)) return;
+  const v=progProgramadasEfectivas(machine,fecha);
+  if(v==null){
+    if(input.dataset.autofilled==='true'){ input.value=''; delete input.dataset.autofilled; calcOEE(); }
+    return;
+  }
+  if(document.activeElement===input) return;
+  input.value=v; input.dataset.autofilled='true'; calcOEE();
+}
 function handleProgramaUpload(event){
   const file=event.target.files[0];
   const msg=document.getElementById('programa-upload-msg');
@@ -2019,49 +2268,66 @@ function handleProgramaUpload(event){
     msg.style.color='var(--amber)';
     return;
   }
-  const fecha=document.getElementById('reg-fecha').value || todayStr();
+  const fecha=progTargetFecha();
   msg.textContent='Procesando archivo…'; msg.style.color='var(--text3)';
   const reader=new FileReader();
   reader.onload=(e)=>{
     try{
       const data=new Uint8Array(e.target.result);
       const wb=XLSX.read(data,{type:'array', cellStyles:true, sheetStubs:true});
-      const found=[]; const missing=[];
+      const found=[]; const missing=[]; let kept=0, lost=0;
       PROGRAMA_MACHINES.forEach(machine=>{
         const sheetName=findSheetForMachine(wb.SheetNames, machine);
         if(!sheetName){ missing.push(machine); return; }
         const ws=wb.Sheets[sheetName];
         const {header:rawHeader, dataRows:rawDataRows, obsColIdx:rawObsColIdx}=extractSheetTable(ws);
         if(!rawDataRows.length){ missing.push(machine); return; }
-        // Se agrega una columna "Cortado" al inicio (no viene en el Excel
-        // original) para que el operador marque pieza por pieza lo que ya
-        // se cortó. Esto recorre en +1 el índice de Observaciones.
+        // Se agrega una columna "Cortado" al inicio (no viene en el Excel original) para que el operador
+        // marque pieza por pieza lo que ya se cortó. Esto recorre en +1 el índice de Observaciones.
         const header=['Cortado', ...rawHeader];
         const dataRows=rawDataRows.map(row=>[false, ...row]);
         const obsColIdx=rawObsColIdx>=0 ? rawObsColIdx+1 : -1;
-        const cortadoColIdx=0;
+        const old=getProgramaRecord(fecha,machine);
+        let cortes={};
+        // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado)
+        if(old && old.rows && old.rows.length>1){
+          const keyOf=(row,oi)=>JSON.stringify(row.slice(1).map((c,i)=>(i+1===oi)?'':String(c==null?'':c).trim()));
+          const pool={}; const oc=progCortesParse(old.cortes), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
+          old.rows.slice(1).forEach((row,r)=>{ (pool[keyOf(row,old.obsColIdx)]=pool[keyOf(row,old.obsColIdx)]||[]).push(r); });
+          dataRows.forEach((row,r)=>{
+            const k=keyOf(row,obsColIdx), list=pool[k]; if(!list||!list.length) return;
+            const or=list.shift(), oldRow=old.rows[or+1];
+            row[0]=oldRow[oci]===true;
+            if(obsColIdx>=0 && old.obsColIdx>=0) row[obsColIdx]=oldRow[old.obsColIdx];
+            if(oc[or]) cortes[r]=oc[or];
+          });
+          Object.keys(pool).forEach(k=>pool[k].forEach(or=>{ if(old.rows[or+1][oci]===true) lost++; }));
+          kept+=Object.values(cortes).filter(c=>c.on).length;
+        }
         programaDia=programaDia.filter(r=>!(r.fecha===fecha && r.machine===machine));
         const rec={
           id:'prog_'+machine.replace(/\s+/g,'')+'_'+fecha,
           fecha, machine, ct:PROGRAMA_MACHINE_CT[machine], sheetName,
-          rows:[header, ...dataRows], obsColIdx, cortadoColIdx,
+          rows:[header, ...dataRows], obsColIdx, cortadoColIdx:0,
+          cortes:progCortesStr(cortes), completado:'', compTs:'', compBy:'',
           uploadedBy:currentUser.username, uploadedByName:currentUser.name,
           uploadedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         };
         programaDia.push(rec);
-        cloudUpsertRow('Programa_Dia', {...rec, rows:JSON.stringify(rec.rows)});
+        cloudUpsertRow('Programa_Dia', progCloudRow(rec));
         found.push(machine);
       });
       saveProgramaDiaLS();
       if(found.length){
-        msg.textContent=`✓ Cargado: ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'');
-        msg.style.color=missing.length?'var(--amber)':'var(--green)';
+        msg.textContent=`✓ Cargado (${fecha}): ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'')+(kept?` · se conservó el avance de ${kept} fila${kept===1?'':'s'}`:'')+(lost?` · ${lost} fila${lost===1?'':'s'} cortada${lost===1?'':'s'} ya no está${lost===1?'':'n'} en el archivo (lo producido se queda en el hora por hora)`:'');
+        msg.style.color=(missing.length||lost)?'var(--amber)':'var(--green)';
       } else {
         msg.textContent='⚠ No se encontró ninguna hoja que coincida con GW1, GW2 o Laser de Cama.';
         msg.style.color='var(--amber)';
       }
       event.target.value='';
-      renderProgramaDia();
+      try{ progAutoFillContext(); }catch(e){}
+      renderProgramaDia(true);
     }catch(err){
       msg.textContent='⚠ No se pudo leer el archivo. Verifica que sea un .xlsx válido.';
       msg.style.color='var(--red)';
@@ -2069,27 +2335,11 @@ function handleProgramaUpload(event){
   };
   reader.readAsArrayBuffer(file);
 }
-// Guarda cualquier celda editable del programa del día (Cortado u
-// Observaciones) — la usan tanto el checkbox como el campo de texto.
-function updateProgramaCell(fecha,machine,dataRowIdx,colIdx,value){
-  const rec=getProgramaRecord(fecha,machine);
-  if(!rec || colIdx==null || colIdx<0) return;
-  const rowIdx=dataRowIdx+1; // +1 porque rows[0] es el encabezado
-  if(!rec.rows[rowIdx]) return;
-  rec.rows[rowIdx][colIdx]=value;
-  rec.updatedAt=new Date().toISOString();
-  saveProgramaDiaLS();
-  cloudUpsertRow('Programa_Dia', {...rec, rows:JSON.stringify(rec.rows)});
-  renderProgramaProgress(rec);
-  const msg=document.getElementById('programa-obs-msg');
-  if(msg){ msg.textContent='✓ Guardado'; msg.style.color='var(--green)'; setTimeout(()=>{ if(msg.textContent==='✓ Guardado') msg.textContent=''; },2000); }
-}
 function renderProgramaProgress(rec){
   const el=document.getElementById('programa-progress');
   if(!el || rec.cortadoColIdx==null) return;
-  const body=rec.rows.slice(1);
-  const done=body.filter(r=>r[rec.cortadoColIdx]===true).length;
-  el.textContent=`${done} / ${body.length} piezas cortadas`;
+  const st=progStats(rec);
+  el.textContent=`${st.done} / ${st.total} filas cortadas`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'');
 }
 // Filtros activos por columna de la tabla del Programa del día — se
 // conservan entre reconstrucciones de la tabla (sync en segundo plano,
@@ -2137,7 +2387,10 @@ function renderProgramaTable(rec){
   const body=rows.slice(1);
   const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
-  const thead=`<thead><tr>${header.map(h=>`<th>${h===''?'&nbsp;':String(h)}</th>`).join('')}</tr>
+  const canCut=canCutPrograma() && !progIsCompleted(rec);
+  const cortes=progCortesParse(rec.cortes);
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const thead=`<thead><tr>${header.map(h=>`<th>${h===''?'&nbsp;':esc(h)}</th>`).join('')}</tr>
     <tr class="programa-filter-row">${header.map((h,cIdx)=>{
       if(cIdx===cortadoColIdx){
         const cur=programaFilters[cIdx]||'';
@@ -2155,13 +2408,16 @@ function renderProgramaTable(rec){
     const isDone=row[cortadoColIdx]===true;
     return `<tr class="${isDone?'programa-row-done':''}">${header.map((_,cIdx)=>{
     if(cIdx===cortadoColIdx){
-      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} onchange="updateProgramaCell('${rec.fecha}','${rec.machine}',${rIdx},${cortadoColIdx},this.checked);this.closest('tr').classList.toggle('programa-row-done',this.checked);applyProgramaFilters()"></td>`;
+      const c=cortes[rIdx]; let tip='';
+      if(isDone&&c&&c.on){ const tn=(TURNOS_CT[rec.ct]||[])[c.t]; tip=`Cortado el ${isoFromYmd(c.f)} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,c.i)}${c.q>0?' · '+c.q+' pzas':''}`; }
+      else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
+      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)"></td>`;
     }
     if(cIdx===obsColIdx){
       const val=row[cIdx]!=null?String(row[cIdx]):'';
-      return `<td><input type="text" class="programa-obs-input" value="${val.replace(/"/g,'&quot;')}" placeholder="Cantidad real utilizada…" onchange="updateProgramaCell('${rec.fecha}','${rec.machine}',${rIdx},${obsColIdx},this.value)"></td>`;
+      return `<td><input type="text" class="programa-obs-input" value="${esc(val)}" placeholder="${canCut?'Cantidad real utilizada…':''}" ${canCut?'':'readonly'} onchange="programaSetObs('${rec.fecha}','${rec.machine}',${rIdx},this.value)"></td>`;
     }
-    return `<td>${row[cIdx]!=null&&row[cIdx]!==''?String(row[cIdx]):''}</td>`;
+    return `<td>${row[cIdx]!=null&&row[cIdx]!==''?esc(row[cIdx]):''}</td>`;
   }).join('')}</tr>`;
   }).join('')}</tbody>`;
   setTimeout(applyProgramaFilters,0);
@@ -2172,7 +2428,7 @@ function renderProgramaTable(rec){
 // cortado y las observaciones de material real utilizado — para que
 // Leonardo pueda llevar registro del consumo.
 function exportProgramaDia(){
-  const fecha=document.getElementById('reg-fecha').value;
+  const fecha=progTargetFecha();
   const recs=programaDia.filter(r=>r.fecha===fecha);
   const msg=document.getElementById('programa-upload-msg');
   if(!recs.length){
@@ -2223,8 +2479,8 @@ function refreshProgramaDiaFromCloud(){
       try{
         const rows=data.rows||[];
         if(rows.length){
-          const mapped=parseCloudRows(rows).map(r=>({...r, rows: safeParse(r.rows,[])}));
-          programaDia=mergeRecordsById(programaDia, mapped);
+          const mapped=parseCloudRows(rows).map(normProgRec);
+          programaDia=mergeProgramaDia(programaDia, mapped);
           saveProgramaDiaLS();
           renderProgramaDia();
         }
@@ -2233,60 +2489,100 @@ function refreshProgramaDiaFromCloud(){
     ()=>{ /* falla en silencio — se queda con lo que ya tenía en local */ }
   );
 }
-function renderProgramaDia(){
+let _progLastKey='';
+function renderProgramaDia(force){
   const container=document.getElementById('programa-table-container');
   const uploadCard=document.getElementById('programa-upload-card');
   const statusRow=document.getElementById('programa-status-row');
   if(!container||!currentUser) return;
 
-  // Si el usuario está justo en este momento marcando una casilla o
-  // escribiendo una observación dentro de la tabla, no la reconstruimos
-  // ahora (se perdería el foco/lo que está escribiendo) — se refresca en
-  // el siguiente ciclo, sin interrumpir su edición.
-  if(container.contains(document.activeElement) && document.activeElement!==document.body) return;
+  // No se reconstruye mientras alguien escribe una observación (se perdería lo que teclea);
+  // una casilla ya no bloquea: se marca y se refresca.
+  const ae=document.activeElement;
+  if(!force && container.contains(ae) && ae!==document.body && ae.tagName==='INPUT' && ae.type==='text') return;
 
   const canUpload=currentUser.role==='ingeniero'||currentUser.role==='lider';
   if(uploadCard) uploadCard.style.display=(canUpload && !regSplitActive)?'':'none';
 
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
-  const fecha=document.getElementById('reg-fecha').value;
+  const regFecha=progRegFecha();
+  const fecha=progTargetFecha();
   updateProgramaTabState(machine);
 
-  // Chips de estado (solo útiles para quien sube el archivo)
-  if(statusRow){
-    if(canUpload && fecha){
-      statusRow.innerHTML=PROGRAMA_MACHINES.map(m=>{
-        const rec=getProgramaRecord(fecha,m);
-        return rec
-          ? `<div class="programa-status-chip ok">${ic('target',11)} ${m} — cargado</div>`
-          : `<div class="programa-status-chip pend">${ic('alertCircle',11)} ${m} — sin cargar</div>`;
-      }).join('');
-    } else {
-      statusRow.innerHTML='';
-    }
+  // Pestañas «Programa del día» / «Programa siguiente»
+  const bh=document.getElementById('prog-sub-hoy'), bs=document.getElementById('prog-sub-sig');
+  if(bh&&bs){
+    bh.classList.toggle('active',progSub==='hoy'); bs.classList.toggle('active',progSub==='sig');
+    const fh=document.getElementById('prog-sub-hoy-f'), fs=document.getElementById('prog-sub-sig-f');
+    if(fh) fh.textContent=dayLabel(regFecha);
+    if(fs) fs.textContent=dayLabel(progSub==='sig'?fecha:((progSigOverride&&progSigOverride>regFecha)?progSigOverride:progNextWorkday(regFecha)));
+    const dw=document.getElementById('prog-sig-date-wrap'), di=document.getElementById('prog-sig-fecha');
+    if(dw) dw.style.display=progSub==='sig'?'flex':'none';
+    if(di && progSub==='sig' && document.activeElement!==di) di.value=fecha;
   }
+  const ut=document.getElementById('programa-upload-title');
+  if(ut) ut.textContent=progSub==='sig'?`Selecciona el archivo Excel del programa del ${dayLabel(fecha)} (${fecha})`:`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`;
+  const uh=document.getElementById('programa-upload-head');
+  if(uh) uh.textContent=progSub==='sig'?'Subir programa siguiente (adelantar programa)':'Subir programa del día';
+
+  // Resumen de avance por máquina (todos lo ven) + estado de carga (quien sube)
+  const sum=document.getElementById('programa-summary');
+  if(sum){
+    sum.innerHTML=PROGRAMA_MACHINES.map(m=>{
+      const r=getProgramaRecord(fecha,m);
+      if(!r) return canUpload?`<div class="programa-status-chip pend">${ic('alertCircle',11)} ${m} — sin cargar</div>`:'';
+      const st=progStats(r), pct=st.total?Math.round(st.done/st.total*100):0;
+      const done=progIsCompleted(r);
+      return `<div class="programa-status-chip ${done||pct===100?'ok':'pend'}" style="${m===machine?'outline:1px solid var(--blue)':''}" title="${st.done} de ${st.total} filas · ${fmt2(st.pzDone)} de ${fmt2(st.pz)} pzas">${ic('target',11)} ${m} — ${done?'completado ✓':st.done+'/'+st.total+' ('+pct+'%)'}</div>`;
+    }).join('');
+  }
+  if(statusRow) statusRow.innerHTML='';
 
   if(!PROGRAMA_MACHINES.includes(machine)){
     container.innerHTML=`<div class="empty-state">El programa del día solo aplica para GW1, GW2 y Laser de Cama.<br>Selecciona una de esas máquinas en "Identificación del turno" para verlo aquí.</div>`;
     return;
   }
+  try{ progAutoFillContext(); }catch(e){}
   const rec=getProgramaRecord(fecha,machine);
   if(!rec){
     container.innerHTML=`<div class="empty-state">Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.</div>`;
-    const input=document.getElementById('reg-programadas');
-    if(input && input.dataset.autofilled==='true'){
-      input.value='';
-      delete input.dataset.autofilled;
-      calcOEE();
-    }
     return;
   }
-  autoFillPiezasProgramadas(rec);
   const t=rec.uploadedAt?new Date(rec.uploadedAt):null;
   const hhmm=t?t.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
+  const g=progGroupInfo(fecha,machine);
+  const key=fecha+'|'+machine, completed=progIsCompleted(rec);
+  const canCut=canCutPrograma();
+  const c=progCtx();
+  // Aviso de a qué franja del hora por hora van los cortes (o que es solo seguimiento)
+  let aviso='';
+  if(canCut && !completed){
+    const idx=progFranjaIdx(c.turno,new Date());
+    aviso=`<div class="programa-aviso">⏱ Cada fila que marques suma sus piezas al hora por hora de <b>${machine}</b> · ${(c.turno||'').split(' (')[0]} · <b>${idx>=0?progFranjaLabel(c.turno,idx):'—'}</b> (${c.fecha}).${progSub==='sig'?' <span style="color:var(--amber)">Estás cortando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
+  } else if(!canCut && !completed){
+    aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
+  }
+  // Programa completo en el grupo de máquinas → ofrecer completarlo
+  let cierre='';
+  if(completed){
+    const por=rec.compBy?` por ${rec.compBy}`:'';
+    cierre=`<div class="programa-done-bar"><span>✓ <b>Programa completado</b>${por}${g.names.length>1?' en '+g.names.join(' y '):''}. Sigue disponible para consulta.</span>
+      <button class="btn" onclick="toggleProgDone('${key}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)">${progShowDone[key]?'Ocultar programa':'Ver programa'}</button>
+      <button class="btn" onclick="programaReabrir('${fecha}','${machine}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--text3)">↩ Reabrir</button></div>`;
+  } else if(g.complete){
+    const falta=g.missing.length?` <span style="color:var(--text3)">(${g.missing.join(', ')} no tiene programa cargado)</span>`:'';
+    cierre=`<div class="programa-done-bar ready"><span>✓ <b>Todo el programa está cortado</b>${g.names.length>1?' en '+g.recs.map(r=>r.machine).join(' y '):''}.${falta} Márcalo como completado para seguir con el siguiente sin perderlo de vista.</span>
+      <button class="btn btn-primary" onclick="programaCompletar('${fecha}','${machine}')" style="font-size:12px;padding:5px 12px">Marcar programa como completado</button></div>`;
+  } else if(g.names.length>1){
+    const otros=g.names.filter(n=>n!==machine).map(n=>{ const r=getProgramaRecord(fecha,n); if(!r) return `${n}: sin programa`; const st=progStats(r); return `${n}: ${st.done}/${st.total}`; });
+    const mine=progStats(rec);
+    if(mine.total>0&&mine.done===mine.total) cierre=`<div class="programa-done-bar"><span>✓ ${machine} ya cortó todo su programa · falta: ${otros.join(' · ')}</span></div>`;
+  }
+  const showTable=!completed||progShowDone[key];
   container.innerHTML=`
     <div style="padding:1rem 1rem 0">
+      ${aviso}
       <div class="programa-meta">
         ${ic('activity',12)}${machine} · ${rec.fecha} <span style="color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:11px">(hoja: "${rec.sheetName}")</span>
         <span id="programa-progress" style="font-weight:600;color:var(--text)"></span>
@@ -2294,15 +2590,25 @@ function renderProgramaDia(){
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
         ${canUpload?`<button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el programa del día completo (todas las máquinas cargadas) con lo cortado y las observaciones">${ic('box',12)}Descargar registro del día</button>`:''}
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+      ${cierre}
+      ${showTable?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <span style="font-size:11px;color:var(--text3)">Escribe en cualquier columna para filtrar — se combinan entre sí.</span>
         <span id="programa-filter-count" style="font-size:11px;color:var(--blue);font-weight:600"></span>
         <button class="btn" style="margin-left:auto;font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="clearProgramaFilters()">✕ Limpiar filtros</button>
-      </div>
+      </div>`:''}
     </div>
-    <div style="padding:0 1rem 1rem">${renderProgramaTable(rec)}</div>`;
+    ${showTable?`<div style="padding:0 1rem 1rem">${renderProgramaTable(rec)}</div>`:'<div style="height:1rem"></div>'}`;
   renderProgramaProgress(rec);
 }
+// Mientras se ve el Programa se refresca solo (Líder e Ingeniería siguen el corte en vivo)
+setInterval(()=>{
+  try{
+    if(!currentUser||document.hidden) return;
+    const tab=document.getElementById('reg-tab-programa'), pg=document.getElementById('page-registro');
+    const visible=tab&&(tab.classList.contains('active')||document.getElementById('reg-content')?.classList.contains('reg-split-mode'))&&pg&&pg.classList.contains('active');
+    if(visible) refreshProgramaDiaFromCloud();
+  }catch(e){}
+},15000);
 // Suma la columna "Cant." del programa cargado (misma columna que usa la
 // fórmula "TOTAL DE PIEZAS" del Excel original) y la coloca automáticamente
 // en "Piezas programadas" de Datos de producción, para que no haya que
@@ -2317,36 +2623,13 @@ function getCTProgramadasAuto(ct, fecha){
   if(!machinesList) return null; // este CT no tiene programa por archivo — usar el valor manual de Metas por CT
   let total=0, anyData=false;
   machinesList.forEach(m=>{
-    const rec=programaDia.find(r=>r.fecha===fecha && r.machine===m);
-    if(!rec || !rec.rows || !rec.rows.length) return;
-    anyData=true;
-    const header=rec.rows[0]||[];
-    const colIdx=header.findIndex(h=>String(h).trim().toLowerCase()==='cant.');
-    if(colIdx<0) return;
-    total+=rec.rows.slice(1).reduce((sum,row)=>{
-      const v=parseFloat(row[colIdx]);
-      return sum+(isNaN(v)?0:v);
-    },0);
+    const v=progProgramadasEfectivas(m,fecha);
+    if(v==null) return;
+    anyData=true; total+=v;
   });
   return anyData?total:0;
 }
-function autoFillPiezasProgramadas(rec){
-  const input=document.getElementById('reg-programadas');
-  if(!input || !rec || !rec.rows || !rec.rows.length) return;
-  // Si el usuario está en este momento escribiendo/enfocado en el campo,
-  // no lo pisamos — se aplicará la próxima vez que se vuelva a renderizar.
-  if(document.activeElement===input) return;
-  const header=rec.rows[0]||[];
-  const colIdx=header.findIndex(h=>String(h).trim().toLowerCase()==='cant.');
-  if(colIdx<0) return;
-  const total=rec.rows.slice(1).reduce((sum,row)=>{
-    const v=parseFloat(row[colIdx]);
-    return sum+(isNaN(v)?0:v);
-  },0);
-  input.value=total;
-  input.dataset.autofilled='true';
-  calcOEE();
-}
+function autoFillPiezasProgramadas(rec){ progAutoFillContext(); }
 
 // ── CONFIGURACIÓN › USUARIOS (solo ingeniero) ──────────
 // ── CONFIGURACIÓN › METAS POR CT ──────────────────────
@@ -2995,6 +3278,8 @@ function fastRefreshToday(){
         horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
       }
     })),
+    // El material consumido del Dashboard (Laser) se lee de los registros de aprovechamiento del día
+    ...((currentUser.permissions||defaultPermissions(currentUser.role))['aprovechamiento']!==false?[{name:'Aprovechamiento', assign:(d)=>{ aprovRecords=mergeRecordsById(aprovRecords,(d||[]).map(normalizeAprovRow)); save('aprovRecords'); }}]:[]),
   ];
   withGasLock(done=>{
     gasRequest(
@@ -3643,8 +3928,8 @@ function loadFromCloud(){
     }},
     {name:'Programa_Dia', assign:(d)=>{
       if(d && d.length){
-        const mapped=d.map(r=>({...r, rows: safeParse(r.rows,[])}));
-        programaDia=mergeRecordsById(programaDia,mapped);
+        const mapped=d.map(normProgRec);
+        programaDia=mergeProgramaDia(programaDia,mapped);
         saveProgramaDiaLS();
       }
     }},
@@ -4003,6 +4288,18 @@ function renderDashboard(){
   const labels=ctMachines.map(k=>k.split('|')[1]);
   const data=ctMachines.map(k=>last[k].oee);
   const color=ct==='TROQUELES'?'#4a9eff':ct==='LASER'?'#3ecf8e':'#f5a623';
+  // Centro Laser: en lugar del OEE por máquina, el material tubular consumido por GW1 + GW2 (almacén surte por centro)
+  const matPanel=document.getElementById('dash-mat-panel'), chartWrap=document.getElementById('dash-chart-wrap');
+  if(ct==='LASER' && matPanel){
+    if(titleEl) titleEl.textContent='Material consumido — Laser (hoy)';
+    if(dashChart){ try{ dashChart.destroy(); }catch(e){} dashChart=null; }
+    if(chartWrap) chartWrap.style.display='none';
+    matPanel.style.display='block';
+    matPanel.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tubular que registran GW1 y GW2 en Aprovechamiento, sumado por centro de trabajo (así surte almacén). Se actualiza solo.</div>`+tubTotalsHtml(tubTotalsData(laserTubRecords(todayStr())),'Aún no se registra material tubular hoy.');
+    return;
+  }
+  if(matPanel) matPanel.style.display='none';
+  if(chartWrap) chartWrap.style.display='';
   if(titleEl) titleEl.textContent='OEE por máquina — '+ct+' (hoy)';
   if(dashChart)dashChart.destroy();
   if(!labels.length){
@@ -5158,6 +5455,53 @@ function aprovWeeklyMerma(g){
   const sum=g.recs.reduce((s,r)=>s+(ok(r)?Number(r.merma):0),0);
   return sum>0?{kg:sum,src:'diaria'}:null;
 }
+// ── Material tubular consumido por centro de trabajo (GW1 + GW2) ─────────────────────────
+// Almacén surta por centro de trabajo, no por máquina: aquí se suman los tramos de ambas máquinas, por tipo de tubular.
+function tubTotalsData(recs){
+  const mset=new Set(), map={}; let n=0,last=0,total=0,kg=0;
+  (recs||[]).forEach(r=>{
+    if(!r||r.tipo!=='tubular') return; n++;
+    const t=new Date(r.updatedAt||0).getTime(); if(t>last) last=t;
+    (r.tramosDetalle||[]).forEach(x=>{
+      const q=Number(x&&x.cant)||0; if(!x||!x.tipo||!(q>0)) return;
+      mset.add(r.maquina);
+      const o=map[x.tipo]||(map[x.tipo]={tipo:x.tipo,by:{},total:0});
+      o.by[r.maquina]=(o.by[r.maquina]||0)+q; o.total+=q; total+=q;
+      const cfg=getTubularByTipo(x.tipo); kg+=q*((cfg&&cfg.peso)||0);
+    });
+  });
+  const base=['GW1','GW2'], machines=[...base.filter(m=>mset.has(m)||true),...Array.from(mset).filter(m=>!base.includes(m)).sort()];
+  const rows=Object.values(map).sort((a,b)=>b.total-a.total||String(a.tipo).localeCompare(String(b.tipo)));
+  const byM={}; machines.forEach(m=>{ byM[m]=rows.reduce((a,x)=>a+(x.by[m]||0),0); });
+  return {machines,rows,byM,total,kg,n,last,tipos:rows.length};
+}
+function tubTotalsHtml(d,empty){
+  const f2=fmt2, mono="font-family:'IBM Plex Mono',monospace";
+  if(!d.rows.length) return `<div class="ap-empty" style="display:block">${empty||'Aún no hay tubulares registrados.'}</div>`;
+  const hh=d.last?new Date(d.last).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
+  const kpi=(l,v,c)=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;min-width:110px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${l}</div><div style="${mono};font-size:18px;font-weight:700;${c?'color:'+c:''}">${v}</div></div>`;
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      ${kpi('Total de tramos',f2(d.total),'var(--green)')}${d.kg>0?kpi('Peso (kg)',f2(d.kg)):''}${kpi('Tipos',d.tipos)}${kpi('Registros',d.n)}${hh?kpi('Último registro',hh):''}
+    </div>
+    <div style="overflow:auto"><table class="mat-tbl"><thead><tr><th>Tubular</th>${d.machines.map(m=>`<th class="n">${escH(m)}</th>`).join('')}<th class="n">Total tramos</th></tr></thead><tbody>
+      ${d.rows.map(r=>`<tr><td>${escH(r.tipo)}</td>${d.machines.map(m=>`<td class="n">${r.by[m]?f2(r.by[m]):'<span style="color:var(--text3)">–</span>'}</td>`).join('')}<td class="n tot">${f2(r.total)}</td></tr>`).join('')}
+      <tr class="sum"><td>Total ${d.machines.map(escH).join(' + ')}</td>${d.machines.map(m=>`<td class="n">${f2(d.byM[m])}</td>`).join('')}<td class="n tot">${f2(d.total)}</td></tr>
+    </tbody></table></div>`;
+}
+function laserTubRecords(fecha){ return aprovVisibleRecords().filter(r=>r.tipo==='tubular'&&r.ct==='LASER'&&r.fecha===fecha); }
+let _tubTotOpen=true;
+function toggleTubTotCard(){ _tubTotOpen=!_tubTotOpen; renderTubTotals(); }
+// Tarjeta «Total de tubulares» en Aprovechamiento › Tubular (para la fecha elegida)
+function renderTubTotals(){
+  const body=document.getElementById('tub-total-body'); if(!body) return;
+  const fecha=document.getElementById('tub-fecha')?.value||todayStr();
+  const f=document.getElementById('tub-total-fecha'); if(f) f.textContent=dayLabel(fecha)+' · '+fecha;
+  const caret=document.getElementById('tub-total-caret'); if(caret) caret.textContent=_tubTotOpen?'▾':'▸';
+  body.style.display=_tubTotOpen?'block':'none';
+  if(!_tubTotOpen) return;
+  body.innerHTML=tubTotalsHtml(tubTotalsData(laserTubRecords(fecha)),'Aún no hay tubulares registrados este día por GW1 ni GW2.');
+}
+function toggleTubTot(gid){ const el=document.getElementById('tubtot-'+gid); if(el) el.style.display=el.style.display==='block'?'none':'block'; }
 function aprovGroupStats(g){
   const r2=n=>Math.round(n*100)/100;
   let peso=0,ahorroRec=0,valorMat=0,noExpl=0,cubierto=0,compMat=0,compRec=0,compFp=0; const map={}, order=[];
@@ -5181,6 +5525,8 @@ function aprovGroupStats(g){
 }
 
 function renderAprovHist(force){
+  try{ renderTubTotals(); }catch(e){}
+  try{ if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard(); }catch(e){}
   const tbEl=document.getElementById('aprov-hist-body');
   // Si hay algo escrito sin guardar dentro del historial (explosión, merma,
   // desglose), no se repinta — una sincronización en segundo plano no debe
@@ -5189,7 +5535,7 @@ function renderAprovHist(force){
     const dirty=Array.from(tbEl.querySelectorAll('input')).some(i=>i.type!=='checkbox' && i.value!==i.defaultValue) || !!tbEl.querySelector('[class*="explosion-new-row-"],[data-removed]');
     if(dirty) return;
   }
-  const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="ms-edit-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
+  const openIds=tbEl?Array.from(tbEl.querySelectorAll('[id^="aprov-detail-"],[id^="ms-edit-"],[id^="tubtot-"]')).filter(e=>e.style.display==='block').map(e=>e.id):[];
   const tipo=document.getElementById('ah-tipo').value;
   let visible=aprovVisibleRecords();
   if(tipo) visible=visible.filter(r=>r.tipo===tipo);
@@ -5237,7 +5583,9 @@ function renderAprovHist(force){
           <span style="color:var(--text3);font-size:11px">${st.n} registro${st.n===1?'':'s'} · ${fmt2(st.peso)} kg</span>
           <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto">${mermaHtml}</span>
           <span style="${mono};font-size:11px;color:${st.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro $${fmtMoney(st.ahorroTeorico)}</span>
+          ${g.tipo==='tubular'?`<button onclick="toggleTubTot('${g.gid}')" title="Total de tramos por tipo de tubular entre ${escH(g.maquina)} (almacén surte por centro de trabajo)" style="font-size:11px;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.3);color:#3ecf8e;border-radius:4px;cursor:pointer;padding:3px 10px;font-family:'IBM Plex Sans',sans-serif">Σ Total de tubulares</button>`:''}
         </div>
+        ${g.tipo==='tubular'?`<div id="tubtot-${g.gid}" style="display:none;padding:10px 12px 12px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Total de tubulares de la semana ${weekLabelShort(g.weekStart)} — <b>${escH(g.maquina)}</b> (centro Laser)</div>${tubTotalsHtml(tubTotalsData(g.recs))}</div>`:''}
         <div id="ms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
           <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.weekStart)} — ${g.tipo==='lamina'?'Lámina':'Tubular'} · ${g.maquina}${g.combo&&g.maquinas.length>1?' <span style="color:var(--amber)">(un solo registro de merma para ambas máquinas)</span>':''}. Peso procesado en la semana: <b style="${mono}">${fmt2(st.peso)} kg</b>. Se captura <b>una sola vez</b> por semana (5 días hábiles).</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -5669,7 +6017,7 @@ function repMachineDay(m,fecha){
     o.oee=oees.length?oees.reduce((a,b)=>a+b,0)/oees.length:null;
     o.paros=os.reduce((s,r)=>s+(Number(r.parosNoProg)||0),0);
     // Programadas: el programa del día (si se subió) es el total del día; si no, lo capturado por turno
-    const pt=progTotalFromRecord(PROGRAMA_MACHINES.includes(m.name)?getProgramaRecord(fecha,m.name):null);
+    const pt=PROGRAMA_MACHINES.includes(m.name)?progProgramadasEfectivas(m.name,fecha):null;
     const po=os.reduce((s,r)=>s+(Number(r.piezasProg)||0),0);
     o.prog=pt!=null&&pt>0?pt:(po>0?po:null);
     o.hasData=hs.length>0||os.length>0;
@@ -5948,7 +6296,7 @@ function repCargarHistorial(){
     diaRecords=mergeRecordsById(diaRecords,ok('Cierre_Dia').filter(r=>r&&r.id).map(normalizeDiaRow)); saveDiaLocal();
     records=mergeRecordsById(records,ok('OEE_Registros')); save('records');
     atrasos=mergeRecordsById(atrasos,ok('Atrasos')); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
-    programaDia=mergeRecordsById(programaDia,ok('Programa_Dia').map(r=>({...r,rows:safeParse(r.rows,[])}))); saveProgramaDiaLS();
+    programaDia=mergeProgramaDia(programaDia,ok('Programa_Dia').map(normProgRec)); saveProgramaDiaLS();
     ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,d)]; });
     try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
     if(msg) msg.textContent='✓ Historial cargado'; renderReportes();
