@@ -193,6 +193,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-highlight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
 .ct-highlight-box{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1rem;text-align:center;position:relative}
 .ct-highlight-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:5px}
+.ct-meta-input{width:100%;max-width:150px;text-align:center;background:transparent;border:0;border-bottom:1px dashed var(--border);border-radius:0;color:var(--text);font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;padding:0 0 2px;outline:none;-moz-appearance:textfield}.ct-meta-input::-webkit-outer-spin-button,.ct-meta-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.ct-meta-input:hover{border-bottom-color:var(--text3)}.ct-meta-input:focus{border-bottom:1px solid var(--blue)}
 .ct-highlight-val{font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
 .ct-highlight-sub{font-size:10px;color:var(--text3);margin-top:4px}
 .ct-highlight-box.editable-hint{cursor:default}
@@ -1111,7 +1112,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="tab" id="cfg-laminas-btn" onclick="switchTab('cfg-laminas',this)">Calibres de lámina</div>
       <div class="tab" id="cfg-tubulares-btn" onclick="switchTab('cfg-tubulares',this)">Tipos de tubular</div>
       <div class="tab" id="cfg-usuarios-btn" onclick="switchTab('cfg-usuarios',this);renderUsersConfig()">Usuarios</div>
-      <div class="tab" id="cfg-metas-btn" onclick="switchTab('cfg-metas',this);renderCtTargetsConfig()">Metas por CT</div>
       <div class="tab" id="cfg-checklist-btn" onclick="switchTab('cfg-checklist',this);renderChecklistEditor()">Checklist de arranque</div>
     </div>
     <div id="cfg-maquinas" class="tab-content active">
@@ -1194,13 +1194,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div style="font-size:12px;color:var(--text3);margin-bottom:.9rem;line-height:1.5">Son las actividades que el operador confirma al iniciar su turno en cada máquina. Puedes <b>apagar el checklist</b> por máquina, por centro de trabajo o en toda la planta: apagado, el operador captura sin confirmarlo (las actividades se conservan). Los cambios se guardan en la nube y los reciben todos los dispositivos.</div>
         <div id="chk-editor"></div>
         <datalist id="chk-freq-list"><option value="Inicio de turno"><option value="Diario"><option value="Semanal"><option value="Mensual"></datalist>
-      </div>
-    </div>
-    <div id="cfg-metas" class="tab-content">
-      <div class="form-card">
-        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Metas por Centro de Trabajo</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:1rem">Estos valores se muestran como indicadores en el Dashboard principal de cada Centro de Trabajo — no se calculan solos, los defines tú aquí.</div>
-        <div id="ct-targets-config"></div>
       </div>
     </div>
   </div>
@@ -1545,7 +1538,6 @@ const PERMISSIONS_TREE=[
     {key:'cfg-laminas', label:'Calibres de lámina'},
     {key:'cfg-tubulares', label:'Tipos de tubular'},
     {key:'cfg-usuarios', label:'Usuarios'},
-    {key:'cfg-metas', label:'Metas por CT'},
     {key:'cfg-checklist', label:'Checklist de arranque'},
   ]},
 ];
@@ -2620,7 +2612,7 @@ setInterval(()=>{
 const CT_PROGRAMADAS_AUTO_MACHINES={ 'LASER': ['GW1','GW2'] };
 function getCTProgramadasAuto(ct, fecha){
   const machinesList=CT_PROGRAMADAS_AUTO_MACHINES[ct];
-  if(!machinesList) return null; // este CT no tiene programa por archivo — usar el valor manual de Metas por CT
+  if(!machinesList) return null; // este CT no tiene programa por archivo — usar el valor manual editable en el Dashboard
   let total=0, anyData=false;
   machinesList.forEach(m=>{
     const v=progProgramadasEfectivas(m,fecha);
@@ -2632,24 +2624,6 @@ function getCTProgramadasAuto(ct, fecha){
 function autoFillPiezasProgramadas(rec){ progAutoFillContext(); }
 
 // ── CONFIGURACIÓN › USUARIOS (solo ingeniero) ──────────
-// ── CONFIGURACIÓN › METAS POR CT ──────────────────────
-function renderCtTargetsConfig(){
-  const wrap=document.getElementById('ct-targets-config');
-  if(!wrap) return;
-  const cts=ALL_CTS.map(ct=>({key:ct, label:ct, cls:ctClass(ct)}));
-  wrap.innerHTML=cts.map(c=>{
-    const t=ctTargets[c.key]||{piezasProgramadas:0,capacidadInstalada:0};
-    const isAuto=!!CT_PROGRAMADAS_AUTO_MACHINES[c.key];
-    const autoVal=isAuto?getCTProgramadasAuto(c.key, todayStr()):null;
-    return `<div style="display:grid;grid-template-columns:140px 1fr 1fr;gap:1rem;align-items:end;padding:.85rem 0;border-bottom:0.5px solid var(--border)">
-      <span class="ct-badge ${c.cls}">${c.label}</span>
-      <div class="form-group"><label>Piezas programadas (CT)${isAuto?' <span style="color:var(--text3);font-weight:400">— se calcula sola (GW1+GW2)</span>':''}</label>
-        <input type="number" min="0" value="${isAuto?(autoVal||0):t.piezasProgramadas}" ${isAuto?'disabled title="Este valor se calcula automáticamente sumando el programa del día de GW1 y GW2 — no se edita aquí."':`onchange="updateCtTargetField('${c.key}','piezasProgramadas',this.value)"`}></div>
-      <div class="form-group"><label>Capacidad instalada (CT)</label>
-        <input type="number" min="0" value="${t.capacidadInstalada}" onchange="updateCtTargetField('${c.key}','capacidadInstalada',this.value)"></div>
-    </div>`;
-  }).join('');
-}
 // Genera el bloque de checkboxes de Centro de Trabajo, reutilizado tanto
 // en el formulario de "agregar usuario" como en el editor de cada cuenta
 // existente. `groupClass` identifica el grupo para poder leerlos después.
@@ -4154,7 +4128,7 @@ function renderDashboard(){
     const color=ctAvg===null?'var(--text3)':oeeColor(ctAvg);
 
     // ── Indicadores destacados: piezas programadas / capacidad instalada
-    // (editables desde Configuración → Metas por CT, salvo Laser que se
+    // (editables directo en el Dashboard por líder e ingeniería, salvo Laser que se
     // calcula solo sumando GW1+GW2 del programa del día subido) y
     // adelanto/atraso ──
     const target=ctTargets[ct]||{piezasProgramadas:0,capacidadInstalada:0};
@@ -4165,6 +4139,10 @@ function renderDashboard(){
     const esAdelanto=diffCT>=0;
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
+    const canEditMetas=canRegistrarAtraso;   // líder e ingeniería editan las metas aquí; operador solo las ve
+    // No repintar la tarjeta mientras se escribe en uno de sus campos (meta o atraso): el refresco automático borraría lo tecleado
+    const _ae=document.activeElement;
+    if(!(_ae && _ae.tagName==='INPUT' && ctCardsEl.contains(_ae)))
     ctCardsEl.innerHTML=`<div class="ct-card ${cls}">
         <div class="ct-card-header">
           <div class="ct-card-icon ${cls}">${ic(cls,17)}</div>
@@ -4177,12 +4155,12 @@ function renderDashboard(){
           <div class="ct-highlight-row">
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
-              <div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>
+              ${(autoProgramadas==null&&canEditMetas)?`<input type="number" min="0" class="ct-meta-input" value="${target.piezasProgramadas||0}" title="Meta de piezas programadas del CT (editable)" onchange="updateCtTargetField('${ct}','piezasProgramadas',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>`}
               <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}</div>
             </div>
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('gauge',12)}Capacidad instalada (CT)</div>
-              <div class="ct-highlight-val" style="color:var(--text)">${target.capacidadInstalada||0}</div>
+              ${canEditMetas?`<input type="number" min="0" class="ct-meta-input" value="${target.capacidadInstalada||0}" title="Capacidad instalada del CT (editable)" onchange="updateCtTargetField('${ct}','capacidadInstalada',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${target.capacidadInstalada||0}</div>`}
               <div class="ct-highlight-sub">pzas / turno</div>
             </div>
             <div class="ct-highlight-box">
@@ -4219,15 +4197,10 @@ function renderDashboard(){
               <div class="ct-card-stat-text"><div class="ct-card-stat-label">Costo paros</div>
                 <div class="ct-card-stat-val ${ctCosto>0?'paro-cost-neon':''}" style="color:${ctCosto>0?'unset':'var(--green)'}">${ctCosto>0?'$'+fmtN(ctCosto,0).toLocaleString('es-MX'):'$0'}</div></div>
             </div>
-            <div class="ct-card-stat">
+            <div class="ct-card-stat" style="grid-column:1/-1">
               <div class="ct-card-stat-icon" style="color:${avgCumpl!=null?cumplColor(avgCumpl):'var(--text3)'}">${ic('target',13)}</div>
               <div class="ct-card-stat-text"><div class="ct-card-stat-label">Cumplimiento</div>
                 <div class="ct-card-stat-val" style="color:${avgCumpl!=null?cumplColor(avgCumpl):'var(--text3)'}">${avgCumpl!=null?avgCumpl+'%':'–'}</div></div>
-            </div>
-            <div class="ct-card-stat">
-              <div class="ct-card-stat-icon" style="color:${ctOEEs.filter(v=>v>=85).length>0?'#3ecf8e':'var(--text3)'}">${ic('star',13)}</div>
-              <div class="ct-card-stat-text"><div class="ct-card-stat-label">Clase mundial</div>
-                <div class="ct-card-stat-val" style="color:${ctOEEs.filter(v=>v>=85).length>0?'#3ecf8e':'var(--text3)'}">${ctOEEs.filter(v=>v>=85).length} / ${ctOEEs.length||'–'}</div></div>
             </div>
           </div>
         </div>
@@ -4240,7 +4213,7 @@ function renderDashboard(){
   // ── Mostrar solo la sección de tabla del CT seleccionado ──
   ALL_CTS.forEach(c=>{
     const c2=ctClass(c);
-    const section=document.querySelector(`.ct-badge.${c2}`)?.closest('.ct-section');
+    const section=document.getElementById('ct-body-'+c2)?.closest('.ct-section');
     if(section) section.style.display=dashCTVisible(c)?'':'none';
   });
   const bodyId='ct-body-'+cls;
@@ -6782,6 +6755,7 @@ function saveMantPlan(){
 // indicadores destacados en el Dashboard. Cada CT se guarda como una fila
 // independiente (upsert), nunca se reescribe todo de golpe.
 function saveCtTarget(ct){
+  try{ const a=document.activeElement; if(a && a.classList && a.classList.contains('ct-meta-input')) a.blur(); }catch(e){}
   if(!ctTargets[ct]) ctTargets[ct]={piezasProgramadas:0,capacidadInstalada:0};
   ctTargets[ct].updatedAt=new Date().toISOString();
   localStorage.setItem(SK.ctTargets, JSON.stringify(ctTargets));
