@@ -554,6 +554,41 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-obs-input:hover{border-color:var(--border);background:var(--bg3)}
 .programa-obs-input:focus{outline:none;border-color:var(--blue);background:var(--bg3)}
 .programa-obs-input::placeholder{color:var(--text3)}
+.programa-upload.drag{border-color:var(--blue);background:rgba(74,158,255,.10);border-style:solid}
+#programa-upload-card.collapsed #programa-upload-body{display:none}
+#programa-upload-msg:empty,#programa-upload-card .programa-status-row:empty{display:none}
+#programa-upload-card.collapsed .form-card-title{margin-bottom:0}
+.prog-cons-td{min-width:150px}
+/* Consumo real y Equiv. tramos quedan fijas a la derecha: se ven siempre, sin desplazar la tabla */
+.prog-tub .pc-cons{position:sticky;right:104px;z-index:2;background:var(--bg2);min-width:190px;max-width:190px;box-shadow:-6px 0 8px -6px rgba(0,0,0,.5)}
+.prog-tub .pc-eq{position:sticky;right:0;z-index:2;background:var(--bg2);width:104px;min-width:104px;max-width:104px}
+.prog-tub thead tr:first-child th.pc-cons,.prog-tub thead tr:first-child th.pc-eq{background:var(--bg3);z-index:4}
+.prog-tub thead .programa-filter-row th.pc-cons,.prog-tub thead .programa-filter-row th.pc-eq{z-index:4}
+.programa-table tbody tr:hover td.pc-cons,.programa-table tbody tr:hover td.pc-eq{background:var(--bg3)}
+.programa-row-done td.pc-cons,.programa-row-done td.pc-eq{background:linear-gradient(rgba(62,207,142,.06),rgba(62,207,142,.06)),var(--bg2)}
+.prog-cons-btn{width:100%;text-align:left;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 9px;border:1px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap}
+.prog-cons-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--bg3)}
+.prog-cons-btn.has{border-style:solid;border-color:rgba(62,207,142,.45);background:rgba(62,207,142,.08);color:var(--text);font-weight:500}
+.prog-cons-ro{color:var(--text);font-weight:500}
+.prog-cons-note{display:block;font-size:10px;color:var(--text3);margin-top:2px;white-space:normal;max-width:220px}
+.prog-eq-td{text-align:right;font-family:'IBM Plex Mono',monospace;min-width:92px}
+.prog-eq-td small{display:block;font-size:10px;color:var(--text3);font-weight:400}
+.pcm-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
+.pcm{width:min(440px,100%);max-height:92vh;overflow:auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.pcm-h{display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:700;margin-bottom:6px}
+.pcm-x{width:24px;height:24px;border:1px solid var(--border);background:transparent;color:var(--text3);border-radius:6px;cursor:pointer;font-size:14px;line-height:1}
+.pcm-x:hover{color:var(--red);border-color:var(--red)}
+.pcm-ctx{font-size:11px;color:var(--text2);line-height:1.5;padding:7px 10px;background:var(--bg3);border-radius:var(--radius);margin-bottom:10px}
+.pcm-l{display:block;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin:10px 0 4px}
+.pcm select,.pcm input[type=number]{width:100%;font-size:13px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);font-family:'IBM Plex Sans',sans-serif}
+.pcm-r{display:grid;grid-template-columns:1fr 14px 1fr 22px 26px;gap:6px;align-items:center;margin-bottom:6px;font-size:12px;color:var(--text3)}
+.pcm-add{margin-top:2px;font-size:11px;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:5px 12px;font-family:'IBM Plex Sans',sans-serif}
+.pcm-eq{margin-top:12px;padding:9px 11px;background:var(--bg3);border-radius:var(--radius);font-size:12px;line-height:1.6;color:var(--text2)}
+.pcm-eq b{color:var(--green);font-family:'IBM Plex Mono',monospace}
+.pcm-m{color:var(--text3);font-size:11px}
+.pcm-w{color:var(--amber);font-size:11px}
+.pcm-bar{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.pcm-sec{font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:6px 12px;font-family:'IBM Plex Sans',sans-serif}
 .programa-cortado-check{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
 .programa-row-done td{background:rgba(62,207,142,.06);color:var(--text3)}
 .programa-row-done td:first-child{background:rgba(62,207,142,.1)}
@@ -981,13 +1016,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
       <div class="programa-status-row" id="programa-summary" style="margin:0 0 .75rem"></div>
       <div class="form-card" id="programa-upload-card" style="display:none">
-        <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="programa-upload-head">Subir programa del día</span></div>
-        <label class="programa-upload" for="programa-file-input">
-          <div class="programa-upload-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <div id="programa-upload-title" style="font-size:13px;font-weight:600;color:var(--text)">Selecciona el archivo Excel del programa de hoy</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:4px">Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong></div>
-          <input type="file" id="programa-file-input" accept=".xlsx,.xls" onchange="handleProgramaUpload(event)">
-        </label>
+        <div class="form-card-title" id="programa-upload-bar" style="cursor:pointer;user-select:none" onclick="toggleProgUpload()" title="Comprimir / expandir la sección de carga"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span id="programa-upload-head">Subir programa del día</span><span id="programa-upload-caret" style="margin-left:auto;font-size:11px;font-weight:500;color:var(--text3)">▾ Comprimir</span></div>
+        <div id="programa-upload-body">
+          <label class="programa-upload" id="programa-dropzone" for="programa-file-input">
+            <div class="programa-upload-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+            <div id="programa-upload-title" style="font-size:13px;font-weight:600;color:var(--text)">Selecciona el archivo Excel del programa de hoy</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:4px">o <b>arrástralo y suéltalo aquí</b></div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong></div>
+            <input type="file" id="programa-file-input" accept=".xlsx,.xlsm,.xls" onchange="handleProgramaUpload(event)">
+          </label>
+        </div>
         <div class="save-msg" id="programa-upload-msg" style="margin-top:8px;text-align:center"></div>
         <div class="programa-status-row" id="programa-status-row"></div>
       </div>
@@ -1116,7 +1154,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div id="tab-tubular" class="tab-content">
       <div class="ap-card" id="tub-total-card" style="margin-bottom:12px">
         <div class="ap-card-h" style="cursor:pointer" onclick="toggleTubTotCard()"><span id="tub-total-caret" style="width:12px">▾</span> Total de tubulares — Laser (GW1 + GW2) <span id="tub-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
-        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Almacén surte por centro de trabajo: aquí se suman los tramos que registran las dos máquinas, por tipo de tubular.</div>
+        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Almacén surte por centro de trabajo: aquí se suma el <b>consumo real</b> del Programa del día de las dos máquinas (tramos completos + equivalencia de recortes), por tipo de tubular.</div>
         <div id="tub-total-body"></div>
       </div>
       <div class="ap-top">
@@ -1125,13 +1163,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="form-group"><label>Turno</label><select id="tub-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
         <div class="form-group"><label>Operador</label><input type="text" id="tub-op" placeholder="Nombre del operador"></div>
       </div>
-      <div class="ap-cols">
-        <div class="ap-card">
-          <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Tramos utilizados<span class="ap-badge" id="tub-tramos-count">0 tramos</span><button class="ap-add" id="btn-add-tub-tramo" onclick="addTubTramo()">+ Agregar tubular</button></div>
-          <div class="dynamic-row-header dynamic-row-tub" id="tub-tramos-head" style="display:none"><span>Tipo de tubular</span><span>Tramos (6m)</span><span>Peso/tramo (kg)</span><span>Peso total (kg)</span><span></span></div>
-          <div id="tub-tramos-list"></div>
-          <div class="ap-empty" id="tub-tramos-empty">Aún no hay tubulares. Toca «+ Agregar tubular».</div>
-        </div>
+      <div class="ap-note" style="margin-bottom:10px">El consumo de <b>tramos completos</b> ya no se captura aquí: se toma del <b>Consumo real</b> que el operador anota en el <b>Programa del día</b> (GW1 y GW2) y se suma arriba. En esta pantalla solo se registra la <b>recuperación de recortes</b> (pedacera utilizada).</div>
+      <div class="ap-cols" style="grid-template-columns:1fr">
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Pedacera utilizada<span class="ap-badge" id="tub-recortes-count">0 pedaceras</span><button class="ap-add" id="btn-add-tub-recorte" onclick="addTubRecorte()">+ Agregar pedacera</button></div>
           <div class="ap-note">Registra los recortes de tubular que se usaron para producir piezas. Ahorro = largo total usado ÷ largo del tramo × costo del tramo. Si cada recorte equivale al 40% o más de un tramo, ya es parte del material explosionado y no cuenta como ahorro.</div>
@@ -1142,7 +1175,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <input type="hidden" id="tub-merma" value="0"><span id="tub-pct-merma" hidden>–</span>
       <div style="display:none"><canvas id="tub-chart"></canvas><div id="tub-chart-legend"></div></div>
       <div class="ap-bar">
-        <div class="ap-stat"><span class="ap-stat-l">Peso procesado</span><span class="ap-stat-v"><span id="tub-peso-total">0.000</span> kg</span></div>
+        <span id="tub-peso-total" hidden>0.000</span>
         <div class="ap-stat"><span class="ap-stat-l">Ahorro por recortes</span><span class="ap-stat-v ap-green">$<span id="tub-ahorro">0.00</span></span></div>
         <span class="save-msg" id="tub-save-msg"></span>
         <button class="btn btn-primary" id="btn-save-tubular" onclick="saveTubular()">Guardar registro</button>
@@ -1687,7 +1720,7 @@ function tubPreselectDefault(){
   try{
     if(!currentUser || _tubTouchedUid===currentUser.id) return;
     const sel=document.getElementById('tub-machine'); if(!sel) return;
-    if(document.querySelectorAll('#tub-tramos-list .dynamic-row, #tub-recortes-list .dynamic-row').length) return;
+    if(document.querySelectorAll('#tub-recortes-list .dynamic-row').length) return;
     const d=getDefaultMachine(currentUser.id);
     if(d && d.ct==='LASER' && Array.from(sel.options).some(o=>o.value===d.machine)) sel.value=d.machine;
   }catch(e){ console.warn('tubPreselectDefault',e); }
@@ -2164,7 +2197,12 @@ function mergeProgRec(a,b){
   const ci=out.cortadoColIdx!=null?out.cortadoColIdx:0;
   Object.keys(m).forEach(k=>{ if(out.rows[+k+1]) out.rows[+k+1][ci]=!!m[k].on; });
   // observaciones: las del registro más reciente
-  if(out.obsColIdx!=null && out.obsColIdx>=0) out.rows.forEach((row,i)=>{ if(i>0 && newer.rows[i]) row[out.obsColIdx]=newer.rows[i][out.obsColIdx]; });
+  // (consumo real: por fila gana la captura más reciente — marca @ de la celda; sin marca, la del registro más nuevo)
+  if(out.obsColIdx!=null && out.obsColIdx>=0) out.rows.forEach((row,i)=>{
+    if(i<1||!newer.rows[i]) return;
+    const nv=newer.rows[i][out.obsColIdx], ov=older.rows[i]?older.rows[i][out.obsColIdx]:nv;
+    row[out.obsColIdx]=(progConsTs(ov)>progConsTs(nv))?ov:nv;
+  });
   // completado: la última decisión (completar / reabrir)
   const ra=String(a.compTs||''), rb=String(b.compTs||'');
   const w=rb>ra?b:a; out.completado=(String(w.completado)==='1')?'1':''; out.compTs=w.compTs||''; out.compBy=w.compBy||'';
@@ -2275,6 +2313,173 @@ function programaToggleCut(fecha,machine,rIdx,checked,el){
   renderProgramaDia(true);
   try{ renderDashboard(); }catch(e){}
 }
+// ── Consumo real de tubular (GW1 y GW2) ──────────────────────────────────────────────────────────
+// El operador anota, por cada fila (OP) del programa, los tramos completos y/o los recortes que usó.
+// Se guarda dentro de la propia celda «Observaciones» de la fila (viaja en Programa_Dia, en el Sheet):
+//   "§T2;R3x120;R1x80;K=10509204;@marca"   T = tramos completos · R = N recortes x medida en cm · K = SKU del tubular · @ = marca de tiempo
+// De ahí sale la equivalencia de los recortes en tramos y el registro de Aprovechamiento (tp_GW1_fecha / tp_GW2_fecha).
+const PROG_HIDE_COLS=['firma de entregado','pz x tramo','tubos'];
+const PROG_TUB_MACHINES=['GW1','GW2'];
+function progIsTubRec(rec){ return !!rec && PROG_TUB_MACHINES.includes(rec.machine); }
+function r3(n){ return Math.round((Number(n)||0)*1000)/1000; }
+function f3(n){ return String(r3(n)); }
+function tubNormName(s){
+  return String(s==null?'':s).toLowerCase().replace(/[×]/g,'x').replace(/["”“″′']/g,' ')
+    .replace(/\b(tubular|tubo|in|pulg)\b/g,' ').replace(/\d+(?:[.,]\d+)?\s*m(?:ts?|etros)?\b/g,' ')
+    .replace(/cal\.?\s*/g,'cal').replace(/[^a-z0-9\/.]/g,'');
+}
+function tubMatchCatalog(txt){ const n=tubNormName(txt); if(!n) return null; return tubulares.find(t=>tubNormName(t.tipo)===n)||null; }
+function progTubColIdx(rec){ return ((rec&&rec.rows&&rec.rows[0])||[]).findIndex(h=>String(h).trim().toLowerCase()==='tubular'); }
+function progConsTs(v){ const m=String(v==null?'':v).match(/@([0-9a-z]+)/); return m?(parseInt(m[1],36)||0):0; }
+function progConsParse(v){
+  const s=String(v==null?'':v), o={t:0,r:[],k:'',ts:'',note:''};
+  if(s.charAt(0)!=='§'){ o.note=s.trim(); return o; }
+  s.slice(1).split(';').forEach(p=>{
+    if(!p) return;
+    if(p.charAt(0)==='T') o.t=parseFloat(p.slice(1))||0;
+    else if(p.charAt(0)==='R'){ const m=p.slice(1).split('x'), n=parseFloat(m[0])||0, l=parseFloat(m[1])||0; if(n>0&&l>0) o.r.push([n,l]); }
+    else if(p.slice(0,2)==='K=') o.k=p.slice(2);
+    else if(p.charAt(0)==='@') o.ts=p.slice(1);
+  });
+  return o;
+}
+function progConsStr(o){
+  const p=[]; if(o.t>0) p.push('T'+o.t);
+  (o.r||[]).forEach(a=>{ if(a[0]>0&&a[1]>0) p.push('R'+a[0]+'x'+a[1]); });
+  if(o.k && p.length) p.push('K='+o.k);
+  p.push('@'+(o.ts||Date.now().toString(36)));
+  return '§'+p.join(';');
+}
+// Una fila del programa: qué tubular es, cuánto se consumió y la equivalencia de los recortes en tramos.
+function progConsRow(rec,r){
+  const oi=rec&&rec.obsColIdx, row=((rec&&rec.rows)||[])[r+1]||[];
+  const c=progConsParse(oi>=0?row[oi]:'');
+  const ti=progTubColIdx(rec), raw=ti>=0?String(row[ti]==null?'':row[ti]).trim():'';
+  let tub=null; if(c.k) tub=tubulares.find(x=>x.sku&&x.sku===c.k)||null;
+  if(!tub) tub=tubMatchCatalog(raw);
+  const largo=tub?tuboLargoCm(tub.tipo):600;
+  const re=r3(c.r.reduce((s,a)=>s+a[0]*a[1]/largo,0)), t=c.t;
+  return {c,raw,tub,key:tub?tub.tipo:(raw||'(sin tubular)'),largo,t,re,total:r3(t+re),has:(t>0||re>0)};
+}
+function progConsText(x){
+  const p=[]; if(x.t>0) p.push(f3(x.t)+(x.t===1?' tramo':' tramos'));
+  x.c.r.forEach(a=>p.push(f3(a[0])+'×'+f3(a[1])+' cm'));
+  return p.join(' + ');
+}
+// Consumo por tipo de tubular de todo el programa de una máquina → renglones para Aprovechamiento.
+function progTubDetalle(rec){
+  const map={}, n=Math.max(0,((rec&&rec.rows)||[]).length-1);
+  for(let r=0;r<n;r++){
+    const x=progConsRow(rec,r); if(!x.has) continue;
+    const o=map[x.key]||(map[x.key]={tipo:x.key,tc:0,re:0}); o.tc+=x.t; o.re+=x.re;
+  }
+  return Object.keys(map).sort().map(k=>{
+    const o=map[k], tub=getTubularByTipo(k), cant=r3(o.tc+o.re);
+    return {tipo:k,cant,tc:r3(o.tc),re:r3(o.re),pesoTotal:r3(cant*((tub&&tub.peso)||0))};
+  });
+}
+function progConsTotals(rec){
+  const d=progTubDetalle(rec); let tc=0,re=0,kg=0;
+  d.forEach(x=>{ tc+=x.tc; re+=x.re; kg+=x.pesoTotal; });
+  return {tc:r3(tc),re:r3(re),total:r3(tc+re),kg:r3(kg),tipos:d.length};
+}
+// Mantiene el registro de Aprovechamiento (uno por máquina y día) igual al consumo real del programa.
+// La explosión, la merma y lo demás que ya tenga el registro se respetan.
+function syncTubFromPrograma(fecha,machine){
+  try{
+    const rec=getProgramaRecord(fecha,machine); if(!rec||!progIsTubRec(rec)) return;
+    const det=progTubDetalle(rec), id='tp_'+machine+'_'+fecha;
+    let ar=aprovRecords.find(r=>String(r.id)===id);
+    if(!ar && !det.length) return;
+    if(ar && JSON.stringify(ar.tramosDetalle||[])===JSON.stringify(det)) return;
+    const now=new Date().toISOString(), peso=r3(det.reduce((s,x)=>s+x.pesoTotal,0));
+    if(!ar){
+      ar={id,tipo:'tubular',maquina:machine,ct:'LASER',fecha,turno:'Programa',op:'Programa del día',origen:'programa',
+          pesoTotal:0,merma:null,pctMerma:null,aprovechado:null,ahorro:0,tramosDetalle:[],recortesDetalle:[],explosionDetalle:[]};
+      aprovRecords.push(ar);
+    }
+    ar.tramosDetalle=det; ar.pesoTotal=peso; ar.updatedAt=now;
+    save('aprovRecords'); _aprovLastSync='pend';
+    cloudUpsertRow('Aprovechamiento',aprovCloudRow(ar),aprovSyncDone);
+    try{ renderAprovHist(); }catch(e){}
+  }catch(e){ console.warn('syncTubFromPrograma',e); }
+}
+// ── Ventana «Consumo real» (solo Operador) ──
+let _consCtx=null;
+function programaOpenConsumo(fecha,machine,rIdx){
+  if(!canCutPrograma()){ progMsg('Solo el Operador registra el consumo real.','var(--amber)'); return; }
+  const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]||!(rec.obsColIdx>=0)) return;
+  if(progIsCompleted(rec)){ progMsg('Este programa está completado: reábrelo para corregirlo.','var(--amber)'); return; }
+  programaCloseConsumo();
+  _consCtx={fecha,machine,rIdx};
+  const x=progConsRow(rec,rIdx), h=(rec.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), row=rec.rows[rIdx+1];
+  const g=n=>{ const i=h.indexOf(n); return i>=0&&row[i]!==''&&row[i]!=null?String(row[i]):''; };
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const opts=`<option value="">${x.tub?'':'Selecciona el tubular…'}</option>`+tubulares.map(t=>`<option value="${esc(t.tipo)}" ${x.tub&&x.tub.tipo===t.tipo?'selected':''}>${esc(t.tipo)}</option>`).join('');
+  const ov=document.createElement('div'); ov.className='pcm-ov'; ov.id='prog-cons-modal';
+  ov.onclick=e=>{ if(e.target===ov) programaCloseConsumo(); };
+  ov.innerHTML=`<div class="pcm" role="dialog" aria-label="Consumo real">
+    <div class="pcm-h"><span>Consumo real · ${esc(machine)}</span><button class="pcm-x" onclick="programaCloseConsumo()" title="Cerrar">×</button></div>
+    <div class="pcm-ctx"><b>${esc(g('op'))}</b>${g('modelo')?' · '+esc(g('modelo')):''}${g('parte')?' · '+esc(g('parte')):''}<br>Programado: <b>${esc(g('cant.')||'–')}</b> pzas${x.raw?` · Tubular del programa: <b>${esc(x.raw)}</b>`:''}</div>
+    <label class="pcm-l">Tubular</label>
+    <select id="pcm-tub" oninput="pcmCalc()">${opts}</select>
+    <label class="pcm-l">Tramos completos</label>
+    <input type="number" id="pcm-t" min="0" step="any" placeholder="0" value="${x.t>0?x.t:''}" oninput="pcmCalc()">
+    <label class="pcm-l">Recortes utilizados <span style="font-weight:400;text-transform:none;letter-spacing:0">(cantidad × medida del recorte)</span></label>
+    <div id="pcm-rs"></div>
+    <button class="pcm-add" onclick="pcmAddRec()">+ Agregar recortes</button>
+    <div class="pcm-eq" id="pcm-eq"></div>
+    <div class="pcm-bar"><button class="btn btn-primary" onclick="programaSaveConsumo()" style="font-size:12px;padding:6px 16px">Guardar</button>
+      <button class="pcm-sec" onclick="programaClearConsumo()">Borrar consumo</button>
+      <button class="pcm-sec" onclick="programaCloseConsumo()">Cancelar</button><span id="pcm-msg" style="font-size:12px;color:var(--amber)"></span></div></div>`;
+  document.body.appendChild(ov);
+  x.c.r.forEach(a=>pcmAddRec(a[0],a[1]));
+  if(!x.c.r.length) pcmAddRec();
+  pcmCalc();
+  ov.addEventListener('keydown',e=>{ if(e.key==='Escape') programaCloseConsumo(); });
+  const first=document.getElementById('pcm-t'); if(first) setTimeout(()=>first.focus(),30);
+}
+function programaCloseConsumo(){ const m=document.getElementById('prog-cons-modal'); if(m) m.remove(); _consCtx=null; }
+function pcmAddRec(n,l){
+  const box=document.getElementById('pcm-rs'); if(!box) return;
+  const d=document.createElement('div'); d.className='pcm-r';
+  d.innerHTML=`<input type="number" class="pcm-rn" min="0" step="1" placeholder="N.º recortes" value="${n>0?n:''}" oninput="pcmCalc()"><span>×</span><input type="number" class="pcm-rl" min="0" step="any" placeholder="Medida cm" value="${l>0?l:''}" oninput="pcmCalc()"><span>cm</span><button class="pcm-x" title="Quitar" onclick="this.parentNode.remove();pcmCalc()">×</button>`;
+  box.appendChild(d);
+}
+function pcmRead(){
+  const num=el=>parseFloat(el&&el.value)||0;
+  const r=Array.from(document.querySelectorAll('#pcm-rs .pcm-r')).map(d=>[num(d.querySelector('.pcm-rn')),num(d.querySelector('.pcm-rl'))]).filter(a=>a[0]>0&&a[1]>0);
+  const tipo=document.getElementById('pcm-tub')?.value||'', tub=tipo?getTubularByTipo(tipo):null;
+  return {t:num(document.getElementById('pcm-t')),r,tub,tipo};
+}
+function pcmCalc(){
+  const el=document.getElementById('pcm-eq'); if(!el) return;
+  const v=pcmRead(), largo=v.tub?tuboLargoCm(v.tub.tipo):600;
+  const re=r3(v.r.reduce((s,a)=>s+a[0]*a[1]/largo,0)), tot=r3(v.t+re), out=[];
+  if(v.r.length) out.push(`Recortes ≈ <b>${f3(re)}</b> tramo${re===1?'':'s'} <span class="pcm-m">(tramo de ${f3(largo)} cm${v.tub?'':' — supuesto, elige el tubular'})</span>`);
+  out.push(`Consumo total: <b>${f3(tot)}</b> tramo${tot===1?'':'s'}${v.tub&&v.tub.peso>0&&tot>0?` · ${fmt2(tot*v.tub.peso)} kg`:''}`);
+  if(v.r.some(a=>a[1]>largo)) out.push(`<span class="pcm-w">⚠ Hay un recorte más largo que el tramo (${f3(largo)} cm). Revisa la medida.</span>`);
+  if(!v.tub&&(v.t>0||v.r.length)) out.push(`<span class="pcm-w">Sin tubular del catálogo: se registrará con el nombre del programa y sin peso.</span>`);
+  el.innerHTML=out.join('<br>');
+}
+function pcmSaveWith(clear){
+  const c=_consCtx; if(!c) return;
+  const rec=getProgramaRecord(c.fecha,c.machine); if(!rec||!rec.rows[c.rIdx+1]) { programaCloseConsumo(); return; }
+  if(!canCutPrograma()){ programaCloseConsumo(); return; }
+  if(progIsCompleted(rec)){ programaCloseConsumo(); progMsg('Este programa está completado: reábrelo para corregirlo.','var(--amber)'); return; }
+  const v=clear?{t:0,r:[],tub:null}:pcmRead();
+  if(!clear && !(v.t>0) && !v.r.length){ const m=document.getElementById('pcm-msg'); if(m) m.textContent='Captura tramos o recortes (o usa «Borrar consumo»).'; return; }
+  const o={t:v.t,r:v.r,k:(v.tub&&v.tub.sku)?v.tub.sku:'',ts:Date.now().toString(36)};
+  rec.rows[c.rIdx+1][rec.obsColIdx]=clear?('§@'+o.ts):progConsStr(o);
+  rec.updatedAt=new Date().toISOString();
+  progSave(rec); syncTubFromPrograma(c.fecha,c.machine);
+  programaCloseConsumo();
+  progMsg(clear?'✓ Consumo borrado':'✓ Consumo guardado');
+  renderProgramaDia(true);
+  try{ renderDashboard(); }catch(e){}
+}
+function programaSaveConsumo(){ pcmSaveWith(false); }
+function programaClearConsumo(){ pcmSaveWith(true); }
 function programaSetObs(fecha,machine,rIdx,value){
   if(!canCutPrograma()){ progMsg('Solo el Operador captura observaciones.','var(--amber)'); renderProgramaDia(true); return; }
   const rec=getProgramaRecord(fecha,machine); if(!rec||rec.obsColIdx==null||rec.obsColIdx<0||!rec.rows[rIdx+1]) return;
@@ -2331,10 +2536,52 @@ function progAutoFillContext(){
   if(document.activeElement===input) return;
   input.value=v; input.dataset.autofilled='true'; calcOEE();
 }
+// Sección de carga: comprimir/expandir (se recuerda en este navegador) y arrastrar el archivo.
+function progUploadCollapsed(){ try{ return localStorage.getItem('oee_prog_upload_collapsed')==='1'; }catch(e){ return false; } }
+function applyProgUploadCollapse(){
+  const card=document.getElementById('programa-upload-card'); if(!card) return;
+  const c=progUploadCollapsed(); card.classList.toggle('collapsed',c);
+  const car=document.getElementById('programa-upload-caret'); if(car) car.textContent=c?'▸ Expandir':'▾ Comprimir';
+}
+function toggleProgUpload(){
+  try{ localStorage.setItem('oee_prog_upload_collapsed',progUploadCollapsed()?'0':'1'); }catch(e){ const card=document.getElementById('programa-upload-card'); if(card) card.classList.toggle('collapsed'); }
+  applyProgUploadCollapse();
+}
+(function(){
+  const hasFiles=e=>!!(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files'));
+  const zoneOf=e=>e.target&&e.target.closest?e.target.closest('#programa-upload-card'):null;
+  const dz=()=>document.getElementById('programa-dropzone');
+  let depth=0;
+  window.addEventListener('dragenter',e=>{ if(!hasFiles(e)) return; const z=zoneOf(e); if(z&&dz()){ dz().classList.add('drag'); } });
+  window.addEventListener('dragover',e=>{
+    if(!hasFiles(e)) return;
+    const z=zoneOf(e);
+    if(z){ e.preventDefault(); try{ e.dataTransfer.dropEffect='copy'; }catch(x){} if(dz()) dz().classList.add('drag'); }
+    else if(document.getElementById('programa-upload-card')&&document.getElementById('programa-upload-card').offsetParent){ e.preventDefault(); if(dz()) dz().classList.remove('drag'); }   // soltar fuera de la zona no abre el archivo en el navegador
+  });
+  window.addEventListener('dragleave',e=>{ if(!zoneOf(e)||!e.relatedTarget||!(e.relatedTarget.closest&&e.relatedTarget.closest('#programa-upload-card'))){ if(dz()) dz().classList.remove('drag'); } });
+  window.addEventListener('drop',e=>{
+    if(!hasFiles(e)) return;
+    const z=zoneOf(e), up=document.getElementById('programa-upload-card');
+    if(dz()) dz().classList.remove('drag');
+    if(!z){ if(up&&up.offsetParent) e.preventDefault(); return; }
+    e.preventDefault();
+    const files=Array.from(e.dataTransfer.files||[]);
+    const f=files.find(x=>/\.(xlsx|xlsm|xls)$/i.test(x.name))||files[0];
+    if(f) processProgramaFile(f);
+  });
+})();
 function handleProgramaUpload(event){
   const file=event.target.files[0];
+  if(file) processProgramaFile(file);
+}
+// Procesa el archivo del programa, venga del selector o de arrastrarlo a la zona de carga.
+function processProgramaFile(file){
   const msg=document.getElementById('programa-upload-msg');
   if(!file) return;
+  if(!/\.(xlsx|xlsm|xls)$/i.test(file.name||'')){
+    msg.textContent='⚠ El archivo debe ser un Excel (.xlsx o .xls).'; msg.style.color='var(--amber)'; return;
+  }
   if(typeof XLSX==='undefined'){
     msg.textContent='⚠ No se pudo cargar el lector de Excel (sin conexión a internet).';
     msg.style.color='var(--amber)';
@@ -2354,20 +2601,31 @@ function handleProgramaUpload(event){
         const ws=wb.Sheets[sheetName];
         const {header:rawHeader, dataRows:rawDataRows, obsColIdx:rawObsColIdx}=extractSheetTable(ws);
         if(!rawDataRows.length){ missing.push(machine); return; }
+        // GW1/GW2: ya no se usan «Firma de entregado», «Pz x tramo» y «Tubos» (se quitan), y «Observaciones» pasa a ser
+        // el «Consumo real» (si el archivo no la trae, se agrega).
+        let hdr=rawHeader.slice(), body=rawDataRows.map(row=>row.slice());
+        if(PROG_TUB_MACHINES.includes(machine)){
+          const keep=hdr.map((h,i)=>PROG_HIDE_COLS.includes(String(h).trim().toLowerCase())?-1:i).filter(i=>i>=0);
+          hdr=keep.map(i=>hdr[i]); body=body.map(row=>keep.map(i=>row[i]));
+          if(hdr.findIndex(h=>String(h).trim().toLowerCase()==='observaciones')<0){ hdr.push('Observaciones'); body.forEach(row=>row.push('')); }
+        }
+        const obsRaw=hdr.findIndex(h=>String(h).trim().toLowerCase()==='observaciones');
         // Se agrega una columna "Cortado" al inicio (no viene en el Excel original) para que el operador
         // marque pieza por pieza lo que ya se cortó. Esto recorre en +1 el índice de Observaciones.
-        const header=['Cortado', ...rawHeader];
-        const dataRows=rawDataRows.map(row=>[false, ...row]);
-        const obsColIdx=rawObsColIdx>=0 ? rawObsColIdx+1 : -1;
+        const header=['Cortado', ...hdr];
+        const dataRows=body.map(row=>[false, ...row]);
+        const obsColIdx=obsRaw>=0 ? obsRaw+1 : -1;
         const old=getProgramaRecord(fecha,machine);
         let cortes={};
         // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado)
         if(old && old.rows && old.rows.length>1){
-          const keyOf=(row,oi)=>JSON.stringify(row.slice(1).map((c,i)=>(i+1===oi)?'':String(c==null?'':c).trim()));
+          // Una fila "sigue igual" si coinciden sus datos clave (sin el No., que se recorre si se inserta una fila)
+          const KEYCOLS=['modelo','op','cant.','familia','parte','tubular','nombre del dibujo'];
+          const keyOf=(hrow,row)=>{ const hl=(hrow||[]).map(x=>String(x).trim().toLowerCase()); return JSON.stringify(KEYCOLS.map(k=>{ const i=hl.indexOf(k); return i>=0?String(row[i]==null?'':row[i]).trim():''; })); };
           const pool={}; const oc=progCortesParse(old.cortes), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
-          old.rows.slice(1).forEach((row,r)=>{ (pool[keyOf(row,old.obsColIdx)]=pool[keyOf(row,old.obsColIdx)]||[]).push(r); });
+          old.rows.slice(1).forEach((row,r)=>{ const k=keyOf(old.rows[0],row); (pool[k]=pool[k]||[]).push(r); });
           dataRows.forEach((row,r)=>{
-            const k=keyOf(row,obsColIdx), list=pool[k]; if(!list||!list.length) return;
+            const k=keyOf(header,row), list=pool[k]; if(!list||!list.length) return;
             const or=list.shift(), oldRow=old.rows[or+1];
             row[0]=oldRow[oci]===true;
             if(obsColIdx>=0 && old.obsColIdx>=0) row[obsColIdx]=oldRow[old.obsColIdx];
@@ -2388,6 +2646,7 @@ function handleProgramaUpload(event){
         programaDia.push(rec);
         cloudUpsertRow('Programa_Dia', progCloudRow(rec));
         found.push(machine);
+        if(PROG_TUB_MACHINES.includes(machine)) syncTubFromPrograma(fecha,machine);
       });
       saveProgramaDiaLS();
       if(found.length){
@@ -2397,7 +2656,7 @@ function handleProgramaUpload(event){
         msg.textContent='⚠ No se encontró ninguna hoja que coincida con GW1, GW2 o Laser de Cama.';
         msg.style.color='var(--amber)';
       }
-      event.target.value='';
+      { const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; }
       try{ progAutoFillContext(); }catch(e){}
       renderProgramaDia(true);
     }catch(err){
@@ -2411,7 +2670,9 @@ function renderProgramaProgress(rec){
   const el=document.getElementById('programa-progress');
   if(!el || rec.cortadoColIdx==null) return;
   const st=progStats(rec);
-  el.textContent=`${st.done} / ${st.total} filas cortadas`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'');
+  let extra='';
+  if(progIsTubRec(rec) && rec.obsColIdx>=0){ const ct=progConsTotals(rec); if(ct.total>0) extra=` · Consumo real: ${fmt2(ct.total)} tramos${ct.re>0?` (${fmt2(ct.tc)} completos + ${fmt2(ct.re)} de recortes)`:''}`; }
+  el.textContent=`${st.done} / ${st.total} filas cortadas`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'')+extra;
 }
 // Filtros activos por columna de la tabla del Programa del día — se
 // conservan entre reconstrucciones de la tabla (sync en segundo plano,
@@ -2452,38 +2713,64 @@ function applyProgramaFilters(){
   const counter=document.getElementById('programa-filter-count');
   if(counter) counter.textContent = Object.keys(programaFilters).length ? `${visibleCount} de ${rows.length} filas` : '';
 }
+// Columnas que se muestran en la tabla del programa. En GW1/GW2 «Observaciones» pasa a ser «Consumo real» seguida de
+// «Equiv. tramos», y se ocultan «Firma de entregado», «Pz x tramo» y «Tubos».
+function progDisplayCols(rec,tub){
+  const out=[];
+  ((rec.rows&&rec.rows[0])||[]).forEach((h,i)=>{
+    const n=String(h).trim().toLowerCase();
+    if(tub && PROG_HIDE_COLS.includes(n)) return;
+    if(tub && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'eq',i,label:'Equiv. tramos'}); return; }
+    out.push({k:'d',i,label:h});
+  });
+  return out;
+}
 function renderProgramaTable(rec){
   const rows=rec&&rec.rows;
   if(!rows || !rows.length) return '<div class="empty-state">Sin datos en esta hoja.</div>';
-  const header=rows[0]||[];
   const body=rows.slice(1);
   const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
   const canCut=canCutPrograma() && !progIsCompleted(rec);
   const cortes=progCortesParse(rec.cortes);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  const thead=`<thead><tr>${header.map(h=>`<th>${h===''?'&nbsp;':esc(h)}</th>`).join('')}</tr>
-    <tr class="programa-filter-row">${header.map((h,cIdx)=>{
-      if(cIdx===cortadoColIdx){
-        const cur=programaFilters[cIdx]||'';
-        return `<th><select class="programa-filter-select" onchange="setProgramaFilter(${cIdx},this.value)">
+  const tub=progIsTubRec(rec) && obsColIdx>=0;
+  const cols=progDisplayCols(rec,tub);
+  const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
+    <tr class="programa-filter-row">${cols.map((c,j)=>{
+      if(c.k==='d' && c.i===cortadoColIdx){
+        const cur=programaFilters[j]||'';
+        return `<th><select class="programa-filter-select" onchange="setProgramaFilter(${j},this.value)">
           <option value="">Todos</option>
           <option value="__done__" ${cur==='__done__'?'selected':''}>✓ Cortados</option>
           <option value="__pending__" ${cur==='__pending__'?'selected':''}>Pendientes</option>
         </select></th>`;
       }
-      const cur=(programaFilters[cIdx]||'').toString().replace(/"/g,'&quot;');
-      return `<th><input type="text" class="programa-filter-input" value="${cur}" placeholder="Filtrar…" oninput="setProgramaFilter(${cIdx},this.value)"></th>`;
+      const cur=(programaFilters[j]||'').toString().replace(/"/g,'&quot;');
+      return `<th class="${c.k==='cons'?'pc-cons':c.k==='eq'?'pc-eq':''}"><input type="text" class="programa-filter-input" value="${cur}" placeholder="Filtrar…" oninput="setProgramaFilter(${j},this.value)"></th>`;
     }).join('')}</tr>
   </thead>`;
   const tbody=`<tbody>${body.map((row,rIdx)=>{
     const isDone=row[cortadoColIdx]===true;
-    return `<tr class="${isDone?'programa-row-done':''}">${header.map((_,cIdx)=>{
-    if(cIdx===cortadoColIdx){
-      const c=cortes[rIdx]; let tip='';
-      if(isDone&&c&&c.on){ const tn=(TURNOS_CT[rec.ct]||[])[c.t]; tip=`Cortado el ${isoFromYmd(c.f)} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,c.i)}${c.q>0?' · '+c.q+' pzas':''}`; }
+    const x=tub?progConsRow(rec,rIdx):null;
+    return `<tr class="${isDone?'programa-row-done':''}">${cols.map(c=>{
+    const cIdx=c.i;
+    if(c.k==='d' && cIdx===cortadoColIdx){
+      const cc=cortes[rIdx]; let tip='';
+      if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; tip=`Cortado el ${isoFromYmd(cc.f)} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}`; }
       else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
       return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)"></td>`;
+    }
+    if(c.k==='cons'){
+      const txt=progConsText(x);
+      if(canCut) return `<td class="prog-cons-td pc-cons"><button type="button" class="prog-cons-btn ${x.has?'has':''}" title="${x.has?'Editar el consumo real de esta OP':'Registrar el consumo real: tramos completos o recortes'}" onclick="programaOpenConsumo('${rec.fecha}','${rec.machine}',${rIdx})">${x.has?esc(txt):'＋ Registrar'}</button>${x.c.note&&!x.has?`<span class="prog-cons-note" title="Nota anterior del archivo">${esc(x.c.note)}</span>`:''}</td>`;
+      return `<td class="prog-cons-td pc-cons">${x.has?`<span class="prog-cons-ro">${esc(txt)}</span>`:(x.c.note?`<span class="prog-cons-note">${esc(x.c.note)}</span>`:'')}</td>`;
+    }
+    if(c.k==='eq'){
+      if(!x.has) return `<td class="prog-eq-td pc-eq"></td>`;
+      const warn=(!x.tub&&x.re>0)?` <span title="El tubular no está en el catálogo: se asumió un tramo de ${x.largo} cm" style="color:var(--amber)">⚠</span>`:'';
+      const tip=`Equivalencia de los recortes en tramos: cantidad × medida ÷ largo del tramo (${x.largo} cm)`;
+      return `<td class="prog-eq-td pc-eq" title="${esc(tip)}">${x.re>0?`<b>${f3(x.re)}</b>${warn}`:'<span style="color:var(--text3)">–</span>'}${x.t>0&&x.re>0?`<small>total ${f3(x.total)}</small>`:''}</td>`;
     }
     if(cIdx===obsColIdx){
       const val=row[cIdx]!=null?String(row[cIdx]):'';
@@ -2493,36 +2780,96 @@ function renderProgramaTable(rec){
   }).join('')}</tr>`;
   }).join('')}</tbody>`;
   setTimeout(applyProgramaFilters,0);
-  return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table">${thead}${tbody}</table></div>`;
+  return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table${tub?' prog-tub':''}">${thead}${tbody}</table></div>`;
 }
-// Descarga un .xlsx con el programa del día completo (todas las máquinas
-// con datos para la fecha seleccionada), incluyendo lo marcado como
-// cortado y las observaciones de material real utilizado — para que
-// Leonardo pueda llevar registro del consumo.
+// ── Registro del día: reporte imprimible (mismo estilo que los demás reportes) ──
+function buildProgramaReportHtml(fecha){
+  const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
+  const n2=n=>fmt2(n);
+  const recs=PROGRAMA_MACHINES.map(m=>getProgramaRecord(fecha,m)).filter(Boolean);
+  const quien=currentUser?currentUser.name:'';
+  const ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  let rowsT=0,rowsD=0,pzT=0,pzD=0;
+  recs.forEach(r=>{ const st=progStats(r); rowsT+=st.total; rowsD+=st.done; pzT+=st.pz; pzD+=st.pzDone; });
+  const tubRecs=recs.filter(progIsTubRec);
+  // Consumo por tipo de tubular y máquina (GW1 + GW2)
+  const tmap={}, tot={tc:0,re:0,kg:0}, byM={};
+  tubRecs.forEach(r=>{ byM[r.machine]=0; progTubDetalle(r).forEach(d=>{
+    const o=tmap[d.tipo]||(tmap[d.tipo]={tipo:d.tipo,by:{},tc:0,re:0,kg:0});
+    o.by[r.machine]=(o.by[r.machine]||0)+d.cant; o.tc+=d.tc; o.re+=d.re; o.kg+=d.pesoTotal;
+    tot.tc+=d.tc; tot.re+=d.re; tot.kg+=d.pesoTotal; byM[r.machine]+=d.cant;
+  }); });
+  const trows=Object.values(tmap).sort((a,b)=>(b.tc+b.re)-(a.tc+a.re)||String(a.tipo).localeCompare(String(b.tipo)));
+  const tubTotal=r3(tot.tc+tot.re);
+  const maqs=tubRecs.map(r=>r.machine);
+  const consTable=!tubRecs.length?'':`<section><h2><span class="tag tub">TUBULAR</span> Consumo real de material — ${maqs.map(esc).join(' + ')} <small>suma de ambas máquinas</small></h2>
+    ${trows.length?`<table><thead><tr><th>Tubular</th>${maqs.map(m=>`<th class="n">${esc(m)} (tramos)</th>`).join('')}<th class="n">Tramos completos</th><th class="n">Equiv. recortes</th><th class="n">Total tramos</th><th class="n">Peso (kg)</th></tr></thead><tbody>
+      ${trows.map(o=>`<tr><td>${esc(o.tipo)}</td>${maqs.map(m=>`<td class="n">${o.by[m]?n2(o.by[m]):'<span class="muted">–</span>'}</td>`).join('')}<td class="n">${o.tc?n2(o.tc):'–'}</td><td class="n">${o.re?n2(o.re):'–'}</td><td class="n"><b>${n2(o.tc+o.re)}</b></td><td class="n">${o.kg?n2(o.kg):'–'}</td></tr>`).join('')}
+      <tr class="tot"><td>Total</td>${maqs.map(m=>`<td class="n">${n2(byM[m])}</td>`).join('')}<td class="n">${n2(tot.tc)}</td><td class="n">${n2(tot.re)}</td><td class="n">${n2(tubTotal)}</td><td class="n">${n2(tot.kg)}</td></tr>
+    </tbody></table>`:'<div class="line muted">Aún no se registró consumo real en el programa de este día.</div>'}
+    <div class="muted" style="margin-top:3px">Equiv. recortes = cantidad × medida del recorte ÷ largo del tramo. Este es el consumo que se refleja en Aprovechamiento (explosión de material y merma).</div></section>`;
+  // Detalle de recortes utilizados
+  const rdet=[];
+  tubRecs.forEach(r=>{
+    const h=(r.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), g=(row,n)=>{ const i=h.indexOf(n); return i>=0&&row[i]!=null?String(row[i]):''; };
+    r.rows.slice(1).forEach((row,i)=>{ const x=progConsRow(r,i); if(!x.c.r.length) return;
+      x.c.r.forEach(a=>rdet.push({m:r.machine,op:g(row,'op'),parte:g(row,'parte'),tubular:x.key,n:a[0],l:a[1],eq:r3(a[0]*a[1]/x.largo),largo:x.largo}));
+    });
+  });
+  const rdetHtml=!rdet.length?'':`<section><h2>Detalle de recortes utilizados <small>${rdet.length} renglón${rdet.length===1?'':'es'}</small></h2>
+    <table><thead><tr><th>Máquina</th><th>OP</th><th>Parte</th><th>Tubular</th><th class="n">Recortes</th><th class="n">Medida (cm)</th><th class="n">Largo tramo (cm)</th><th class="n">Equiv. tramos</th></tr></thead><tbody>
+    ${rdet.map(d=>`<tr><td>${esc(d.m)}</td><td>${esc(d.op)}</td><td>${esc(d.parte)}</td><td>${esc(d.tubular)}</td><td class="n">${f3(d.n)}</td><td class="n">${f3(d.l)}</td><td class="n">${f3(d.largo)}</td><td class="n">${f3(d.eq)}</td></tr>`).join('')}
+    </tbody></table></section>`;
+  // Programa por máquina
+  const sections=recs.map(r=>{
+    const tub=progIsTubRec(r)&&r.obsColIdx>=0, cols=progDisplayCols(r,tub), cortes=progCortesParse(r.cortes), st=progStats(r);
+    const ci=r.cortadoColIdx!=null?r.cortadoColIdx:0;
+    const th=cols.map(c=>`<th${c.k==='eq'?' class="n"':''}>${esc(c.label)}</th>`).join('');
+    const trs=r.rows.slice(1).map((row,i)=>{
+      const x=tub?progConsRow(r,i):null;
+      return `<tr>${cols.map(c=>{
+        if(c.k==='d'&&c.i===ci){ const cc=cortes[i]; if(row[ci]===true){ const tn=cc&&cc.on?(TURNOS_CT[r.ct]||[])[cc.t]:''; const lab=cc&&cc.on&&tn?progFranjaLabel(tn,cc.i):''; const adv=cc&&cc.on&&cc.f&&isoFromYmd(cc.f)!==r.fecha?' · '+isoFromYmd(cc.f):''; return `<td><b class="pos">✓</b> <span class="muted">${esc(lab+adv)}</span></td>`; } return `<td><span class="muted">—</span></td>`; }
+        if(c.k==='cons') return `<td>${x.has?esc(progConsText(x)):(x.c.note?`<span class="muted">${esc(x.c.note)}</span>`:'')}</td>`;
+        if(c.k==='eq') return `<td class="n">${x.has&&x.re>0?`<b>${f3(x.re)}</b>${x.t>0?` <span class="muted">(total ${f3(x.total)})</span>`:''}`:(x.has?'<span class="muted">–</span>':'')}</td>`;
+        const v=row[c.i]; return `<td>${v!=null&&v!==''?esc(v):''}</td>`;
+      }).join('')}</tr>`;
+    }).join('');
+    const ct=tub?progConsTotals(r):null;
+    const hora=r.uploadedAt?new Date(r.uploadedAt).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
+    return `<section class="ps"><h2><span class="tag ct">${esc(r.machine.toUpperCase())}</span> Programa de corte <small>${st.done} de ${st.total} filas cortadas · ${nf(st.pzDone)} de ${nf(st.pz)} pzas${progIsCompleted(r)?' · programa completado':''}</small></h2>
+      <div class="ctline"><span>Hoja: <b>${esc(r.sheetName||'')}</b></span><span>Subido por <b>${esc(r.uploadedByName||'')}</b>${hora?' a las '+esc(hora):''}</span>${ct?`<span>Consumo real: <b>${n2(ct.tc)}</b> tramos completos + <b>${n2(ct.re)}</b> equiv. de recortes = <b>${n2(ct.total)}</b> tramos${ct.kg>0?' · '+n2(ct.kg)+' kg':''}</span>`:''}</div>
+      <table class="prog"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></section>`;
+  }).join('');
+  const titulo='Registro del día — Programa de corte';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(fecha)}</title>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter landscape;margin:10mm}.page{max-width:1080px}section.ps{page-break-inside:auto}table.prog{font-size:9.5px}table.prog th,table.prog td{padding:3px 5px;vertical-align:top}table.prog td{white-space:normal}.kpis{grid-template-columns:repeat(4,1fr)}</style></head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<header><div><h1>${titulo}</h1><div class="wk">${esc(dayLabel(fecha))} · ${esc(fecha)}</div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi"><div class="l">Filas cortadas</div><div class="v">${rowsD} / ${rowsT}</div><div class="s">${recs.length} programa${recs.length===1?'':'s'} (${recs.map(r=>esc(r.machine)).join(', ')})</div></div>
+  <div class="kpi"><div class="l">Piezas cortadas</div><div class="v">${nf(pzD)}</div><div class="s">de ${nf(pzT)} programadas</div></div>
+  <div class="kpi main"><div class="l">Consumo real (tramos)</div><div class="v">${tubRecs.length?n2(tubTotal):'—'}</div><div class="s">${tubRecs.length?`${n2(tot.tc)} completos + ${n2(tot.re)} de recortes`:'sin GW1 / GW2'}</div></div>
+  <div class="kpi"><div class="l">Peso consumido (kg)</div><div class="v">${tubRecs.length?n2(tot.kg):'—'}</div><div class="s">según el catálogo de tubulares</div></div>
+</div>
+${consTable}${rdetHtml}${sections}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Consumo real: lo que el operador anotó en el programa por cada OP (tramos completos y/o recortes con su medida). La equivalencia de los recortes se calcula contra el largo del tramo del tubular.</footer>
+</div></body></html>`;
+}
+// «Descargar registro del día»: abre el reporte imprimible (imprimir o guardar como PDF).
 function exportProgramaDia(){
   const fecha=progTargetFecha();
-  const recs=programaDia.filter(r=>r.fecha===fecha);
   const msg=document.getElementById('programa-upload-msg');
-  if(!recs.length){
+  if(!programaDia.some(r=>r.fecha===fecha)){
+    progMsg('⚠ No hay programa cargado para esta fecha.','var(--amber)');
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
   }
-  if(typeof XLSX==='undefined'){
-    if(msg){ msg.textContent='⚠ No se pudo cargar el lector de Excel (sin conexión a internet).'; msg.style.color='var(--amber)'; }
-    return;
-  }
-  const wb=XLSX.utils.book_new();
-  recs.forEach(rec=>{
-    const cortadoIdx=rec.cortadoColIdx;
-    const exportRows=rec.rows.map((row,i)=>{
-      if(i===0) return row; // encabezado tal cual
-      if(cortadoIdx==null) return row;
-      return row.map((c,ci)=>ci===cortadoIdx ? (c===true?'Sí':'No') : c);
-    });
-    const ws=XLSX.utils.aoa_to_sheet(exportRows);
-    XLSX.utils.book_append_sheet(wb, ws, rec.machine.replace(/[\\/*?:\[\]]/g,'').slice(0,31));
-  });
-  XLSX.writeFile(wb, `Programa_Dia_${fecha}.xlsx`);
+  openPrintHtml(buildProgramaReportHtml(fecha));
 }
 // Habilita/deshabilita la pestaña "Programa del día" según la máquina seleccionada
 function updateProgramaTabState(machine){
@@ -2575,6 +2922,7 @@ function renderProgramaDia(force){
 
   const canUpload=currentUser.role==='ingeniero'||currentUser.role==='lider';
   if(uploadCard) uploadCard.style.display=(canUpload && !regSplitActive)?'':'none';
+  applyProgUploadCollapse();
 
   const ct=document.getElementById('reg-ct').value;
   const machine=document.getElementById('reg-machine').value;
@@ -2613,12 +2961,14 @@ function renderProgramaDia(force){
 
   if(!PROGRAMA_MACHINES.includes(machine)){
     container.innerHTML=`<div class="empty-state">El programa del día solo aplica para GW1, GW2 y Laser de Cama.<br>Selecciona una de esas máquinas en "Identificación del turno" para verlo aquí.</div>`;
+    container._progHtml=null; delete container.dataset.progKey;
     return;
   }
   try{ progAutoFillContext(); }catch(e){}
   const rec=getProgramaRecord(fecha,machine);
   if(!rec){
     container.innerHTML=`<div class="empty-state">Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.</div>`;
+    container._progHtml=null; delete container.dataset.progKey;
     return;
   }
   const t=rec.uploadedAt?new Date(rec.uploadedAt):null;
@@ -2652,7 +3002,11 @@ function renderProgramaDia(force){
     if(mine.total>0&&mine.done===mine.total) cierre=`<div class="programa-done-bar"><span>✓ ${machine} ya cortó todo su programa · falta: ${otros.join(' · ')}</span></div>`;
   }
   const showTable=!completed||progShowDone[key];
-  container.innerHTML=`
+  // Se conserva la posición de desplazamiento (horizontal y vertical) de la tabla: el refresco automático no debe moverla.
+  const prevWrap=container.querySelector('.programa-table-wrap');
+  const keepScroll=(prevWrap&&container.dataset.progKey===rec.id)?{l:prevWrap.scrollLeft,t:prevWrap.scrollTop}:null;
+  container.dataset.progKey=rec.id;
+  const html=`
     <div style="padding:1rem 1rem 0">
       ${aviso}
       <div class="programa-meta">
@@ -2660,7 +3014,7 @@ function renderProgramaDia(force){
         <span id="programa-progress" style="font-weight:600;color:var(--text)"></span>
         <span style="margin-left:auto">Subido por ${rec.uploadedByName} — ${hhmm}</span>
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
-        ${canUpload?`<button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el programa del día completo (todas las máquinas cargadas) con lo cortado y las observaciones">${ic('box',12)}Descargar registro del día</button>`:''}
+        <button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Abre el reporte imprimible del día (imprimir o guardar como PDF): programa por máquina, lo cortado y el consumo real de material">${ic('box',12)}Descargar registro del día</button>
       </div>
       ${cierre}
       ${showTable?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
@@ -2670,6 +3024,12 @@ function renderProgramaDia(force){
       </div>`:''}
     </div>
     ${showTable?`<div style="padding:0 1rem 1rem">${renderProgramaTable(rec)}</div>`:'<div style="height:1rem"></div>'}`;
+  // Si nada cambió no se reconstruye (así no se pierde el desplazamiento ni el foco); si cambió, se restaura la posición.
+  if(container._progHtml!==html){
+    container.innerHTML=html; container._progHtml=html;
+    const nw=container.querySelector('.programa-table-wrap');
+    if(nw&&keepScroll){ nw.scrollLeft=keepScroll.l; nw.scrollTop=keepScroll.t; }
+  }
   renderProgramaProgress(rec);
 }
 // Mientras se ve el Programa se refresca solo (Líder e Ingeniería siguen el corte en vivo)
@@ -4761,7 +5121,7 @@ function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())retu
 const SK_LAM_DRAFT='oee_lam_draft_v1';
 // ── Formulario de Aprovechamiento: estados vacíos, contadores, foco y teclado ──
 function apRefresh(){
-  ['lam-hojas','lam-recortes','tub-tramos','tub-recortes'].forEach(k=>{
+  ['lam-hojas','lam-recortes','tub-recortes'].forEach(k=>{
     const list=document.getElementById(k+'-list'); if(!list) return;
     const n=list.querySelectorAll('.dynamic-row').length;
     const head=document.getElementById(k+'-head'), emp=document.getElementById(k+'-empty');
@@ -4772,7 +5132,6 @@ function apRefresh(){
   const cnt=sel=>document.querySelectorAll(sel).length;
   const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
   set('lam-hojas-count', fmtN(qty('#lam-hojas-list .dynamic-row'),2)+' hojas');
-  set('tub-tramos-count', fmtN(qty('#tub-tramos-list .dynamic-row'),2)+' tramos');
   const nl=cnt('#lam-recortes-list .dynamic-row'), nt=cnt('#tub-recortes-list .dynamic-row');
   set('lam-recortes-count', nl+(nl===1?' recorte':' recortes'));
   set('tub-recortes-count', nt+(nt===1?' pedacera':' pedaceras'));
@@ -4894,7 +5253,6 @@ function saveLamina(){
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
   aprovAfterSave('lam-save-msg');renderAprovHist();
 }
-function addTubTramo(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tt'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-tub';d.id=id;d.innerHTML=`<select onchange="calcTubular()">${getTubularOptions()||'<option>Sin tubulares</option>'}</select><input type="number" min="0" placeholder="0" oninput="calcTubular()"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcTubular()">×</button>`;document.getElementById('tub-tramos-list').appendChild(d);calcTubular();if(!skipPermCheck)apFocus(d);}
 function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row ped-row';d.id=id;
   const f=(lbl,inner)=>`<label class="ped-f"><span>${lbl}</span>${inner}</label>`;
   d.innerHTML=`<div class="ped-l1">
@@ -4937,10 +5295,6 @@ function saveTubDraft(){
     turno: document.getElementById('tub-turno')?.value,
     op: document.getElementById('tub-op')?.value,
     merma: document.getElementById('tub-merma')?.value,
-    tramos: Array.from(document.querySelectorAll('#tub-tramos-list .dynamic-row')).map(row=>{
-      const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-      return {tipo: sel?.value, cant: ins[0]?.value};
-    }),
     recortes: Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
       const o={}; row.querySelectorAll('[data-f]').forEach(el=>{ if(el.dataset.f!=='chips') o[el.dataset.f]=el.value; });
       return o;
@@ -4950,24 +5304,15 @@ function saveTubDraft(){
 }
 function clearTubDraft(){ localStorage.removeItem(SK_TUB_DRAFT); }
 function restoreTubDraft(){
-  if(document.querySelectorAll('#tub-tramos-list .dynamic-row').length) return;
   if(document.querySelectorAll('#tub-recortes-list .dynamic-row').length) return;
   let draft;
   try{ draft=JSON.parse(localStorage.getItem(SK_TUB_DRAFT)); }catch(e){ return; }
   if(!draft) return;
   if(draft.fecha && draft.fecha!==todayStr()){ clearTubDraft(); return; }
-  if(!(draft.tramos&&draft.tramos.length) && !(draft.recortes&&draft.recortes.length)) return;
+  if(!(draft.recortes&&draft.recortes.length)) return;
   if(draft.maquina) document.getElementById('tub-machine').value=draft.maquina;
   if(draft.turno) document.getElementById('tub-turno').value=draft.turno;
   if(draft.merma) document.getElementById('tub-merma').value=draft.merma;
-  (draft.tramos||[]).forEach(t=>{
-    addTubTramo(true);
-    const rows=document.querySelectorAll('#tub-tramos-list .dynamic-row');
-    const row=rows[rows.length-1];
-    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    if(sel && t.tipo) sel.value=t.tipo;
-    if(ins[0] && t.cant) ins[0].value=t.cant;
-  });
   (draft.recortes||[]).forEach(r=>{
     addTubRecorte(true);
     const rows=document.querySelectorAll('#tub-recortes-list .dynamic-row');
@@ -4980,7 +5325,7 @@ function restoreTubDraft(){
 }
 function calcTubular(){
   apRefresh();
-  let pt=0;document.querySelectorAll('#tub-tramos-list .dynamic-row').forEach(row=>{const sel=row.querySelector('select');const ins=row.querySelectorAll('input');const tub=getTubularByTipo(sel?sel.value:'');const t=parseFloat(ins[0]?.value)||0;const pw=tub?tub.peso:0;const pr=fmtN(t*pw,3);if(ins[1])ins[1].value=pw||'';if(ins[2])ins[2].value=pr||'';pt+=pr;});
+  let pt=0;
   document.getElementById('tub-peso-total').textContent=fmtN(pt,3);
   const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   document.getElementById('tub-pct-merma').textContent=pt>0?fmtN((merma/pt)*100,2)+'%':'–';
@@ -5008,19 +5353,16 @@ function calcTubular(){
 }
 function saveTubular(){
   if(!canCaptureAprov()){ console.warn('saveTubular bloqueado: sin permiso de capturar aprovechamiento.'); return; }
-  { const vt=apValidate('#tub-tramos-list',[0]), vr=apValidate('#tub-recortes-list',[0,1]);
-    if(!vt.filas && !vr.filas){ apMsg('tub-save-msg','⚠ Agrega al menos un tubular o una pedacera',true); return; }
-    if(vt.bad.length||vr.bad.length){ apMsg('tub-save-msg','⚠ Completa las filas marcadas en rojo (o quítalas con ×)',true); (vt.bad[0]||vr.bad[0]).focus(); return; } }
+  { const vr=apValidate('#tub-recortes-list',[0,1]);
+    if(!vr.filas){ apMsg('tub-save-msg','⚠ Agrega al menos una pedacera (el consumo de tramos se toma del Programa del día)',true); return; }
+    if(vr.bad.length){ apMsg('tub-save-msg','⚠ Completa las filas marcadas en rojo (o quítalas con ×)',true); vr.bad[0].focus(); return; } }
   const maquina=document.getElementById('tub-machine').value;const fecha=document.getElementById('tub-fecha').value||todayStr();const turno=document.getElementById('tub-turno').value;const op=document.getElementById('tub-op').value||'–';
   const pt=parseFloat(document.getElementById('tub-peso-total').textContent)||0;const merma=parseFloat(document.getElementById('tub-merma').value)||0;
   const pctMerma=pt>0?fmtN((merma/pt)*100,2):0;const ah=parseFloat(document.getElementById('tub-ahorro').textContent.replace(/,/g,''))||0;
   const aprovechado=pt>0?fmtN(pt-merma,3):0;const mermaFinal=merma>0?merma:null;
   // Desglose por tipo de tubular y recortes recuperados — necesarios para
   // comparar contra lo explosionado, igual que en lámina.
-  const tramosDetalle=Array.from(document.querySelectorAll('#tub-tramos-list .dynamic-row')).map(row=>{
-    const sel=row.querySelector('select'); const ins=row.querySelectorAll('input');
-    return {tipo: sel?.value, cant: parseFloat(ins[0]?.value)||0, pesoTotal: parseFloat(ins[2]?.value)||0};
-  }).filter(t=>t.tipo && t.cant>0);
+  const tramosDetalle=[];   // el consumo de tramos ya no se captura aquí: viene del Programa del día (registro tp_…)
   const recortesDetalle=Array.from(document.querySelectorAll('#tub-recortes-list .dynamic-row')).map(row=>{
     const x=readPedRow(row);
     return {tipo:x.tipo,op:x.op,modelo:x.modelo,ubicacion:x.ubicacion,nPz:x.nPz,largoRet:x.largoRet,piezasProd:x.piezasProd,largoPieza:x.largoPieza,largoTramo:x.largoTramo,largoTotal:x.largoTotal,rec:x.rec,peso:x.peso,ahorro:x.ahorro};
@@ -5028,7 +5370,7 @@ function saveTubular(){
   const rec={id:Date.now(),tipo:'tubular',maquina,ct:'LASER',fecha,turno,op,pesoTotal:pt,merma:mermaFinal,pctMerma:mermaFinal!=null?pctMerma:null,aprovechado:mermaFinal!=null?aprovechado:null,ahorro:ah,tramosDetalle,recortesDetalle,updatedAt:new Date().toISOString()};
   aprovRecords.push(rec);save('aprovRecords');_aprovLastSync='pend';cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec),aprovSyncDone);
   clearTubDraft();
-  document.getElementById('tub-tramos-list').innerHTML='';document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
+  document.getElementById('tub-recortes-list').innerHTML='';document.getElementById('tub-merma').value=0;calcTubular();
   aprovAfterSave('tub-save-msg');renderAprovHist();
 }
 function renderAprovChart(canvasId,legendId,aprovechado,merma,chartRef,setRef){
@@ -5079,11 +5421,11 @@ const APROV_INPUT="width:100%;max-width:110px;font-size:12px;font-family:'IBM Pl
 function aprovItems(r){
   const raw = r.tipo==='lamina'
     ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0,ev:h.origen==='eventualidad'?(Number(h.hojas)||0):0}))
-    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0}));
+    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0,tc:Number(t.tc)||0,re:Number(t.re)||0}));
   const map={}, out=[];
   raw.forEach(it=>{
     if(!it.key) return;
-    if(map[it.key]){ map[it.key].real+=it.real; map[it.key].ev=(map[it.key].ev||0)+(it.ev||0); return; }
+    if(map[it.key]){ map[it.key].real+=it.real; map[it.key].ev=(map[it.key].ev||0)+(it.ev||0); map[it.key].tc=(map[it.key].tc||0)+(it.tc||0); map[it.key].re=(map[it.key].re||0)+(it.re||0); return; }
     const cfg=it.kind==='cal'?getLaminaByCal(it.key):getTubularByTipo(it.key);
     map[it.key]={...it,costo:(cfg&&cfg.costo)||0};
     out.push(map[it.key]);
@@ -5224,7 +5566,7 @@ function aprovDetailHtml(r){
         : `<span style="font-weight:500">${it.key}</span>`;
       return `<div id="exrow-${id}-${i}" style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
         ${first}
-        <span style="${mono}">${fmt2(it.real)}${it.ev>0?`<span style="display:block;color:var(--amber);font-size:10px;line-height:1.3" title="Láminas de eventualidad: no estaban en la explosión, se restan del consumo de este calibre">− ${fmt2(it.ev)} event. = ${fmt2(it.realProg)}</span>`:''}</span>
+        <span style="${mono}">${fmt2(it.real)}${it.re>0?`<span style="display:block;color:var(--text3);font-size:10px;line-height:1.3" title="Consumo real del Programa del día: tramos completos y equivalencia de los recortes usados">${fmt2(it.tc)} compl. + ${fmt2(it.re)} recortes</span>`:''}${it.ev>0?`<span style="display:block;color:var(--amber);font-size:10px;line-height:1.3" title="Láminas de eventualidad: no estaban en la explosión, se restan del consumo de este calibre">− ${fmt2(it.ev)} event. = ${fmt2(it.realProg)}</span>`:''}</span>
         <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.realProg}" data-total="${it.real}" data-costo="${it.costo}" data-row="${i}" ${it.extra?'data-extra="1"':''} value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
         <span id="dif-${id}-${i}" style="${mono}">–</span>
         <span id="val-${id}-${i}" style="${mono}">–</span>
@@ -5237,6 +5579,8 @@ function aprovDetailHtml(r){
       <div id="tot-row-${id}" style="${grid};padding:7px 0;font-size:12px;font-weight:700">
         <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${fmt2(T.totReal)}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
       </div></div>${nuevoBtn}`;
+  } else if(!isLam && (r.origen==='programa' || (r.recortesDetalle||[]).some(x=>Number(x.largoRet)>0))){
+    consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5">${r.origen==='programa'?'Aún no hay consumo real anotado en el Programa del día para esta máquina y fecha.':'Este registro solo trae <b>recuperación de recortes</b>: el consumo de tramos se toma del <b>Consumo real</b> del Programa del día (registro de la máquina para este día).'}</div>`;
   } else {
     consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmt2(r.pesoTotal)} kg</b>) para poder compararlo contra lo explosionado.</div>
       <div id="legacy-rows-${id}"></div>
@@ -5269,6 +5613,8 @@ function aprovDetailHtml(r){
           ${extra?`<div style="color:var(--text3);font-size:11px;margin-top:1px">${extra}</div>`:''}
         </div>`;
       }).join('')+(isLam?`<div id="rcov-${id}" style="margin-top:8px"></div>`:'')
+    : r.origen==='programa'
+    ? `<div style="font-size:12px;color:var(--text3);line-height:1.5">Este registro se genera solo con el <b>Consumo real</b> que el operador anota en el Programa del día (tramos completos y recortes en su equivalencia de tramos). La pedacera recuperada se registra en «Tubular — Laser».</div>`
     : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
   const ahorroRec=T.recEfectivo40;
   const rqData=isLam?JSON.stringify(aprovRecGroups(r)).replace(/'/g,'&#39;'):'{}';
@@ -5686,7 +6032,9 @@ function renderAprovHist(force){
         try{
           const T=aprovTotals(r);
           let ahorroCell;
-          if(!T.items.length){
+          if(!T.items.length && r.tipo==='tubular' && r.origen!=='programa' && (r.recortesDetalle||[]).some(x=>Number(x.largoRet)>0)){
+            ahorroCell=`<button onclick="toggleAprovDetail('${r.id}',true)" title="Solo recuperación de recortes (el consumo viene del Programa del día)" style="background:transparent;border:none;cursor:pointer;padding:0;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:#3ecf8e">$${fmtMoney(T.ahorroRec)}</button>`;
+          } else if(!T.items.length){
             ahorroCell=`<button onclick="toggleAprovDetail('${r.id}',true)" style="font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:4px;cursor:pointer;padding:2px 8px;font-family:'IBM Plex Sans',sans-serif">Ver / capturar detalle</button>`;
           } else if(T.any){
             const tip=T.items.map(it=>it.expl==null?`${it.key}: ${fmt2(it.real)} reales (sin explosión)`:`${it.key}: ${fmt2(it.real)} reales vs ${fmt2(it.expl)} plan (${sgn2(it.dif)})`).join('\n').replace(/"/g,'&quot;');
@@ -6545,7 +6893,6 @@ function refreshMaterialSelects(){
   const set=(sel,html)=>document.querySelectorAll(sel).forEach(el=>{ const cur=el.value; el.innerHTML=html; if(cur && Array.from(el.options).some(o=>o.value===cur)) el.value=cur; });
   set('#lam-hojas-list select:not([data-f="org"])',getLaminaOptions());
   set('#lam-recortes-list select',getLaminaOptionsShort());
-  set('#tub-tramos-list select',getTubularOptions());
   set('#tub-recortes-list select',getTubularOptions());
 }
 function saveLamConfig(){save('laminas');matPublishPending();const msg=document.getElementById('lam-config-save-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);}
@@ -7100,7 +7447,8 @@ function deleteRecord(id){
   cloudDeleteRow('OEE_Registros', id);
 }
 function deleteAprov(id){
-  if(!confirm('¿Eliminar este registro de aprovechamiento?')) return;
+  const _tp=String(id).indexOf('tp_')===0;
+  if(!confirm(_tp?'Este registro se genera del Consumo real del Programa del día. Si lo eliminas se vuelve a crear cuando el operador modifique el consumo de esa máquina y día. ¿Eliminarlo (incluida su explosión)?':'¿Eliminar este registro de aprovechamiento?')) return;
   aprovRecords = aprovRecords.filter(r => String(r.id) !== String(id));
   save('aprovRecords');
   renderAprovHist(true);
@@ -8414,7 +8762,7 @@ const today=todayStr();
 // Teclado en los formularios de Aprovechamiento: Enter pasa al siguiente campo y, en el último
 // campo de la última fila, agrega una fila nueva.
 (function(){
-  const add={'lam-hojas-list':()=>addLamHoja(),'lam-recortes-list':()=>addLamRecorte(),'tub-tramos-list':()=>addTubTramo(),'tub-recortes-list':()=>addTubRecorte()};
+  const add={'lam-hojas-list':()=>addLamHoja(),'lam-recortes-list':()=>addLamRecorte(),'tub-recortes-list':()=>addTubRecorte()};
   Object.keys(add).forEach(id=>{
     const el=document.getElementById(id); if(!el) return;
     el.addEventListener('keydown',e=>{
