@@ -802,7 +802,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="tab-row" id="reg-tab-row">
       <div class="tab active" id="reg-tab-form-btn" onclick="switchTab('reg-tab-form',this)">Registro</div>
       <div class="tab" id="reg-tab-programa-btn" onclick="flushLiveSyncNow();switchTab('reg-tab-programa',this);renderProgramaDia();refreshProgramaDiaFromCloud()">Programa del día</div>
-      <div class="tab" id="reg-tab-historial-btn" onclick="flushLiveSyncNow();switchTab('reg-tab-historial',this);renderHoraHist()">Historial</div>
+      <div class="tab" id="reg-tab-historial-btn" onclick="flushLiveSyncNow();switchTab('reg-tab-historial',this);mountHistShared('reg-tab-historial');renderHoraHist()">Historial</div>
     </div>
 
     <!-- TAB: REGISTRO -->
@@ -999,7 +999,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
     <!-- TAB: HISTORIAL -->
     <div id="reg-tab-historial" class="tab-content">
-      <div class="form-card">
+      <div id="hist-shared"><div class="form-card">
         <div class="tab-row" style="margin-bottom:.75rem">
           <div class="tab active" onclick="switchTabScoped('hora-tab-hist',this,'hora-subtabs')">Historial hora por hora</div>
           <div class="tab" onclick="switchTabScoped('hora-tab-eval',this,'hora-subtabs');renderEvaluacion()">Evaluación por operador</div>
@@ -1007,8 +1007,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <!-- HISTORIAL HORA POR HORA -->
         <div id="hora-tab-hist" class="tab-content active">
           <div class="filter-row" style="margin-bottom:.75rem">
-            <select id="hora-hist-ct" onchange="populateHistMachineOptions('hora-hist-ct','hora-hist-machine');renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+            <select id="hora-hist-ct" onchange="populateHistMachineOptions('hora-hist-ct','hora-hist-machine',false);renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
               <option value="">Todos los centros</option>
+            </select>
+            <select id="hora-hist-tipo" onchange="renderHoraHist()" title="Tipo de captura" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
+              <option value="">Todas las capturas</option>
+              <option value="hora">Hora por hora</option>
+              <option value="dia">Cierre del día</option>
             </select>
             <select id="hora-hist-machine" onchange="renderHoraHist()" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
               <option value="">Todas las máquinas</option>
@@ -1024,11 +1029,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
               <option value="con">Solo con producción</option>
               <option value="sin">Solo en cero (sin producción)</option>
             </select>
-            <button class="btn" style="margin-left:auto;border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearHoraRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
+            <button class="btn" id="btn-quitar-vacios" style="margin-left:auto;border:1px solid var(--border);color:var(--text2);background:var(--bg3);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearEmptyRecords()" title="Quita los registros en cero (sin piezas ni paros)">🧹 Quitar vacíos</button>
+            <button class="btn" style="border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearHoraRecords()" title="Elimina todos los registros hora por hora (no toca los cierres del día)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Borrar hora×hora</button>
           </div>
           <div id="hora-rt-semanal"></div>
           <div id="hora-hist-body"></div>
-          <div id="hora-hist-empty" class="empty-state" style="display:none">Sin registros hora por hora.</div>
+          <div id="hora-hist-empty" class="empty-state" style="display:none">Sin registros.</div>
         </div>
         <!-- EVALUACIÓN POR OPERADOR -->
         <div id="hora-tab-eval" class="tab-content">
@@ -1064,7 +1070,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             </div>
           </div>
         </div>
-      </div>
+      </div></div><!-- end hist-shared -->
     </div><!-- end reg-tab-historial -->
   </div><!-- end .content -->
 </div><!-- end page-registro -->
@@ -1158,19 +1164,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 <!-- HISTORIAL OEE -->
 <div id="page-historial" class="page">
-  <div class="topbar"><div class="page-title">Historial OEE</div><div class="page-sub">Todos los turnos capturados</div></div>
-  <div class="content">
-    <div class="filter-row">
-      <select id="filter-ct" onchange="filterChanged()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
-      <select id="filter-machine" onchange="renderHistory()"><option value="">Todas las máquinas</option></select>
-      <select id="filter-turno" onchange="renderHistory()"><option value="">Todos los turnos</option></select>
-      <button class="btn" id="btn-quitar-vacios" style="margin-left:auto;border:1px solid var(--border);color:var(--text2);background:var(--bg3);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearEmptyRecords()" title="Quita los registros en cero (sin piezas ni paros)">🧹 Quitar vacíos</button>
-      <button class="btn" style="border:1px solid rgba(240,96,96,.3);color:var(--red);background:rgba(240,96,96,.06);font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:5px" onclick="clearAllRecords()"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Limpiar todo</button>
-    </div>
-    <div class="card"><div class="tbl-wrap">
-      <table class="tbl"><thead><tr><th>Fecha</th><th>Centro</th><th>Máquina</th><th>Turno</th><th>Operador</th><th>Prog.</th><th>Prod.</th><th>Rechazo</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th></th></tr></thead><tbody id="history-body"></tbody></table>
-    </div><div id="history-empty" class="empty-state" style="display:none">Sin registros.</div></div>
-  </div>
+  <div class="topbar"><div class="page-title">Historial</div><div class="page-sub">Todas las máquinas: hora por hora y cierre del día</div></div>
+  <div class="content" id="hist-page-host"></div>
 </div>
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
@@ -1617,7 +1612,7 @@ const PERMISSIONS_TREE=[
     {key:'tab-tubular', label:'Tubular — Laser'},
     {key:'tab-aprov-hist', label:'Historial'},
   ]},
-  {key:'historial', label:'Historial OEE'},
+  {key:'historial', label:'Historial'},
   {key:'reportes', label:'Reportes'},
   {key:'config', label:'Configuración', children:[
     {key:'cfg-laminas', label:'Calibres de lámina'},
@@ -6397,6 +6392,7 @@ function repCargarHistorial(){
 
 // ── HISTORIAL OEE ──
 function renderHistory(){
+  if(!document.getElementById('history-body')) return;   // el Historial OEE se sustituyó por el historial de Registrar turno
   const fct=document.getElementById('filter-ct').value;const fm=document.getElementById('filter-machine').value;const ft=document.getElementById('filter-turno').value;
   let filtered=[...records].reverse().filter(r=>machineInRoster(r.machine));if(fct)filtered=filtered.filter(r=>r.ct===fct);if(fm)filtered=filtered.filter(r=>r.machine===fm);if(ft)filtered=filtered.filter(r=>r.turno===ft);
   const tb=document.getElementById('history-body');const em=document.getElementById('history-empty');
@@ -6404,6 +6400,7 @@ function renderHistory(){
   tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${r.machine}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord('${r.id}')" title="Eliminar registro">×</button></td></tr>`).join('');
 }
 function updateFilterSelects(){
+  if(!document.getElementById('filter-ct')) return;
   const fct=document.getElementById('filter-ct').value;const mlist=fct?getMachinesByCT(fct):machines;
   document.getElementById('filter-machine').innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option>${m.name}</option>`).join('');
   const turnos=fct?TURNOS_CT[fct]:Object.values(TURNOS_CT).flat().filter((v,i,a)=>a.indexOf(v)===i);
@@ -6660,10 +6657,10 @@ function navigate(page,el){
   const _w=(tag)=>(e)=>console.warn('navigate('+page+') — '+tag+':', e);
   try{ if(page==='dashboard')renderDashboard(); }catch(e){ _w('dashboard')(e); }
   try{ if(page==='reportes'){ const i=document.getElementById('rep-fecha'); if(i&&!i.value) i.value=todayStr(); renderReportes(); } }catch(e){ _w('reportes')(e); }
-  try{ if(page==='historial'){ updateFilterSelects(); renderHistory(); updateEmptyRecordsBtn(); } }catch(e){ _w('historial')(e); }
+  try{ if(page==='historial'){ mountHistShared('hist-page-host'); renderHoraHist(); } }catch(e){ _w('historial')(e); }
   try{ if(page==='config'){renderConfig();renderLamConfig();renderTubConfig();} }catch(e){ _w('config')(e); }
   try{ if(page==='aprovechamiento')renderAprovHist(); }catch(e){ _w('aprovHist')(e); }
-  try{ if(page==='registro'){restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){ _w('registro')(e); }
+  try{ if(page==='registro'){mountHistShared('reg-tab-historial');restoreOrDefaultMachineSelection();renderHoraHist();applyOperatorRegistroUI();} }catch(e){ _w('registro')(e); }
   try{ if(page==='aprovechamiento'){applyAprovUI();} }catch(e){ _w('aprovUI')(e); }
 }
 
@@ -7890,14 +7887,20 @@ function populateHistCtOptions(){
     }
   });
 }
-function populateHistMachineOptions(ctSelId, machineSelId){
+// Un solo bloque de Historial (filtros + tarjetas + evaluación) que vive en «Registrar turno › Historial» o en el menú
+// «Historial», según desde dónde se abra. Así no hay IDs duplicados.
+function mountHistShared(hostId){
+  const el=document.getElementById('hist-shared'), host=document.getElementById(hostId);
+  if(el && host && el.parentNode!==host) host.appendChild(el);
+}
+function populateHistMachineOptions(ctSelId, machineSelId, onlyHora){
   const ct=document.getElementById(ctSelId)?.value||'';
   const machineSel=document.getElementById(machineSelId);
   if(!machineSel) return;
-  // Solo interesan las máquinas con hora×hora habilitada — son las únicas
-  // que generan registros en este historial.
+  // Evaluación por operador: solo máquinas con hora×hora. Historial: todas (hora por hora y cierre del día).
+  if(onlyHora===undefined) onlyHora=true;
   const pool = ct ? getMachinesByCT(ct) : machines;
-  const mlist = pool.filter(m=>LASER_MAQUINAS_HORA.includes(m.name));
+  const mlist = onlyHora ? pool.filter(m=>LASER_MAQUINAS_HORA.includes(m.name)) : pool;
   const current=machineSel.value;
   machineSel.innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option>${m.name}</option>`).join('');
   if(mlist.some(m=>m.name===current)) machineSel.value=current;
@@ -7910,27 +7913,44 @@ function renderHoraHist(){
     return records.find(r=>r.ct===horaRec.ct&&r.machine===horaRec.machine&&r.turno===horaRec.turno&&r.fecha===horaRec.fecha&&r.op===horaRec.op) || null;
   }
   populateHistCtOptions();
-  populateHistMachineOptions('hora-hist-ct','hora-hist-machine');
+  populateHistMachineOptions('hora-hist-ct','hora-hist-machine',false);
   const fct = document.getElementById('hora-hist-ct')?.value||'';
   const fmachine = document.getElementById('hora-hist-machine')?.value||'';
   const fturno = document.getElementById('hora-hist-turno')?.value||'';
   const fstatus = document.getElementById('hora-hist-status')?.value||'';
   try{ renderRetrabajoSemanal(fct,fmachine); }catch(e){ console.warn('renderRetrabajoSemanal',e); }
-  let filtered = [...horaRecords].reverse().filter(r=>machineInRoster(r.machine));
-  if(fct) filtered = filtered.filter(r=>r.ct===fct);
-  if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
-  if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
-  // Una máquina que se seleccionó pero nunca llegó a producir nada ese día
-  // (0 piezas fabricadas y 0 dañadas) deja un registro "en cero" — este
-  // filtro permite ocultarlo, o ver solo esos, según convenga.
-  if(fstatus==='con') filtered = filtered.filter(r=>(r.totalFabricadas||0)>0 || (r.totalDanadas||0)>0);
-  if(fstatus==='sin') filtered = filtered.filter(r=>(r.totalFabricadas||0)===0 && (r.totalDanadas||0)===0);
+  const ftipo = document.getElementById('hora-hist-tipo')?.value||'';
+  const nz=(v)=>Number(v)||0;
+  let horaF = [...horaRecords].filter(r=>machineInRoster(r.machine));
+  if(fct) horaF = horaF.filter(r=>r.ct===fct);
+  if(fmachine) horaF = horaF.filter(r=>r.machine===fmachine);
+  if(fturno) horaF = horaF.filter(r=>r.turno===fturno);
+  // Una máquina que se seleccionó pero nunca llegó a producir nada ese día (0 piezas fabricadas y 0 dañadas) deja un registro
+  // "en cero" — este filtro permite ocultarlo, o ver solo esos, según convenga.
+  if(fstatus==='con') horaF = horaF.filter(r=>nz(r.totalFabricadas)>0 || nz(r.totalDanadas)>0);
+  if(fstatus==='sin') horaF = horaF.filter(r=>nz(r.totalFabricadas)===0 && nz(r.totalDanadas)===0);
+  // Cierre del día (piezas totales) de las máquinas sin hora×hora. No tienen turno: con un turno elegido no se muestran.
+  let diaF = diaRecords.filter(r=>r && machineInRoster(r.machine));
+  if(fct) diaF = diaF.filter(r=>r.ct===fct);
+  if(fmachine) diaF = diaF.filter(r=>r.machine===fmachine);
+  if(fturno) diaF = [];
+  if(fstatus==='con') diaF = diaF.filter(r=>diaHasPiezas(r)&&Number(r.piezas)>0);
+  if(fstatus==='sin') diaF = diaF.filter(r=>!(diaHasPiezas(r)&&Number(r.piezas)>0));
+  if(ftipo==='hora') diaF = [];
+  if(ftipo==='dia') horaF = [];
+  // Más reciente primero: por fecha y, dentro del mismo día, por última actualización
+  let filtered = [
+    ...horaF.map(r=>({kind:'hora',r,fecha:String(r.fecha||''),ts:String(r.updatedAt||r.id||'')})),
+    ...diaF.map(r=>({kind:'dia',r,fecha:String(r.fecha||''),ts:String(r.updatedAt||r.id||'')}))
+  ].sort((a,b)=> a.fecha<b.fecha?1:a.fecha>b.fecha?-1:(a.ts<b.ts?1:a.ts>b.ts?-1:0));
+  try{ updateEmptyRecordsBtn(); }catch(e){}
+  const qv=document.getElementById('btn-quitar-vacios'); if(qv) qv.style.display=(currentUser&&currentUser.role!=='operador')?'':'none';
   const body = document.getElementById('hora-hist-body');
   const empty = document.getElementById('hora-hist-empty');
   if(!filtered.length){if(body)body.innerHTML='';if(empty)empty.style.display='block';return;}
   if(empty)empty.style.display='none';
 
-  body.innerHTML = filtered.map(r=>{ try{
+  body.innerHTML = filtered.map(it=>{ if(it.kind==='dia') return diaHistCardHtml(it.r); const r=it.r; try{
     const franjas = safeParse(r.franjas,[]);
     const eficColor = r.eficiencia>=85?'#3ecf8e':r.eficiencia>=60?'#f5a623':'#f06060';
     const rechazadas = franjas.filter(f=>!f.isBreak&&f.danadas>0);
@@ -7997,6 +8017,7 @@ function renderHoraHist(){
           <div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Fabricadas</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace">${r.totalFabricadas}</div></div>
           ${r.totalDanadas>0?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Dañadas</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#f06060">${r.totalDanadas}</div></div>`:''}
           <div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Eficiencia</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${eficColor}">${r.eficiencia}%</div></div>
+          ${(oeeMatch&&oeeMatch.oee!=null&&oeeMatch.oee!=='')?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">OEE</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(Number(oeeMatch.oee))}">${oeeMatch.oee}%</div></div>`:''}
           <div>${miniChart}</div>
           <button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteHoraRecord('${r.id}')" title="Eliminar">×</button>
         </div>
@@ -8025,12 +8046,61 @@ function renderHoraHist(){
   } }).join('');
 }
 
+function diaHistCardHtml(r){
+  try{
+    const mono="font-family:'IBM Plex Mono',monospace";
+    const hasP=diaHasPiezas(r), piezas=hasP?Number(r.piezas):null;
+    const prog=(r.programadas!=null&&r.programadas!=='')?Number(r.programadas):null;
+    const cumpl=(hasP&&prog>0)?Math.round(piezas/prog*100):null;
+    const paros=safeParse(r.paros,[]), atr=diaAtrasoOf(r);
+    const parosMin=Number(r.parosNoProg)||paros.reduce((a,p)=>a+(Number(p.min)||0),0);
+    const sid=String(r.id).replace(/[^A-Za-z0-9_\-]/g,'');
+    const stat=(l,v,c)=>`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">${l}</div><div style="font-size:16px;font-weight:600;${mono};${c?'color:'+c:''}">${v}</div></div>`;
+    const hasDetail=paros.length>0||atr.length>0;
+    const parosSection=paros.length?`<div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.15)">
+        <div style="font-size:10px;font-weight:600;color:#f06060;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Paros no programados — ${parosMin} min total</div>
+        ${paros.map(p=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;display:flex;justify-content:space-between"><span>${escH(p.motivo||'')}</span><span style="${mono};color:#f06060">${escH(p.min||0)} min</span></div>`).join('')}</div>`:'';
+    const atrSection=atr.length?`<div style="padding:.5rem 1rem;background:rgba(245,166,35,.05);border-top:1px solid rgba(245,166,35,.15)">
+        <div style="font-size:10px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Atraso vs. programado</div>
+        ${atr.map(a=>`<div style="font-size:12px;color:var(--text2);padding:2px 0;display:flex;justify-content:space-between;gap:10px"><span>${escH(a.ref||'')}${a.motivo?' — '+escH(a.motivo):''}</span>${a.pzas?`<span style="${mono};color:var(--amber)">${escH(a.pzas)} pzas</span>`:''}</div>`).join('')}</div>`:'';
+    const canDel=currentUser&&currentUser.role!=='operador';
+    return `<div style="background:var(--bg3);border-radius:var(--radius-lg);margin-bottom:.75rem;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;padding:.75rem 1rem;background:var(--bg2);border-bottom:${hasDetail?'1px solid var(--border)':'none'};flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${escH(r.machine)} — ${escH(r.fecha)}</span>
+          <span style="font-size:11px;color:var(--text3)"><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;background:rgba(245,166,35,.12);color:var(--amber)">Cierre del día</span> ${r.op?'· '+escH(r.op):''}</span>
+        </div>
+        <div style="display:flex;gap:14px;margin-left:auto;align-items:center;flex-wrap:wrap">
+          ${stat('Piezas totales',hasP?piezas:'–')}
+          ${prog!=null?stat('Programadas',prog):''}
+          ${cumpl!=null?stat('Cumplimiento',cumpl+'%',cumplColor(cumpl)):''}
+          ${parosMin>0?stat('Paros',parosMin+' min','var(--amber)'):''}
+          ${canDel?`<button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteDiaRecord('${sid}')" title="Eliminar">×</button>`:''}
+        </div>
+      </div>
+      ${hasDetail?`<div id="hora-detail-${sid}" style="display:none">${parosSection}${atrSection}</div>
+      <button data-lbl="▾ Ver paros y atraso" onclick="toggleHoraDetail('${sid}',this)" style="width:100%;text-align:center;padding:5px;font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif">▾ Ver paros y atraso</button>`:''}
+    </div>`;
+  }catch(err){
+    console.warn('Cierre del día con datos inesperados:', r&&r.id, err);
+    return `<div style="background:var(--bg3);border-radius:var(--radius-lg);margin-bottom:.75rem;padding:.75rem 1rem;font-size:12px;color:var(--text3)">${r&&r.machine||''} — ${r&&r.fecha||''} · este registro tiene datos incompletos y no se pudo mostrar completo.</div>`;
+  }
+}
+function deleteDiaRecord(sid){
+  if(!currentUser || currentUser.role==='operador') return;
+  const rec=diaRecords.find(r=>String(r.id).replace(/[^A-Za-z0-9_\-]/g,'')===sid);
+  if(!rec) return;
+  if(!confirm('¿Eliminar este cierre del día ('+rec.machine+' — '+rec.fecha+')?')) return;
+  diaRecords=diaRecords.filter(r=>r!==rec); saveDiaLocal();
+  cloudDeleteRow('Cierre_Dia',rec.id);
+  try{ renderHoraHist(); renderDashboard(); }catch(e){}
+}
 function toggleHoraDetail(id, btn){
   const el = document.getElementById('hora-detail-'+id);
   if(!el) return;
   const open = el.style.display !== 'none';
   el.style.display = open ? 'none' : 'block';
-  btn.textContent = open ? '▾ Ver detalle por franja' : '▴ Ocultar detalle';
+  btn.textContent = open ? (btn.dataset.lbl||'▾ Ver detalle por franja') : '▴ Ocultar detalle';
 }
 
 function deleteHoraRecord(id){
