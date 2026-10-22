@@ -5405,7 +5405,63 @@ function fmtMoney(n){ return (Number(n)||0).toLocaleString('es-MX',{minimumFract
 function shortTurno(t){ return String(t||'').split(' ').slice(0,2).join(' '); }
 // La explosión de material la captura Ingeniería/Líder; el Operador solo la consulta.
 function canEditAprovExplosion(){ return !!currentUser && currentUser.role!=='operador'; }
-function findAprov(id){ return aprovRecords.find(r=>String(r.id)===String(id)); }
+function findAprov(id){
+  const sid=String(id);
+  if(sid.indexOf('td_')===0) return aprovTubDay(sid.slice(3));   // renglón del día (GW1 + GW2 juntas)
+  return aprovRecords.find(r=>String(r.id)===sid);
+}
+// ── Tubular: un solo renglón por día para las dos máquinas (GW1 + GW2) ──────────────────────────────
+// Almacén surte por centro de trabajo y la explosión es una por día: aquí se juntan los registros tubulares de las dos
+// máquinas (consumo del Programa del día y registros anteriores) en un registro «del día» (td_AAAA-MM-DD).
+// La explosión del día se guarda en su propio registro (tx_AAAA-MM-DD, hoja Aprovechamiento); mientras no exista,
+// se usa la suma de las explosiones que ya tuvieran las máquinas por separado.
+function aprovIsTubDayRec(r){ return !!r && r.tipo==='tubular' && r.ct==='LASER' && r.origen!=='explosion_dia'; }
+function aprovTxRecord(fecha,create){
+  const id='tx_'+fecha; let t=aprovRecords.find(r=>String(r.id)===id);
+  if(!t && create){
+    t={id,tipo:'tubular',ct:'LASER',maquina:'GW1',fecha,turno:'Día',op:'Explosión del día',origen:'explosion_dia',
+       pesoTotal:0,merma:null,pctMerma:null,aprovechado:null,ahorro:0,tramosDetalle:[],recortesDetalle:[],explosionDetalle:[]};
+    aprovRecords.push(t);
+  }
+  return t||null;
+}
+function aprovMakeTubDay(fecha,raw){
+  const r3=n=>Math.round(n*1000)/1000, ok=r=>r.merma!=null&&r.merma!==''&&!isNaN(Number(r.merma));
+  const maqs=Array.from(new Set(raw.map(r=>r.maquina).filter(Boolean))).sort();
+  const tmap={}, tord=[], rec=[]; let peso=0,ahorro=0,last=0,mSum=0,mAny=false,flag=null;
+  raw.forEach(r=>{
+    peso+=Number(r.pesoTotal)||0; ahorro+=Number(r.ahorro)||0;
+    const t=new Date(r.updatedAt||0).getTime(); if(t>last) last=t;
+    if(ok(r)){ mAny=true; mSum+=Number(r.merma); if(r.mermaSemanal&&!flag) flag=r; }
+    (r.recortesDetalle||[]).forEach(x=>rec.push(x));
+    (r.tramosDetalle||[]).forEach(x=>{
+      if(!x||!x.tipo) return; const q=Number(x.cant)||0; if(!(q>0)) return;
+      let o=tmap[x.tipo]; if(!o){ o=tmap[x.tipo]={tipo:x.tipo,cant:0,tc:0,re:0,pesoTotal:0,by:{}}; tord.push(o); }
+      o.cant+=q; o.pesoTotal+=Number(x.pesoTotal)||0;
+      o.tc+=(x.tc!=null&&x.tc!=='')?(Number(x.tc)||0):q; o.re+=Number(x.re)||0;
+      o.by[r.maquina]=(o.by[r.maquina]||0)+q;
+    });
+  });
+  const tx=aprovRecords.find(r=>String(r.id)==='tx_'+fecha);
+  let expl;
+  if(tx) expl=(tx.explosionDetalle||[]).map(e=>({...e}));
+  else { const m={},ord=[]; raw.forEach(r=>(r.explosionDetalle||[]).forEach(e=>{ const k=aprovExplKey(e); if(!k) return; if(!m[k]){ m[k]={tipo:k,hojas:0}; ord.push(m[k]); } m[k].hojas+=Number(e.hojas)||0; })); expl=ord; }
+  if(tx){ const t=new Date(tx.updatedAt||0).getTime(); if(t>last) last=t; }
+  return {id:'td_'+fecha,tipo:'tubular',ct:'LASER',maquina:maqs.join(' + ')||'GW1 + GW2',maqs,fecha,turno:'Día',op:'Programa del día',origen:'dia',
+    pesoTotal:r3(peso),ahorro:r3(ahorro),merma:mAny?(flag?Number(flag.merma):r3(mSum)):null,pctMerma:null,aprovechado:null,mermaSemanal:!!flag,
+    tramosDetalle:tord.map(o=>({tipo:o.tipo,cant:r3(o.cant),tc:r3(o.tc),re:r3(o.re),pesoTotal:r3(o.pesoTotal),by:o.by})),
+    recortesDetalle:rec,explosionDetalle:expl,updatedAt:last?new Date(last).toISOString():'',nRaw:raw.length};
+}
+function aprovTubDay(fecha,recs){
+  const base=recs||aprovVisibleRecords();
+  return aprovMakeTubDay(fecha,base.filter(r=>aprovIsTubDayRec(r)&&r.fecha===fecha));
+}
+function aprovCollapseTub(recs){
+  const out=[], byDay={};
+  (recs||[]).forEach(r=>{ if(aprovIsTubDayRec(r)) (byDay[r.fecha]=byDay[r.fecha]||[]).push(r); else out.push(r); });
+  Object.keys(byDay).forEach(f=>out.push(aprovMakeTubDay(f,byDay[f])));
+  return out;
+}
 // Fila lista para el Sheet: los desgloses viajan como texto JSON.
 function aprovCloudRow(rec){
   const o={...rec};
@@ -5421,7 +5477,7 @@ const APROV_INPUT="width:100%;max-width:110px;font-size:12px;font-family:'IBM Pl
 function aprovItems(r){
   const raw = r.tipo==='lamina'
     ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0,ev:h.origen==='eventualidad'?(Number(h.hojas)||0):0}))
-    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0,tc:Number(t.tc)||0,re:Number(t.re)||0}));
+    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0,tc:Number(t.tc)||0,re:Number(t.re)||0,by:t.by||null}));
   const map={}, out=[];
   raw.forEach(it=>{
     if(!it.key) return;
@@ -5566,7 +5622,7 @@ function aprovDetailHtml(r){
         : `<span style="font-weight:500">${it.key}</span>`;
       return `<div id="exrow-${id}-${i}" style="${grid};padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px">
         ${first}
-        <span style="${mono}">${fmt2(it.real)}${it.re>0?`<span style="display:block;color:var(--text3);font-size:10px;line-height:1.3" title="Consumo real del Programa del día: tramos completos y equivalencia de los recortes usados">${fmt2(it.tc)} compl. + ${fmt2(it.re)} recortes</span>`:''}${it.ev>0?`<span style="display:block;color:var(--amber);font-size:10px;line-height:1.3" title="Láminas de eventualidad: no estaban en la explosión, se restan del consumo de este calibre">− ${fmt2(it.ev)} event. = ${fmt2(it.realProg)}</span>`:''}</span>
+        <span style="${mono}">${fmt2(it.real)}${(it.by&&Object.keys(it.by).length>1)?`<span style="display:block;color:var(--text3);font-size:10px;line-height:1.3">${Object.keys(it.by).sort().map(m=>m+' '+fmt2(it.by[m])).join(' · ')}</span>`:''}${it.re>0?`<span style="display:block;color:var(--text3);font-size:10px;line-height:1.3" title="Consumo real del Programa del día: tramos completos y equivalencia de los recortes usados">${fmt2(it.tc)} compl. + ${fmt2(it.re)} recortes</span>`:''}${it.ev>0?`<span style="display:block;color:var(--amber);font-size:10px;line-height:1.3" title="Láminas de eventualidad: no estaban en la explosión, se restan del consumo de este calibre">− ${fmt2(it.ev)} event. = ${fmt2(it.realProg)}</span>`:''}</span>
         <span><input type="number" min="0" step="any" class="explosion-cal-input-${id}" data-key="${it.key}" data-kind="${it.kind}" data-real="${it.realProg}" data-total="${it.real}" data-costo="${it.costo}" data-row="${i}" ${it.extra?'data-extra="1"':''} value="${exVal}" placeholder="Plan" oninput="recalcAprovDetail('${id}')" ${canEdit?'':'disabled'} style="${inputCss}"></span>
         <span id="dif-${id}-${i}" style="${mono}">–</span>
         <span id="val-${id}-${i}" style="${mono}">–</span>
@@ -5822,19 +5878,21 @@ function weekLabelShort(ws){
 function dayLabel(iso){ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso))) return String(iso||'–'); const {m,d}=isoParts(iso); return `${DIAS_ES[isoDow(iso)]} ${d}/${String(m).padStart(2,'0')}`; }
 function aprovWeekStartOf(fecha){ return /^\d{4}-\d{2}-\d{2}$/.test(String(fecha||''))?getWeekRange(fecha).start:'0000-00-00'; }
 function aprovGid(ws,tipo,maq){ return ws+'_'+tipo+'_'+String(maq||'').replace(/[^A-Za-z0-9]/g,''); }
-function aprovVisibleRecords(){ return aprovRecords.filter(r=>machineInRoster(r.maquina)); }
+function aprovVisibleRecords(){ return aprovRecords.filter(r=>r.origen!=='explosion_dia' && machineInRoster(r.maquina)); }
 // Tubular: la merma es una sola por semana para TODO el centro Laser (GW1 + GW2 juntas, comparten tubo y pedacera).
 // Lámina (Laser de Cama) sigue siendo por máquina.
 function aprovGroupGid(ws,tipo,maq){ return tipo==='tubular'?aprovGid(ws,'tubular','LASER'):aprovGid(ws,tipo,maq); }
 function aprovMaqLabel(list){ return Array.from(new Set(list.filter(Boolean))).sort().join(' + '); }
 function aprovBuildGroups(recs){
+  const raw0=recs||[]; recs=aprovCollapseTub(raw0);   // tubular: un renglón por día (GW1 + GW2)
   const map={};
   recs.forEach(r=>{
     const ws=aprovWeekStartOf(r.fecha), gid=aprovGroupGid(ws,r.tipo,r.maquina);
     (map[gid]=map[gid]||{gid,weekStart:ws,tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r);
   });
   const groups=Object.values(map);
-  groups.forEach(g=>{ g.maquinas=Array.from(new Set(g.recs.map(r=>r.maquina))).sort(); g.maquina=aprovMaqLabel(g.maquinas); g.combo=g.tipo==='tubular'; });
+  groups.forEach(g=>{ g.maquinas=Array.from(new Set([].concat(...g.recs.map(r=>r.maqs||[r.maquina])))).sort(); g.maquina=aprovMaqLabel(g.maquinas); g.combo=g.tipo==='tubular';
+    g.raw=raw0.filter(r=>aprovGroupGid(aprovWeekStartOf(r.fecha),r.tipo,r.maquina)===g.gid); });
   groups.forEach(g=>g.recs.sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha))||String(b.id).localeCompare(String(a.id))));
   groups.sort((a,b)=>b.weekStart.localeCompare(a.weekStart)||(a.tipo===b.tipo?String(a.maquina).localeCompare(String(b.maquina)):(a.tipo==='lamina'?-1:1)));
   return groups;
@@ -6018,7 +6076,7 @@ function renderAprovHist(force){
           <span style="${mono};font-size:11px;color:${st.ahorroTeorico>=0?'#3ecf8e':'#f06060'};font-weight:700">Ahorro $${fmtMoney(st.ahorroTeorico)}</span>
           ${g.tipo==='tubular'?`<button onclick="toggleTubTot('${g.gid}')" title="Total de tramos por tipo de tubular entre ${escH(g.maquina)} (almacén surte por centro de trabajo)" style="font-size:11px;background:rgba(62,207,142,.1);border:1px solid rgba(62,207,142,.3);color:#3ecf8e;border-radius:4px;cursor:pointer;padding:3px 10px;font-family:'IBM Plex Sans',sans-serif">Σ Total de tubulares</button>`:''}
         </div>
-        ${g.tipo==='tubular'?`<div id="tubtot-${g.gid}" style="display:none;padding:10px 12px 12px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Total de tubulares de la semana ${weekLabelShort(g.weekStart)} — <b>${escH(g.maquina)}</b> (centro Laser)</div>${tubTotalsHtml(tubTotalsData(g.recs))}</div>`:''}
+        ${g.tipo==='tubular'?`<div id="tubtot-${g.gid}" style="display:none;padding:10px 12px 12px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Total de tubulares de la semana ${weekLabelShort(g.weekStart)} — <b>${escH(g.maquina)}</b> (centro Laser)</div>${tubTotalsHtml(tubTotalsData(g.raw||g.recs))}</div>`:''}
         <div id="ms-edit-${g.gid}" style="display:none;padding:10px 12px 10px 22px;background:var(--bg3);border-bottom:0.5px solid var(--border)">
           <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Merma de la semana ${weekLabelShort(g.weekStart)} — ${g.tipo==='lamina'?'Lámina':'Tubular'} · ${g.maquina}${g.combo&&g.maquinas.length>1?' <span style="color:var(--amber)">(un solo registro de merma para ambas máquinas)</span>':''}. Peso procesado en la semana: <b style="${mono}">${fmt2(st.peso)} kg</b>. Se captura <b>una sola vez</b> por semana (5 días hábiles).</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -6121,10 +6179,16 @@ function saveExplosionEdit(id){
     inputs.forEach(inp=>inp.style.borderColor='var(--red)');
     return;
   }
-  rec.explosionDetalle=explosionDetalle;
-  rec.updatedAt=new Date().toISOString();
-  save('aprovRecords');
-  cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  const _now=new Date().toISOString();
+  if(String(id).indexOf('td_')===0){    // explosión única del día para GW1 + GW2
+    const tx=aprovTxRecord(rec.fecha,true); tx.explosionDetalle=explosionDetalle; tx.updatedAt=_now;
+    save('aprovRecords'); _aprovLastSync='pend'; cloudUpsertRow('Aprovechamiento',aprovCloudRow(tx),aprovSyncDone);
+  } else {
+    rec.explosionDetalle=explosionDetalle;
+    rec.updatedAt=_now;
+    save('aprovRecords');
+    cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec));
+  }
   renderAprovHist(true);
   toggleAprovDetail(id,true);
   const m=document.getElementById('aprov-detail-msg-'+id); if(m){ m.textContent='✓ Explosión guardada'; setTimeout(()=>{m.textContent='';},3000); }
@@ -6555,7 +6619,7 @@ function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
     order=aprovBuildGroups(recs).map(g=>({tipo:g.tipo,maquina:g.maquina,recs:g.recs,g}));
   } else {
     const groups={};
-    recs.forEach(r=>{ const k=r.tipo+'|'+r.maquina; (groups[k]=groups[k]||{tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r); });
+    aprovCollapseTub(recs).forEach(r=>{ const k=r.tipo+'|'+r.maquina; (groups[k]=groups[k]||{tipo:r.tipo,maquina:r.maquina,recs:[]}).recs.push(r); });
     order=Object.values(groups).sort((a,b)=>(a.tipo===b.tipo?String(a.maquina).localeCompare(String(b.maquina)):(a.tipo==='lamina'?-1:1)));
   }
   let html=`<div class="line"><b>Aprovechamiento y consumo de material</b></div>`;
@@ -7447,6 +7511,14 @@ function deleteRecord(id){
   cloudDeleteRow('OEE_Registros', id);
 }
 function deleteAprov(id){
+  if(String(id).indexOf('td_')===0){
+    const f=String(id).slice(3);
+    const del=aprovRecords.filter(r=>r.fecha===f&&aprovIsTubDayRec(r)||String(r.id)==='tx_'+f);
+    if(!confirm('Se eliminarán los registros tubulares del '+f+' de GW1 y GW2 y su explosión del día ('+del.length+' registro'+(del.length===1?'':'s')+'). El consumo del Programa del día se vuelve a generar si el operador lo modifica. ¿Continuar?')) return;
+    const ids=new Set(del.map(r=>String(r.id)));
+    aprovRecords=aprovRecords.filter(r=>!ids.has(String(r.id))); save('aprovRecords');
+    renderAprovHist(true); ids.forEach(i=>cloudDeleteRow('Aprovechamiento',i)); return;
+  }
   const _tp=String(id).indexOf('tp_')===0;
   if(!confirm(_tp?'Este registro se genera del Consumo real del Programa del día. Si lo eliminas se vuelve a crear cuando el operador modifique el consumo de esa máquina y día. ¿Eliminarlo (incluida su explosión)?':'¿Eliminar este registro de aprovechamiento?')) return;
   aprovRecords = aprovRecords.filter(r => String(r.id) !== String(id));
