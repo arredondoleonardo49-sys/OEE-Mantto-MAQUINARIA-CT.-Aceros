@@ -438,6 +438,91 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-upload input[type=file]{display:none}
 .programa-upload-icon{width:36px;height:36px;border-radius:10px;background:rgba(74,158,255,.12);color:var(--blue);display:flex;align-items:center;justify-content:center;margin:0 auto .6rem}
 .programa-status-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+
+/* ── Dashboard: split hora×hora (70%) / cierre del día (30%) ── */
+.dash-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.9rem}
+.dash-chip{background:var(--bg3);border-radius:var(--radius);padding:8px 14px;min-width:130px}
+.dash-chip-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.dash-chip-v{font-size:20px;font-weight:700}
+.dash-split{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);gap:12px;align-items:stretch}
+.dash-col{min-width:0;display:flex;flex-direction:column}
+.dash-col .programa-table-wrap{flex:1}
+.dash-col .programa-table{height:100%}
+.dash-hh-wrap td{font-size:16px;padding-top:7px;padding-bottom:7px}
+.dash-hh-wrap td:first-child{font-size:12.5px}
+.dash-hh-wrap td:not(:first-child){font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--text)}
+.dash-hh-wrap th{font-size:12px}
+.dash-sub-title{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:0 2px 6px}
+.dash-sub-title span{font-size:10px;font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0}
+.dash-note{font-size:11px;color:var(--text3);margin-top:8px}
+.dia-tbl{white-space:normal;font-size:11.5px}.dia-tbl td,.dia-tbl th{padding:5px 6px}.dia-tbl td:not(:first-child),.dia-tbl th:not(:first-child){white-space:nowrap}.dash-hh-wrap th{white-space:normal;line-height:1.2}
+.dia-st{font-size:10px;color:var(--text3);margin-top:1px;white-space:normal}
+.mat-kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.mat-kpi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;min-width:110px}
+.mat-kpi-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.mat-kpi-v{font-size:18px;font-weight:700}
+.mat-desc{font-size:11px;color:var(--text3);margin-bottom:8px}
+@media(max-width:1000px){.dash-split{grid-template-columns:1fr}}
+/* ── Pantalla completa del Dashboard: todo visible sin desplazar ── */
+#page-dashboard:fullscreen{background:var(--bg);overflow:auto;zoom:var(--fsz,1);height:calc(100vh / var(--fsz,1));width:calc(100vw / var(--fsz,1));display:flex;flex-direction:column}
+#page-dashboard:fullscreen .topbar{padding:.5rem 1rem .4rem}
+#page-dashboard:fullscreen .content{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px;align-items:stretch;padding:10px 14px;flex:1;min-height:0;overflow:auto}
+#page-dashboard:fullscreen #ct-cards{grid-template-rows:1fr}
+#page-dashboard:fullscreen .ct-card{display:flex;flex-direction:column;height:100%}
+#page-dashboard:fullscreen .ct-card-body{flex:1;align-content:center}
+#page-dashboard:fullscreen #dash-hora-card,#page-dashboard:fullscreen .content>.ct-section{display:flex;flex-direction:column;min-height:0}
+#page-dashboard:fullscreen #dash-hora-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+#page-dashboard:fullscreen #dash-hora-panel>.dash-split,#page-dashboard:fullscreen #dash-hora-panel>.programa-table-wrap{flex:1;min-height:0}
+#page-dashboard:fullscreen .dash-col{min-height:0}
+#page-dashboard:fullscreen .programa-table-wrap{min-height:0}
+#page-dashboard:fullscreen .programa-table{height:100%}
+#page-dashboard:fullscreen .content>.ct-section>div:not(.ct-header){flex:1;min-height:0;display:flex;flex-direction:column}
+#page-dashboard:fullscreen .content>.ct-section .card{flex:1;min-height:0;display:flex;flex-direction:column;margin:0}
+#page-dashboard:fullscreen .content>.ct-section .tbl-wrap{flex:1;min-height:0;overflow:auto}
+#page-dashboard:fullscreen .content>.ct-section .tbl{height:100%}
+#page-dashboard:fullscreen .dash-hh-wrap td{font-size:15px;padding-top:2px;padding-bottom:2px}
+#page-dashboard:fullscreen .dash-hh-wrap td:first-child{font-size:13px}
+#page-dashboard:fullscreen .dash-hh-wrap th{font-size:13px}
+#page-dashboard:fullscreen #ct-cards{grid-column:1;grid-row:1;margin:0!important}
+#page-dashboard:fullscreen #dash-hora-card{grid-column:1;grid-row:2;margin:0!important}
+#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1;margin:0!important}
+#page-dashboard:fullscreen .content>.ct-section{grid-column:2;grid-row:2;margin:0;min-width:0}
+#page-dashboard:fullscreen .content>.ct-section .ct-header{display:none}
+#page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:none}
+#page-dashboard:fullscreen .content>.ct-section .tbl{font-size:10.5px}
+#page-dashboard:fullscreen .content>.ct-section .tbl th{font-size:9px;letter-spacing:0}
+#page-dashboard:fullscreen .oee-bar{width:34px!important}
+#page-dashboard:fullscreen .dia-tbl{font-size:11px}#page-dashboard:fullscreen .dia-tbl td,#page-dashboard:fullscreen .dia-tbl th{padding:4px 4px}
+#page-dashboard:fullscreen .content>.ct-section .tbl th,#page-dashboard:fullscreen .content>.ct-section .tbl td{padding:4px 5px}
+#page-dashboard:fullscreen .ct-card{padding:.7rem .9rem}
+#page-dashboard:fullscreen .ct-card-header{margin-bottom:.5rem}
+#page-dashboard:fullscreen .ct-card-body{gap:.8rem}
+#page-dashboard:fullscreen .ct-highlight-row{gap:8px;margin-bottom:8px}
+#page-dashboard:fullscreen .ct-highlight-box{padding:.5rem .7rem}
+#page-dashboard:fullscreen .ct-highlight-val,#page-dashboard:fullscreen .ct-meta-input{font-size:20px}
+#page-dashboard:fullscreen .ct-card-oee{font-size:34px!important}
+#page-dashboard:fullscreen .ct-card-stats{gap:8px}
+#page-dashboard:fullscreen .ct-card-stat{padding:.5rem .8rem}
+#page-dashboard:fullscreen .ct-card-stat-icon{width:30px;height:30px}
+#page-dashboard:fullscreen .ct-card-stat-val{font-size:16px}
+#page-dashboard:fullscreen .chart-card{padding:.7rem .9rem}
+#page-dashboard:fullscreen .chart-title{margin-bottom:.5rem}
+#page-dashboard:fullscreen .dash-chips{margin-bottom:.5rem}
+#page-dashboard:fullscreen .dash-chip{padding:5px 10px;min-width:100px}
+#page-dashboard:fullscreen .dash-chip-v{font-size:16px}
+#page-dashboard:fullscreen .dash-note{display:none}
+#page-dashboard:fullscreen .programa-table-wrap{max-height:none!important}
+#page-dashboard:fullscreen .dash-hh-wrap{max-height:none!important}
+#page-dashboard:fullscreen .programa-table td,#page-dashboard:fullscreen .programa-table th{padding:4px 8px}
+#page-dashboard:fullscreen .mat-kpi{padding:5px 9px;min-width:90px}
+#page-dashboard:fullscreen .mat-kpi-v{font-size:15px}
+#page-dashboard:fullscreen .mat-tbl td,#page-dashboard:fullscreen .mat-tbl th{padding:4px 8px}
+#page-dashboard:fullscreen #dash-chart-wrap{height:300px!important}
+@media(max-width:1100px){
+  #page-dashboard:fullscreen .content{grid-template-columns:1fr}
+  #page-dashboard:fullscreen #ct-cards,#page-dashboard:fullscreen #dash-hora-card,#page-dashboard:fullscreen #dash-chart-card,#page-dashboard:fullscreen .content>.ct-section{grid-column:1;grid-row:auto}
+  #page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:table-cell}
+}
 .mat-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .mat-tbl th{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .mat-tbl td{padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--text2)}
@@ -4232,9 +4317,9 @@ function renderDashboard(){
       const photo=m.photo?`<img src="${m.photo}" style="width:100px;height:100px;border-radius:8px;object-fit:cover;border:1px solid var(--border)">`:`<div style="width:100px;height:100px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>`;
       if(!LASER_MAQUINAS_HORA.includes(m.name)){
         const d=getDiaRecord(ct,m.name,todayStr());
-        return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="8" style="font-size:12px">${diaHasPiezas(d)?`<span style="color:var(--text3)">Cierre del día:</span> <b style="font-family:'IBM Plex Mono',monospace;font-size:14px">${d.piezas}</b> <span style="color:var(--text3)">piezas${d.op?' · '+d.op:''}</span>`:'<span style="color:var(--amber)">Cierre del día — pendiente de captura</span>'}${(d&&Number(d.parosNoProg)>0)?` <span style="color:var(--amber)">· ${d.parosNoProg} min de paros</span>`:''}</td></tr>`;
+        return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="10" style="font-size:12px">${diaHasPiezas(d)?`<span style="color:var(--text3)">Cierre del día:</span> <b style="font-family:'IBM Plex Mono',monospace;font-size:14px">${d.piezas}</b> <span style="color:var(--text3)">piezas${d.op?' · '+d.op:''}</span>`:'<span style="color:var(--amber)">Cierre del día — pendiente de captura</span>'}${(d&&Number(d.parosNoProg)>0)?` <span style="color:var(--amber)">· ${d.parosNoProg} min de paros</span>`:''}</td></tr>`;
       }
-      if(!rec)return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="8" style="color:var(--text3);font-size:12px">Sin registros hoy</td></tr>`;
+      if(!rec)return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="10" style="color:var(--text3);font-size:12px">Sin registros hoy</td></tr>`;
       const cumplCell=rec.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(rec.cumpl)}">${rec.cumpl}%</span>`:'–';
       const costoHora=COSTO_HORA_CT[ct]||0;
       const parosMin=rec.parosNoProg||0;
@@ -4263,12 +4348,14 @@ function renderDashboard(){
   const color=ct==='TROQUELES'?'#4a9eff':ct==='LASER'?'#3ecf8e':'#f5a623';
   // Centro Laser: en lugar del OEE por máquina, el material tubular consumido por GW1 + GW2 (almacén surte por centro)
   const matPanel=document.getElementById('dash-mat-panel'), chartWrap=document.getElementById('dash-chart-wrap');
-  if(ct==='LASER' && matPanel){
-    if(titleEl) titleEl.textContent='Material consumido — Laser (hoy)';
+  if((ct==='LASER'||ct==='TROQUELES') && matPanel){
+    if(titleEl) titleEl.textContent='Material consumido — '+(ct==='LASER'?'Laser':'Troqueles')+' (hoy)';
     if(dashChart){ try{ dashChart.destroy(); }catch(e){} dashChart=null; }
     if(chartWrap) chartWrap.style.display='none';
     matPanel.style.display='block';
-    matPanel.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tubular que registran GW1 y GW2 en Aprovechamiento, sumado por centro de trabajo (así surte almacén). Se actualiza solo.</div>`+tubTotalsHtml(tubTotalsData(laserTubRecords(todayStr())),'Aún no se registra material tubular hoy.');
+    matPanel.innerHTML=ct==='LASER'
+      ? `<div class="mat-desc">Tubular que registran GW1 y GW2 en Aprovechamiento, sumado por centro de trabajo (así surte almacén). Se actualiza solo.</div>`+tubTotalsHtml(tubTotalsData(laserTubRecords(todayStr())),'Aún no se registra material tubular hoy.')
+      : `<div class="mat-desc">Lámina (hojas por calibre) que se registra en Aprovechamiento para Troqueles, sumada por centro de trabajo (así surte almacén). Se actualiza sola.</div>`+lamTotalsHtml(lamTotalsData(troqLamRecords(todayStr())),'Aún no se registra lámina hoy.');
     return;
   }
   if(matPanel) matPanel.style.display='none';
@@ -4339,39 +4426,45 @@ function renderDashResumenPanel(ct){
   if(!ms.length){ panel.innerHTML='<div class="empty-state" style="padding:1.5rem 0">Este centro de trabajo no tiene máquinas.</div>'; return; }
   const hhmm=iso=>{ const t=new Date(iso); return (!iso||isNaN(t))?'':t.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); };
   const mono="font-family:'IBM Plex Mono',monospace";
-  let totHoy=0,totAyer=0,totSem=0,totParos=0,capturadas=0;
-  const rows=ms.map(m=>{
-    const hora=LASER_MAQUINAS_HORA.includes(m.name);
+  const hh=dashHoraTableHtml(ct,true);                   // máquinas con hora×hora → izquierda
+  const horaSet=new Set(hh.names);
+  let totHoy=0,totAyer=0,totSem=0,totParos=0,capturadas=0, dHoy=0,dAyer=0,dSem=0,dParos=0;
+  const diaRows=[];
+  ms.forEach(m=>{
+    const hora=horaSet.has(m.name)||LASER_MAQUINAS_HORA.includes(m.name);
     const hoy=machineDayInfo(ct,m,today);
     const ay=machineRangeTotal(ct,m,ayer,ayer), sem=machineRangeTotal(ct,m,semIni,today);
     totHoy+=hoy.piezas; totAyer+=ay; totSem+=sem; totParos+=hoy.parosMin; if(hoy.has) capturadas++;
-    const badge=hora
-      ?'<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(74,158,255,.12);color:#4a9eff;white-space:nowrap">Hora × hora</span>'
-      :'<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(245,166,35,.12);color:var(--amber);white-space:nowrap">Cierre del día</span>';
+    if(hora) return;
+    dHoy+=hoy.piezas; dAyer+=ay; dSem+=sem; dParos+=hoy.parosMin;
     const estado=hoy.has
-      ?`<span style="color:var(--green);font-weight:600">✓ ${hora?'En captura':'Registrado'}</span> <span style="color:var(--text3);font-size:11px">${hhmm(hoy.updated)}${(!hora&&hoy.op)?' · '+hoy.op:''}</span>`
-      :`<span style="color:${hora?'var(--text3)':'var(--amber)'}">${hora?'Sin captura':'⏳ Pendiente'}</span>`;
-    return `<tr><td><strong>${m.name}</strong></td><td>${badge}</td>
-      <td style="text-align:right;${mono};font-weight:700;font-size:14px;color:${hoy.has?'var(--text)':'var(--text3)'}">${hoy.has?hoy.piezas:'–'}${hoy.rechazo>0?`<div style="font-size:10px;font-weight:400;color:#f06060">${hoy.rechazo} rech.</div>`:''}</td>
+      ?`<span style="color:var(--green)">✓</span> ${hhmm(hoy.updated)}${hoy.op?' · '+escH(hoy.op):''}`
+      :`<span style="color:var(--amber)">⏳ Pendiente</span>`;
+    diaRows.push(`<tr><td><strong>${escH(m.name)}</strong><div class="dia-st">${estado}</div></td>
+      <td style="text-align:right;${mono};font-weight:700;font-size:14px;color:${hoy.has?'var(--text)':'var(--text3)'}">${hoy.has?hoy.piezas:'–'}${hoy.rechazo>0?`<div style="font-size:10px;font-weight:400;color:#f06060">${hoy.rechazo} rech.</div>`:''}${hoy.parosMin>0?`<div style="font-size:10px;font-weight:400;color:var(--amber)">${hoy.parosMin} min paro</div>`:''}</td>
       <td style="text-align:right;${mono};color:var(--text2)">${ay||'–'}</td>
-      <td style="text-align:right;${mono};color:var(--text2)">${sem||'–'}</td>
-      <td style="text-align:right;${mono};color:${hoy.parosMin>0?'var(--amber)':'var(--text3)'}">${hoy.parosMin>0?hoy.parosMin+' min':'–'}</td>
-      <td>${estado}</td></tr>`;
-  }).join('');
+      <td style="text-align:right;${mono};color:var(--text2)">${sem||'–'}</td></tr>`);
+  });
   const pend=ms.length-capturadas;
-  const chip=(label,val,col)=>`<div style="background:var(--bg3);border-radius:var(--radius);padding:8px 14px;min-width:130px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${label}</div><div style="${mono};font-size:20px;font-weight:700;color:${col||'var(--text)'}">${val}</div></div>`;
-  panel.innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.9rem">
+  const chip=(label,val,col)=>`<div class="dash-chip"><div class="dash-chip-l">${label}</div><div class="dash-chip-v" style="${mono};color:${col||'var(--text)'}">${val}</div></div>`;
+  const diaHtml=diaRows.length?`<div class="programa-table-wrap" style="max-height:460px">
+      <table class="programa-table dia-tbl">
+        <thead><tr><th>Máquina</th><th style="text-align:right">Hoy</th><th style="text-align:right">Ayer</th><th style="text-align:right">Semana</th></tr></thead>
+        <tbody>${diaRows.join('')}<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td><td style="text-align:right;${mono}">${dHoy}</td><td style="text-align:right;${mono}">${dAyer}</td><td style="text-align:right;${mono}">${dSem}</td></tr></tbody>
+      </table></div>`:'';
+  const cap=(t,n)=>`<div class="dash-sub-title">${t}<span>${n}</span></div>`;
+  let body;
+  if(hh.names.length && diaRows.length){
+    body=`<div class="dash-split"><div class="dash-col">${cap('Hora × hora',hh.names.length+(hh.names.length===1?' máquina':' máquinas'))}${hh.html}</div>
+      <div class="dash-col">${cap('Cierre del día',diaRows.length+(diaRows.length===1?' máquina':' máquinas'))}${diaHtml}</div></div>`;
+  } else body=hh.names.length?hh.html:diaHtml;
+  panel.innerHTML=`<div class="dash-chips">
       ${chip('Piezas totales hoy',totHoy)}
       ${chip('Máquinas con captura',capturadas+' / '+ms.length,capturadas===ms.length?'var(--green)':'var(--text)')}
       ${chip('Pendientes',pend,pend>0?'var(--amber)':'var(--green)')}
-    </div>
-    <div class="programa-table-wrap" style="max-height:420px">
-      <table class="programa-table">
-        <thead><tr><th>Máquina</th><th>Captura</th><th style="text-align:right">Hoy</th><th style="text-align:right">Ayer</th><th style="text-align:right">Semana</th><th style="text-align:right">Paros hoy</th><th>Estado</th></tr></thead>
-        <tbody>${rows}<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td><td></td><td style="text-align:right;${mono}">${totHoy}</td><td style="text-align:right;${mono}">${totAyer}</td><td style="text-align:right;${mono}">${totSem}</td><td style="text-align:right;${mono};color:${totParos>0?'var(--amber)':'var(--text3)'}">${totParos>0?totParos+' min':'–'}</td><td></td></tr></tbody>
-      </table>
-    </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:8px">Las máquinas con <b>cierre del día</b> registran su total de piezas al terminar el día; las de <b>hora × hora</b> se actualizan durante el turno. "Semana" suma de lunes a hoy.</div>`;
+      ${totParos>0?chip('Paros hoy',totParos+' min','var(--amber)'):''}
+    </div>${body}
+    <div class="dash-note">Las máquinas con <b>cierre del día</b> registran su total de piezas al terminar el día; las de <b>hora × hora</b> se actualizan durante el turno. "Semana" suma de lunes a hoy.</div>`;
 }
 function renderDashHoraPanel(ct){
   const panel=document.getElementById('dash-hora-panel');
@@ -4381,30 +4474,30 @@ function renderDashHoraPanel(ct){
     if(!titleEl.dataset.svg) titleEl.dataset.svg=(titleEl.querySelector('svg')||{outerHTML:''}).outerHTML;
     titleEl.innerHTML=titleEl.dataset.svg+(ct==='LASER'?'Producción hora × hora — hoy':'Resumen de producción del día');
   }
-  // Laser conserva su tabla hora por hora; Troqueles y Estructura muestran el resumen
+  // Laser: solo su tabla hora por hora. Troqueles/Estructura: hora×hora (izquierda, 70%) + resumen del resto (derecha, 30%)
   if(ct!=='LASER'){ renderDashResumenPanel(ct); return; }
+  const h=dashHoraTableHtml(ct);
+  if(!h.names.length){
+    panel.innerHTML='<div class="empty-state" style="padding:1.5rem 0">Este centro de trabajo no tiene máquinas con hora por hora habilitada.</div>';
+    return;
+  }
+  panel.innerHTML=h.html;
+}
+// Tabla hora × hora de las máquinas del CT que la tienen habilitada (o ya capturaron hoy).
+// Devuelve {names:[máquinas], html}.
+function dashHoraTableHtml(ct,short){
   const today=todayStr();
   const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine));
-
   // Último registro por máquina (el más reciente id), si existe
   const lastByMachine={};
   todays.forEach(r=>{
     if(!lastByMachine[r.machine]||isNewerRecord(r,lastByMachine[r.machine])) lastByMachine[r.machine]=r;
   });
-
-  // Las máquinas del CT con hora×hora habilitada se muestran SIEMPRE (con
-  // o sin registro hoy), para que la tabla nunca desaparezca del Dashboard.
+  // Las máquinas del CT con hora×hora habilitada se muestran SIEMPRE (con o sin registro hoy). Se suman las que ya
+  // tienen registro hoy aunque este dispositivo no las tenga marcadas (se habilitan solas en el equipo de quien captura).
   const ctMachines=machines.filter(m=>m.ct===ct && LASER_MAQUINAS_HORA.includes(m.name)).map(m=>m.name).sort();
-  // Se suman las máquinas que ya tienen registro hoy aunque este dispositivo
-  // no las tenga marcadas con hora×hora (se habilitan solas en el equipo de
-  // quien las captura, no en todos).
   const machineNames=Array.from(new Set([...ctMachines,...Object.keys(lastByMachine)])).sort();
-
-  if(!machineNames.length){
-    panel.innerHTML='<div class="empty-state" style="padding:1.5rem 0">Este centro de trabajo no tiene máquinas con hora por hora habilitada.</div>';
-    return;
-  }
-
+  if(!machineNames.length) return {names:[],html:''};
   // Mapa: máquina -> { franja: fabricadas } (vacío si aún no hay registro)
   const dataByMachine={};
   machineNames.forEach(m=>{
@@ -4415,16 +4508,12 @@ function renderDashHoraPanel(ct){
       franjas.filter(f=>!f.isBreak).forEach(f=>{ dataByMachine[m][f.franja]=f.fabricadas||0; });
     }
   });
-
-  // Franjas con datos hoy; si nadie ha registrado nada aún, se usa el
-  // Turno 1 como estructura base (para que la tabla no quede vacía).
+  // Franjas con datos hoy; si nadie ha registrado nada aún, se usa el Turno 1 como estructura base.
   let relevantFranjas=FRANJA_ORDER.filter(f=>machineNames.some(m=>dataByMachine[m][f]!==undefined));
   if(!relevantFranjas.length){
     relevantFranjas=(LASER_FRANJAS['Turno 1 (8:00–17:00)']||[]).filter(f=>!f.includes('Comida'));
   }
-
   const colTotals={};machineNames.forEach(m=>colTotals[m]=0);let grandTotal=0;
-
   const bodyRows=relevantFranjas.map(f=>{
     let rowTotal=0;
     const cells=machineNames.map(m=>{
@@ -4436,15 +4525,14 @@ function renderDashHoraPanel(ct){
     grandTotal+=rowTotal;
     return `<tr><td>${FRANJA_DISPLAY[f]||f}</td>${cells}<td style="text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--text)">${rowTotal}</td></tr>`;
   }).join('');
-
   const totalRow=`<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td>${machineNames.map(m=>`<td style="text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--text)">${colTotals[m]}</td>`).join('')}<td style="text-align:center;font-family:'IBM Plex Mono',monospace;color:#3ecf8e">${grandTotal}</td></tr>`;
-
-  panel.innerHTML=`<div class="programa-table-wrap" style="max-height:420px">
+  const html=`<div class="programa-table-wrap dash-hh-wrap" style="max-height:460px">
     <table class="programa-table">
-      <thead><tr><th>Hora</th>${machineNames.map(m=>`<th style="text-align:center">Producción ${m}</th>`).join('')}<th style="text-align:center">Total</th></tr></thead>
+      <thead><tr><th>Hora</th>${machineNames.map(m=>`<th style="text-align:center">${short?escH(m):'Producción '+escH(m)}</th>`).join('')}<th style="text-align:center">Total</th></tr></thead>
       <tbody>${bodyRows}${totalRow}</tbody>
     </table>
   </div>`;
+  return {names:machineNames,html};
 }
 // ── REGISTRO ──
 function updateMachineAndTurno(){
@@ -5452,8 +5540,8 @@ function tubTotalsHtml(d,empty){
   const f2=fmt2, mono="font-family:'IBM Plex Mono',monospace";
   if(!d.rows.length) return `<div class="ap-empty" style="display:block">${empty||'Aún no hay tubulares registrados.'}</div>`;
   const hh=d.last?new Date(d.last).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
-  const kpi=(l,v,c)=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;min-width:110px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">${l}</div><div style="${mono};font-size:18px;font-weight:700;${c?'color:'+c:''}">${v}</div></div>`;
-  return `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+  const kpi=(l,v,c)=>`<div class="mat-kpi"><div class="mat-kpi-l">${l}</div><div class="mat-kpi-v" style="${mono};${c?'color:'+c:''}">${v}</div></div>`;
+  return `<div class="mat-kpis">
       ${kpi('Total de tramos',f2(d.total),'var(--green)')}${d.kg>0?kpi('Peso (kg)',f2(d.kg)):''}${kpi('Tipos',d.tipos)}${kpi('Registros',d.n)}${hh?kpi('Último registro',hh):''}
     </div>
     <div style="overflow:auto"><table class="mat-tbl"><thead><tr><th>Tubular</th>${d.machines.map(m=>`<th class="n">${escH(m)}</th>`).join('')}<th class="n">Total tramos</th></tr></thead><tbody>
@@ -5461,6 +5549,37 @@ function tubTotalsHtml(d,empty){
       <tr class="sum"><td>Total ${d.machines.map(escH).join(' + ')}</td>${d.machines.map(m=>`<td class="n">${f2(d.byM[m])}</td>`).join('')}<td class="n tot">${f2(d.total)}</td></tr>
     </tbody></table></div>`;
 }
+function lamTotalsData(recs){
+  const map={}; let n=0,last=0,total=0,kg=0,prog=0,ev=0;
+  (recs||[]).forEach(r=>{
+    if(!r||r.tipo!=='lamina') return; n++;
+    const t=new Date(r.updatedAt||0).getTime(); if(t>last) last=t;
+    (r.hojasDetalle||[]).forEach(x=>{
+      const q=Number(x&&x.hojas)||0; if(!x||!x.cal||!(q>0)) return;
+      const o=map[x.cal]||(map[x.cal]={cal:x.cal,prog:0,ev:0,total:0,kg:0});
+      const isEv=x.origen==='eventualidad';
+      if(isEv){ o.ev+=q; ev+=q; } else { o.prog+=q; prog+=q; }
+      o.total+=q; total+=q;
+      const cfg=getLaminaByCal(x.cal), k=q*((cfg&&cfg.peso)||0); o.kg+=k; kg+=k;
+    });
+  });
+  const rows=Object.values(map).sort((a,b)=>b.total-a.total||String(a.cal).localeCompare(String(b.cal)));
+  return {rows,total,kg,n,last,prog,ev,calibres:rows.length};
+}
+function lamTotalsHtml(d,empty){
+  const f2=fmt2, mono="font-family:'IBM Plex Mono',monospace";
+  if(!d.rows.length) return `<div class="ap-empty" style="display:block">${empty||'Aún no hay lámina registrada.'}</div>`;
+  const hh=d.last?new Date(d.last).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
+  const kpi=(l,v,c)=>`<div class="mat-kpi"><div class="mat-kpi-l">${l}</div><div class="mat-kpi-v" style="${mono};${c?'color:'+c:''}">${v}</div></div>`;
+  return `<div class="mat-kpis">
+      ${kpi('Total de hojas',f2(d.total),'var(--green)')}${d.kg>0?kpi('Peso (kg)',f2(d.kg)):''}${kpi('Calibres',d.calibres)}${kpi('Registros',d.n)}${hh?kpi('Último registro',hh):''}
+    </div>
+    <div style="overflow:auto"><table class="mat-tbl"><thead><tr><th>Calibre</th><th class="n">Programa</th><th class="n">Eventualidad</th><th class="n">Total hojas</th><th class="n">Peso kg</th></tr></thead><tbody>
+      ${d.rows.map(r=>`<tr><td>${escH(r.cal)}</td><td class="n">${r.prog?f2(r.prog):'<span style="color:var(--text3)">–</span>'}</td><td class="n">${r.ev?f2(r.ev):'<span style="color:var(--text3)">–</span>'}</td><td class="n tot">${f2(r.total)}</td><td class="n">${r.kg?f2(r.kg):'<span style="color:var(--text3)">–</span>'}</td></tr>`).join('')}
+      <tr class="sum"><td>Total</td><td class="n">${f2(d.prog)}</td><td class="n">${f2(d.ev)}</td><td class="n tot">${f2(d.total)}</td><td class="n">${f2(d.kg)}</td></tr>
+    </tbody></table></div>`;
+}
+function troqLamRecords(fecha){ return aprovVisibleRecords().filter(r=>r.tipo==='lamina'&&r.ct==='TROQUELES'&&r.fecha===fecha); }
 function laserTubRecords(fecha){ return aprovVisibleRecords().filter(r=>r.tipo==='tubular'&&r.ct==='LASER'&&r.fecha===fecha); }
 let _tubTotOpen=true;
 function toggleTubTotCard(){ _tubTotOpen=!_tubTotOpen; renderTubTotals(); }
@@ -6918,7 +7037,18 @@ function toggleDashboardFullscreen(){
     if(exit) exit.call(document).catch(()=>{});
   }
 }
+// En pantalla completa todo el Dashboard se escala según el tamaño real del monitor (diseñado para ~1366×768),
+// así en pantallas grandes se ve más grande en vez de dejar huecos.
+function applyDashFsZoom(){
+  const pg=document.getElementById('page-dashboard'); if(!pg) return;
+  if(document.fullscreenElement===pg){
+    const z=Math.max(0.85,Math.min(window.innerWidth/1366,window.innerHeight/768,2.2));
+    pg.style.setProperty('--fsz',z.toFixed(3));
+  } else pg.style.removeProperty('--fsz');
+}
+window.addEventListener('resize',applyDashFsZoom);
 document.addEventListener('fullscreenchange', ()=>{
+  applyDashFsZoom();
   const label = document.getElementById('btn-fullscreen-label');
   if(label) label.textContent = document.fullscreenElement ? 'Salir de pantalla completa' : 'Pantalla completa';
 });
