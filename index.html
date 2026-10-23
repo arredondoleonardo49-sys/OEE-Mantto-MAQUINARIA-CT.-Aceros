@@ -466,7 +466,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 /* ── Pantalla completa del Dashboard: todo visible sin desplazar ── */
 #page-dashboard:fullscreen{background:var(--bg);overflow:auto;zoom:var(--fsz,1);height:calc(100vh / var(--fsz,1));width:calc(100vw / var(--fsz,1));display:flex;flex-direction:column}
 #page-dashboard:fullscreen .topbar{padding:.5rem 1rem .4rem}
-#page-dashboard:fullscreen .content{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px;align-items:stretch;padding:10px 14px;flex:1;min-height:0;overflow:auto}
+#page-dashboard:fullscreen .content{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;padding:10px 14px;flex:1;min-height:0;overflow:auto}
 #page-dashboard:fullscreen #ct-cards{grid-template-rows:1fr}
 #page-dashboard:fullscreen .ct-card{display:flex;flex-direction:column;height:100%}
 #page-dashboard:fullscreen .ct-card-body{flex:1;align-content:center}
@@ -484,9 +484,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #page-dashboard:fullscreen .dash-hh-wrap td:first-child{font-size:13px}
 #page-dashboard:fullscreen .dash-hh-wrap th{font-size:13px}
 #page-dashboard:fullscreen #ct-cards{grid-column:1;grid-row:1;margin:0!important}
-#page-dashboard:fullscreen #dash-hora-card{grid-column:1;grid-row:2;margin:0!important}
-#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1;margin:0!important}
-#page-dashboard:fullscreen .content>.ct-section{grid-column:2;grid-row:2;margin:0;min-width:0}
+#page-dashboard:fullscreen #dash-hora-card{grid-column:1;grid-row:2 / 4;margin:0!important}
+#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1 / 3;margin:0!important;min-height:0;overflow:auto}
+#page-dashboard:fullscreen .content>.ct-section{grid-column:2;grid-row:3;margin:0;min-width:0}
 #page-dashboard:fullscreen .content>.ct-section .ct-header{display:none}
 #page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:none}
 #page-dashboard:fullscreen .content>.ct-section .tbl{font-size:10.5px}
@@ -723,7 +723,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #ct-cards .ct-card-stat-label{font-size:9.5px}
 #page-dashboard:fullscreen #ct-cards .ct-card{height:auto}
 #page-dashboard:fullscreen #ct-cards{align-self:start}
-#page-dashboard:fullscreen #dash-chart-wrap{height:170px!important}
 </style>
 </head>
 <body>
@@ -4977,8 +4976,8 @@ function dashHoraTableHtml(ct,short){
   const COLORS=['#b48cff','#f5a623','#2ec4c4','#ff8fb1','#e0d35c'], FIXED={GW1:'#4a9eff',GW2:'#3ecf8e'};
   // Máquinas sin captura hoy no ocupan tarjeta (se listan en una línea); si nadie ha capturado aún, se muestran todas.
   const conDatos=machineNames.filter(m=>Object.keys(dataByMachine[m]).length>0);
-  const sinDatos=conDatos.length?machineNames.filter(m=>!conDatos.includes(m)):[];
-  const cardNames=conDatos.length?conDatos:machineNames;
+  const sinDatos=machineNames.filter(m=>!conDatos.includes(m));
+  const cardNames=conDatos;
   // Avance del turno: fracción de las franjas (en minutos) que ya transcurrió; sirve para «a esta hora deberían llevar»
   const spanOf=f=>{const mm=(FRANJA_DISPLAY[f]||'').match(/^(\d+):(\d+)\s*–\s*(\d+):(\d+)/); if(!mm) return null; const st=(+mm[1])*60+(+mm[2]); let en=(+mm[3])*60+(+mm[4]); if(en<=st) en+=1440; return [st,en];};
   let totSpan=0, doneSpan=0;
@@ -5029,8 +5028,8 @@ function dashHoraTableHtml(ct,short){
   }).join('');
   const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
   const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
-  const vacias=sinDatos.length?`<div class="hh-empty">Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
-  const html=`${resumen}<div class="hh-grid">${panels}</div>${vacias}`;
+  const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
+  const html=`${resumen}${panels?`<div class="hh-grid">${panels}</div>`:''}${vacias}`;
   return {names:machineNames,html};
 }
 // Franja horaria en curso (clave de FRANJA_DISPLAY) según la hora del dispositivo; '' si ninguna.
