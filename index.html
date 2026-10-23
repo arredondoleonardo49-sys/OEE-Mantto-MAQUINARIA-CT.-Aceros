@@ -1506,6 +1506,9 @@ const SK={machines:'oee_machines_v5',records:'oee_records_v5',laminas:'oee_lamin
 let users=[], currentUser=null, checklistRecords=[], programaDia=[];
 const SK_PROGRAMA='oee_programa_dia_v1';
 const PROGRAMA_MACHINES=['GW1','GW2','Laser de Cama'];
+// Los reportes (programas de corte y reportes del centro Laser) solo incluyen estas máquinas
+const REPORT_LASER_MACHINES=['GW1','GW2'];
+function repMachineOk(ct,name){ return ct!=='LASER'||REPORT_LASER_MACHINES.includes(name); }
 const PROGRAMA_MACHINE_CT={'GW1':'LASER','GW2':'LASER','Laser de Cama':'TROQUELES'};
 const ROLE_LABEL={operador:'Operador',lider:'Líder',ingeniero:'Ingeniero'};
 const SK_USERS='oee_users_v1', SK_CURRENT_USER='oee_current_user_v1', SK_CHECKLIST_RECORDS='oee_checklist_records_v1';
@@ -2882,7 +2885,7 @@ function buildProgramaReportHtml(fecha,opts){
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
   const n2=n=>fmt2(n);
-  const recs=PROGRAMA_MACHINES.map(m=>progActiveRecord(fecha,m)).filter(Boolean);   // el vigente ese día (el último que se subió hasta esa fecha)
+  const recs=REPORT_LASER_MACHINES.map(m=>progActiveRecord(fecha,m)).filter(Boolean);   // el vigente ese día (el último que se subió hasta esa fecha)
   const quien=currentUser?currentUser.name:'';
   const ahora=new Date();
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -2902,29 +2905,33 @@ function buildProgramaReportHtml(fecha,opts){
       <tr class="tot"><td colspan="2">Total</td>${maqs.map(m=>`<td class="n">${n2(byM[m])}</td>`).join('')}<td class="n">${n2(tubTotal)}</td></tr>
     </tbody></table>`:'<div class="line muted">Aún no se registró consumo real en el programa de este día.</div>'}</section>`;
   // Un renglón por fila del programa con consumo registrado: OP · Modelo · Tipo de tubular · PTR/Tubo · Consumo real · Equiv. tramos
-  const sections=recs.map(r=>{
+  const MCOL={GW1:'#2563eb',GW2:'#059669'};
+  let totalTramos=0, totalFilas=0;
+  const blocks=recs.map(r=>{
     const tub=progIsTubRec(r)&&r.obsColIdx>=0, body=r.rows.slice(1);
     const iOp=hIdx(r,/^op$/), iMod=hIdx(r,/^modelo$/), iMat=hIdx(r,/tubular|material|l[aá]mina|calibre/);
     const cell=(row,i)=>i>=0&&row[i]!=null&&row[i]!==''?esc(row[i]):'';
-    let lines=[], conCons=0;
+    const lines=[]; let tr=0;
     body.forEach((row,i)=>{
-      if(tub){
-        const x=progConsRow(r,i); if(!x.has) return; conCons++;
-        lines.push(`<tr><td>${cell(row,iOp)}</td><td>${cell(row,iMod)}</td><td>${esc(x.tub?x.tub.tipo:(x.raw||''))}</td><td>${progTubKind(x.tub?x.tub.tipo:x.raw)}</td><td>${esc(progConsText(x))}</td><td class="n"><b>${f3(x.total)}</b></td></tr>`);
-      } else {
-        const ob=r.obsColIdx>=0&&row[r.obsColIdx]!=null?String(row[r.obsColIdx]).trim():''; if(!ob) return; conCons++;
-        lines.push(`<tr><td>${cell(row,iOp)}</td><td>${cell(row,iMod)}</td><td>${cell(row,iMat)}</td><td>${esc(ob)}</td></tr>`);
-      }
+      if(!tub) return;
+      const x=progConsRow(r,i); if(!x.has) return;
+      const tipo=x.tub?x.tub.tipo:(x.raw||''), kind=progTubKind(tipo);
+      tr+=x.total;
+      lines.push(`<tr><td class="op">${cell(row,iOp)}</td><td class="mod">${cell(row,iMod)}</td><td>${esc(tipo)}</td><td><span class="kd ${kind==='PTR'?'ptr':'tubo'}">${kind}</span></td><td>${esc(progConsText(x))}</td><td class="n"><b>${f3(x.total)}</b></td></tr>`);
     });
-    const th=tub?'<th>OP</th><th>Modelo</th><th>Tipo de tubular</th><th>PTR / Tubo</th><th>Consumo real</th><th class="n">Equiv. tramos</th>':'<th>OP</th><th>Modelo</th><th>Material</th><th>Consumo / observaciones</th>';
-    const ct=tub?progConsTotals(r):null;
-    return `<section class="ps"><h2><span class="tag ct">${esc(r.machine.toUpperCase())}</span> ${esc(dayLabel(fecha))} · ${esc(fecha)}${r.fecha!==fecha?` <small>programa del ${esc(dayLabel(r.fecha))}</small>`:''}</h2>
-      ${lines.length?`<table class="prog"><thead><tr>${th}</tr></thead><tbody>${lines.join('')}</tbody></table>`:'<div class="line muted">Aún no hay consumo registrado en este programa.</div>'}</section>`;
-  }).join('');
+    totalTramos+=tr; totalFilas+=lines.length;
+    const col=MCOL[r.machine]||'#475569';
+    return {machine:r.machine,col,n:lines.length,tr,html:`<section class="ps rp-m" style="--mc:${col}"><div class="rp-mh"><span class="rp-mn">${esc(r.machine.toUpperCase())}</span><span class="rp-mi">${lines.length} renglón${lines.length===1?'':'es'} con consumo · <b>${n2(tr)} tramos</b>${r.fecha!==fecha?` · programa del ${esc(dayLabel(r.fecha))}`:''}</span></div>
+      ${lines.length?`<table class="prog"><colgroup><col style="width:14%"><col style="width:11%"><col style="width:27%"><col style="width:9%"><col style="width:26%"><col style="width:13%"></colgroup><thead><tr><th>OP</th><th>Modelo</th><th>Tipo de tubular</th><th>PTR / Tubo</th><th>Consumo real</th><th class="n">Equiv. tramos</th></tr></thead><tbody>${lines.join('')}</tbody>
+      <tfoot><tr><td colspan="5">Total ${esc(r.machine)}</td><td class="n">${n2(tr)}</td></tr></tfoot></table>`:'<div class="line muted">Aún no hay consumo registrado en este programa.</div>'}</section>`};
+  });
+  const sections=blocks.map(b=>b.html).join('');
+  const kpis=blocks.length?`<div class="rp-kpis">${blocks.map(b=>`<div class="rp-k" style="--mc:${b.col}"><small>${esc(b.machine.toUpperCase())}</small><b>${n2(b.tr)}</b><span>tramos · ${b.n} renglón${b.n===1?'':'es'}</span></div>`).join('')}<div class="rp-k tot"><small>TOTAL</small><b>${n2(totalTramos)}</b><span>tramos · ${totalFilas} renglón${totalFilas===1?'':'es'}</span></div></div>`:'';
+  const fechaLarga=(()=>{ try{ const t=new Date(fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); return t.charAt(0).toUpperCase()+t.slice(1); }catch(e){ return fecha; } })();
   const titulo='Programa de corte';
   let indexHtml='';
   if(opts.index){
-    const byF={}; (programaDia||[]).forEach(r=>{ if(r&&r.fecha) (byF[r.fecha]=byF[r.fecha]||[]).push(r); });
+    const byF={}; (programaDia||[]).forEach(r=>{ if(r&&r.fecha&&REPORT_LASER_MACHINES.includes(r.machine)) (byF[r.fecha]=byF[r.fecha]||[]).push(r); });
     const fs=Object.keys(byF).sort().reverse();
     indexHtml=`<section class="noprint"><h2>Programas guardados <small>${fs.length} fecha${fs.length===1?'':'s'} · cada programa se conserva con lo registrado en él hasta que se sube otro que lo sustituya</small></h2>
       ${fs.length?`<table><thead><tr><th>Fecha</th><th>Máquina</th><th class="n">Filas cortadas</th><th class="n">Piezas</th><th class="n">Consumo real (tramos)</th><th>Estado</th></tr></thead><tbody>
@@ -2933,11 +2940,34 @@ function buildProgramaReportHtml(fecha,opts){
       </tbody></table>`:'<div class="line muted">Aún no hay programas guardados.</div>'}</section>`;
   }
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(fecha)}</title>
-${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}section.ps{page-break-inside:auto}table.prog{font-size:11px}table.prog th,table.prog td{padding:4px 7px;vertical-align:top}table.prog td{white-space:normal}@media print{.noprint{display:none}}</style></head><body>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}
+.rp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:3px solid #1b1f2a;padding-bottom:10px;margin-bottom:14px}
+.rp-kick{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;font-weight:700}
+.rp-head h1{font-size:26px;margin:2px 0 1px;letter-spacing:-.3px}.rp-date{font-size:14px;color:#374151;font-weight:600}
+.rp-meta{font-size:10px;color:#6b7280;text-align:right;line-height:1.6}.rp-meta b{color:#1b1f2a;font-size:12px}
+.rp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.rp-k{border:1px solid #e5e7eb;border-left:4px solid var(--mc,#1b1f2a);border-radius:6px;padding:8px 12px;background:#fafbfd}
+.rp-k small{display:block;font-size:9px;letter-spacing:1px;color:#6b7280;font-weight:700}.rp-k b{font-size:22px;line-height:1.2}.rp-k span{display:block;font-size:10px;color:#6b7280}
+.rp-k.tot{background:#1b1f2a;border-color:#1b1f2a;color:#fff}.rp-k.tot small,.rp-k.tot span{color:#cbd5e1}
+section.rp-m{margin-bottom:18px;page-break-inside:auto}
+.rp-mh{display:flex;align-items:center;gap:12px;background:var(--mc);color:#fff;border-radius:6px 6px 0 0;padding:7px 12px}
+.rp-mn{font-size:15px;font-weight:800;letter-spacing:.5px}.rp-mi{font-size:11px;opacity:.95}
+table.prog{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+table.prog thead{display:table-header-group}
+table.prog th{background:#f1f3f8;color:#4b5563;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:2px solid #d9dde7}
+table.prog td{padding:6px 8px;border-bottom:1px solid #e9ecf2;vertical-align:middle;word-wrap:break-word}
+table.prog tbody tr:nth-child(even) td{background:#f9fafc}
+table.prog tr{page-break-inside:avoid}
+table.prog .n{text-align:right}table.prog td.n b{font-size:13px}
+table.prog td.op{font-family:Consolas,'Courier New',monospace;font-size:11px;color:#374151}table.prog td.mod{font-weight:700}
+.kd{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 8px;border-radius:9px;letter-spacing:.4px}.kd.ptr{background:#dbeafe;color:#1d4ed8}.kd.tubo{background:#fef3c7;color:#92400e}
+table.prog tfoot td{background:#eef1f7;font-weight:800;border-top:2px solid #cfd5e2;padding:7px 8px;font-size:12px}
+@media print{.noprint{display:none}}</style></head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
 <div class="page">
-<header><div><h1>${titulo}</h1><div class="wk">${esc(dayLabel(fecha))} · ${esc(fecha)}${recs.length?' · '+recs.map(r=>esc(r.machine)).join(', '):''}</div></div>
-<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Laser</div><h1>${titulo}</h1><div class="rp-date">${esc(fechaLarga)}</div></div>
+<div class="rp-meta"><b>${recs.length?recs.map(r=>esc(r.machine)).join(' · '):'GW1 · GW2'}</b><br>${quien?esc(quien)+'<br>':''}Generado el ${esc(generado)}</div></div>
+${kpis}
 ${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un programa vigente en esta fecha (todavía no se había subido ninguno).</p>'}${sections}
 </div></body></html>`;
 }
@@ -2945,7 +2975,7 @@ ${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un p
 function exportProgramaDia(){
   const fecha=progTargetFecha();
   const msg=document.getElementById('programa-upload-msg');
-  if(!PROGRAMA_MACHINES.some(m=>progActiveRecord(fecha,m))){
+  if(!REPORT_LASER_MACHINES.some(m=>progActiveRecord(fecha,m))){
     progMsg('⚠ No hay programa cargado para esta fecha.','var(--amber)');
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
@@ -4976,8 +5006,11 @@ function dashHoraTableHtml(ct,short){
   const COLORS=['#b48cff','#f5a623','#2ec4c4','#ff8fb1','#e0d35c'], FIXED={GW1:'#4a9eff',GW2:'#3ecf8e'};
   // Máquinas sin captura hoy no ocupan tarjeta (se listan en una línea); si nadie ha capturado aún, se muestran todas.
   const conDatos=machineNames.filter(m=>Object.keys(dataByMachine[m]).length>0);
-  const sinDatos=machineNames.filter(m=>!conDatos.includes(m));
-  const cardNames=conDatos;
+  // Laser: solo tarjetas con captura (el resto en una línea). Otros centros (p. ej. Troqueles con Laser de Cama): una tarjeta por
+  // cada máquina con hora por hora habilitada, aunque aún no capture.
+  const soloConDatos=(ct==='LASER');
+  const sinDatos=soloConDatos?machineNames.filter(m=>!conDatos.includes(m)):[];
+  const cardNames=soloConDatos?conDatos:machineNames;
   // Avance del turno: fracción de las franjas (en minutos) que ya transcurrió; sirve para «a esta hora deberían llevar»
   const spanOf=f=>{const mm=(FRANJA_DISPLAY[f]||'').match(/^(\d+):(\d+)\s*–\s*(\d+):(\d+)/); if(!mm) return null; const st=(+mm[1])*60+(+mm[2]); let en=(+mm[3])*60+(+mm[4]); if(en<=st) en+=1440; return [st,en];};
   let totSpan=0, doneSpan=0;
@@ -4999,8 +5032,9 @@ function dashHoraTableHtml(ct,short){
     const rec=lastByMachine[m];
     const mins=rec&&rec.updatedAt?Math.max(0,Math.round((Date.now()-new Date(rec.updatedAt).getTime())/60000)):null;
     const hace=mins==null||isNaN(mins)?'':(mins<60?mins+' min':Math.floor(mins/60)+' h '+(mins%60)+' min');
-    const estado=meta<=0?'':(tot>=meta?'Arriba de la meta':(dif>=0?'Al corriente':'Por debajo del ritmo'));
-    const estCol=meta<=0?'':(tot>=meta||dif>=0?'var(--green)':'var(--amber)');
+    const sinCap=!rec||Object.keys(dataByMachine[m]).length===0;
+    const estado=sinCap?'Sin captura aún':(meta<=0?'':(tot>=meta?'Arriba de la meta':(dif>=0?'Al corriente':'Por debajo del ritmo')));
+    const estCol=sinCap?'var(--text3)':(meta<=0?'':(tot>=meta||dif>=0?'var(--green)':'var(--amber)'));
     const pct=meta>0?Math.min(100,Math.round(tot/meta*100)):0;
     const bars=cols.map((f,i)=>{
       const c=dataByMachine[m][f];
@@ -5018,8 +5052,8 @@ function dashHoraTableHtml(ct,short){
     const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
     const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
     grand+=tot; grandDan+=dTot;
-    const badge=meta>0?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${dif}</b><span>pzas bajo el ritmo</span></div>`):'';
-    const como=meta>0?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
+    const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${dif}</b><span>pzas bajo el ritmo</span></div>`):'';
+    const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
       <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
@@ -6702,7 +6736,7 @@ function repSum(rows){
 }
 function repDay(fecha,ctFilter){
   return repCtList(ctFilter).map(ct=>{
-    const rows=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)).map(m=>repMachineDay(m,fecha));
+    const rows=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)&&repMachineOk(ct,m.name)).map(m=>repMachineDay(m,fecha));
     return {ct,rows,tot:repSum(rows),atrCT:repAtrasosCT(ct,fecha)};
   });
 }
@@ -6711,7 +6745,7 @@ function repWeekDays(ws){ const d=[]; for(let i=0;i<7;i++) d.push(isoAddDays(ws,
 function repWeek(ws,ctFilter){
   const days=repWeekDays(ws);
   return repCtList(ctFilter).map(ct=>{
-    const ms=getMachinesByCT(ct).filter(m=>machineInRoster(m.name));
+    const ms=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)&&repMachineOk(ct,m.name));
     const perDay=days.map(f=>({fecha:f,rows:ms.map(m=>repMachineDay(m,f)),atrCT:repAtrasosCT(ct,f)}));
     const activeDays=perDay.filter((d,i)=>i<5||d.rows.some(r=>r.hasData)||d.atrCT.length);
     const machines=ms.map((m,mi)=>{
@@ -6737,7 +6771,7 @@ td.day.bad{background:#fef2f2;color:#b91c1c}td.day.good{color:#047857}
 // Piezas rechazadas (hora×hora) y detalle del retrabajo, por centro de trabajo y periodo.
 function repRechazosHtml(ct,fechas,weekly,esc,dayLa){
   const set=new Set(fechas), best={};
-  horaRecords.forEach(r=>{ if(!r||r.ct!==ct||!set.has(r.fecha)||!machineInRoster(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
+  horaRecords.forEach(r=>{ if(!r||r.ct!==ct||!set.has(r.fecha)||!machineInRoster(r.machine)||!repMachineOk(ct,r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
   const rows=[];
   Object.values(best).forEach(r=>safeParse(r.franjas,[]).forEach(f=>{
     if(!f||f.isBreak||!(Number(f.danadas)>0)) return;
@@ -6762,7 +6796,7 @@ function repRechazosHtml(ct,fechas,weekly,esc,dayLa){
 // eventualidades, recortes recuperados, ahorro teórico y, en el semanal, merma y % de aprovechamiento. Más el retrabajo.
 function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
   const set=new Set(fechas);
-  const recs=aprovVisibleRecords().filter(r=>r&&r.ct===ct&&set.has(r.fecha));
+  const recs=aprovVisibleRecords().filter(r=>r&&r.ct===ct&&set.has(r.fecha)&&(/\+/.test(String(r.maquina||''))||repMachineOk(ct,r.maquina)));
   const rts=rtCollect().filter(e=>e.ct===ct&&set.has(e.fecha));
   if(!recs.length && !rts.length) return '';
   const f2=n=>fmt2(n), money=v=>(Number(v)<0?'-':'')+'$'+fmtMoney(Math.abs(Number(v)||0));
