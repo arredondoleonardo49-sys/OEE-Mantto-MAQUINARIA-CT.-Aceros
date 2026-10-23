@@ -1203,7 +1203,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
   <div class="content">
-    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div></div>
+    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div></div>
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
       <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
@@ -1525,7 +1525,15 @@ function loadProgramaDiaLS(){
     programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).map(r=>normProgRec(r));
   }catch(e){ programaDia=[]; }
 }
-function saveProgramaDiaLS(){ localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia)); }
+// En este equipo se guardan los últimos 60 días de programas y, de cada máquina, el programa vigente (aunque sea más viejo);
+// todo lo demás sigue en el Sheet y se consulta desde Reportes › Programas de corte.
+function saveProgramaDiaLS(){
+  try{
+    const lim=isoAddDays(todayStr(),-60), keep=new Set();
+    PROGRAMA_MACHINES.forEach(m=>{ const a=progActiveRecord('9999-12-31',m); if(a) keep.add(a.id); });
+    localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia.filter(r=>keep.has(r.id)||String(r.fecha)>=lim)));
+  }catch(e){ console.warn('No se pudo guardar el programa en este equipo',e); }
+}
 
 // ── Sesión ──
 function getStoredCurrentUser(){
@@ -2058,6 +2066,18 @@ function checklistBadgeHtml(ct,machine,turno,fecha){
 // Se procesa 100% en el navegador (SheetJS) y el resultado (ya parseado en
 // filas) se guarda local + nube para que cualquier operador lo vea sin subir
 // nada por su cuenta.
+// Programa VIGENTE de una máquina para un día: el de ese día si existe y, si no, el último que se subió antes.
+// Un programa se mantiene (con lo que se registró en él) hasta que se sube otro que lo sustituya.
+function progActiveRecord(fecha,machine){
+  let best=null;
+  (programaDia||[]).forEach(r=>{
+    if(!r||r.machine!==machine||String(r.fecha)>String(fecha)) return;
+    if(!best||String(r.fecha)>String(best.fecha)||(r.fecha===best.fecha&&String(r.uploadedAt)>String(best.uploadedAt))) best=r;
+  });
+  return best;
+}
+// En «Programa siguiente» solo cuenta el programa de esa fecha; en «Programa del día», el vigente.
+function progViewRecord(fecha,machine){ return progSub==='sig'?getProgramaRecord(fecha,machine):progActiveRecord(fecha,machine); }
 function getProgramaRecord(fecha,machine){
   return programaDia.find(r=>r.fecha===fecha && r.machine===machine) || null;
 }
@@ -2219,9 +2239,9 @@ function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progC
 function canCutPrograma(){ return !!currentUser && currentUser.role==='operador' && canCaptureHora(); }
 function progGroupInfo(fecha,machine){
   const names=PROG_GRUPO[machine]||[machine];
-  const recs=names.map(n=>getProgramaRecord(fecha,n)).filter(Boolean);
+  const recs=names.map(n=>progViewRecord(fecha,n)).filter(Boolean);
   const full=r=>{ const st=progStats(r); return st.total>0 && st.done===st.total; };
-  return {names,recs,missing:names.filter(n=>!getProgramaRecord(fecha,n)),
+  return {names,recs,missing:names.filter(n=>!progViewRecord(fecha,n)),
     complete:recs.length>0&&recs.every(full), completado:recs.length>0&&recs.every(progIsCompleted)};
 }
 // ── Franja del hora por hora según la hora de pared (dentro del turno elegido) ──
@@ -2783,11 +2803,12 @@ function renderProgramaTable(rec){
   return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table${tub?' prog-tub':''}">${thead}${tbody}</table></div>`;
 }
 // ── Registro del día: reporte imprimible (mismo estilo que los demás reportes) ──
-function buildProgramaReportHtml(fecha){
+function buildProgramaReportHtml(fecha,opts){
+  opts=opts||{};
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
   const n2=n=>fmt2(n);
-  const recs=PROGRAMA_MACHINES.map(m=>getProgramaRecord(fecha,m)).filter(Boolean);
+  const recs=PROGRAMA_MACHINES.map(m=>progActiveRecord(fecha,m)).filter(Boolean);   // el vigente ese día (el último que se subió hasta esa fecha)
   const quien=currentUser?currentUser.name:'';
   const ahora=new Date();
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -2838,13 +2859,24 @@ function buildProgramaReportHtml(fecha){
     }).join('');
     const ct=tub?progConsTotals(r):null;
     const hora=r.uploadedAt?new Date(r.uploadedAt).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
-    return `<section class="ps"><h2><span class="tag ct">${esc(r.machine.toUpperCase())}</span> Programa de corte <small>${st.done} de ${st.total} filas cortadas · ${nf(st.pzDone)} de ${nf(st.pz)} pzas${progIsCompleted(r)?' · programa completado':''}</small></h2>
+    return `<section class="ps"><h2><span class="tag ct">${esc(r.machine.toUpperCase())}</span> Programa de corte${r.fecha!==fecha?` del ${esc(dayLabel(r.fecha))}`:''} <small>${r.fecha!==fecha?'vigente · ':''}${st.done} de ${st.total} filas cortadas · ${nf(st.pzDone)} de ${nf(st.pz)} pzas${progIsCompleted(r)?' · programa completado':''}</small></h2>
       <div class="ctline"><span>Hoja: <b>${esc(r.sheetName||'')}</b></span><span>Subido por <b>${esc(r.uploadedByName||'')}</b>${hora?' a las '+esc(hora):''}</span>${ct?`<span>Consumo real: <b>${n2(ct.tc)}</b> tramos completos + <b>${n2(ct.re)}</b> equiv. de recortes = <b>${n2(ct.total)}</b> tramos${ct.kg>0?' · '+n2(ct.kg)+' kg':''}</span>`:''}</div>
       <table class="prog"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></section>`;
   }).join('');
   const titulo='Registro del día — Programa de corte';
+  // Índice de programas guardados (solo en pantalla, para moverse entre fechas)
+  let indexHtml='';
+  if(opts.index){
+    const byF={}; (programaDia||[]).forEach(r=>{ if(r&&r.fecha) (byF[r.fecha]=byF[r.fecha]||[]).push(r); });
+    const fs=Object.keys(byF).sort().reverse();
+    indexHtml=`<section class="noprint"><h2>Programas guardados <small>${fs.length} fecha${fs.length===1?'':'s'} · cada programa se conserva con lo registrado en él hasta que se sube otro que lo sustituya</small></h2>
+      ${fs.length?`<table><thead><tr><th>Fecha</th><th>Máquina</th><th class="n">Filas cortadas</th><th class="n">Piezas</th><th class="n">Consumo real (tramos)</th><th>Estado</th></tr></thead><tbody>
+      ${fs.slice(0,90).map(f=>byF[f].sort((a,b)=>String(a.machine).localeCompare(String(b.machine))).map((r,i)=>{ const st=progStats(r), ct=progIsTubRec(r)?progConsTotals(r):null;
+        return `<tr${f===fecha?' style="background:#eef2ff"':''}>${i===0?`<td rowspan="${byF[f].length}"><a href="#" onclick="parent.repGoFecha('${f}');return false" style="color:#1d4ed8;font-weight:600">${esc(dayLabel(f))} · ${esc(f)}</a></td>`:''}<td>${esc(r.machine)}</td><td class="n">${st.done} / ${st.total}</td><td class="n">${nf(st.pzDone)} / ${nf(st.pz)}</td><td class="n">${ct?(ct.total>0?n2(ct.total):'–'):'<span class="muted">n/a</span>'}</td><td>${progIsCompleted(r)?'<span class="pill ok">COMPLETADO</span>':(st.total&&st.done===st.total?'<span class="pill ok">TODO CORTADO</span>':'<span class="pill ns">EN CURSO</span>')}</td></tr>`; }).join('')).join('')}
+      </tbody></table>`:'<div class="line muted">Aún no hay programas guardados.</div>'}</section>`;
+  }
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(fecha)}</title>
-${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter landscape;margin:10mm}.page{max-width:1080px}section.ps{page-break-inside:auto}table.prog{font-size:9.5px}table.prog th,table.prog td{padding:3px 5px;vertical-align:top}table.prog td{white-space:normal}.kpis{grid-template-columns:repeat(4,1fr)}</style></head><body>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter landscape;margin:10mm}.page{max-width:1080px}section.ps{page-break-inside:auto}table.prog{font-size:9.5px}table.prog th,table.prog td{padding:3px 5px;vertical-align:top}table.prog td{white-space:normal}.kpis{grid-template-columns:repeat(4,1fr)}@media print{.noprint{display:none}}</style></head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
 <div class="page">
 <header><div><h1>${titulo}</h1><div class="wk">${esc(dayLabel(fecha))} · ${esc(fecha)}</div></div>
@@ -2855,7 +2887,7 @@ ${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter landscape;margin:10
   <div class="kpi main"><div class="l">Consumo real (tramos)</div><div class="v">${tubRecs.length?n2(tubTotal):'—'}</div><div class="s">${tubRecs.length?`${n2(tot.tc)} completos + ${n2(tot.re)} de recortes`:'sin GW1 / GW2'}</div></div>
   <div class="kpi"><div class="l">Peso consumido (kg)</div><div class="v">${tubRecs.length?n2(tot.kg):'—'}</div><div class="s">según el catálogo de tubulares</div></div>
 </div>
-${consTable}${rdetHtml}${sections}
+${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un programa vigente en esta fecha (todavía no se había subido ninguno).</p>'}${consTable}${rdetHtml}${sections}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
 <footer>Consumo real: lo que el operador anotó en el programa por cada OP (tramos completos y/o recortes con su medida). La equivalencia de los recortes se calcula contra el largo del tramo del tubular.</footer>
 </div></body></html>`;
@@ -2864,7 +2896,7 @@ ${consTable}${rdetHtml}${sections}
 function exportProgramaDia(){
   const fecha=progTargetFecha();
   const msg=document.getElementById('programa-upload-msg');
-  if(!programaDia.some(r=>r.fecha===fecha)){
+  if(!PROGRAMA_MACHINES.some(m=>progActiveRecord(fecha,m))){
     progMsg('⚠ No hay programa cargado para esta fecha.','var(--amber)');
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
@@ -2891,21 +2923,29 @@ function updateProgramaTabState(machine){
 // (de una prueba anterior) por unos minutos hasta el próximo ciclo. Para
 // evitarlo, cada vez que se abre esta pestaña o cambia la máquina/fecha,
 // se hace una consulta directa y ligera (solo esta hoja) a la nube.
-function refreshProgramaDiaFromCloud(){
-  if(!currentUser) return;
-  gasRequest({action:'read', sheet:'Programa_Dia'},
+// La primera consulta de la sesión trae hasta 120 días hacia atrás (para encontrar el programa vigente aunque tenga días);
+// las siguientes solo los últimos 8 días, para que el refresco no pese.
+let _progFull=false, _progFetching=false, _progFetchTs=0;
+function refreshProgramaDiaFromCloud(done){
+  if(!currentUser||(_progFetching&&Date.now()-_progFetchTs<30000)) return;
+  _progFetching=true; _progFetchTs=Date.now();
+  gasRequest({action:'read', sheet:'Programa_Dia', since:isoAddDays(todayStr(),_progFull?-8:-120)},
     (data)=>{
+      _progFetching=false;
       try{
         const rows=data.rows||[];
+        _progFull=true;
         if(rows.length){
           const mapped=parseCloudRows(rows).map(normProgRec);
           programaDia=mergeProgramaDia(programaDia, mapped);
           saveProgramaDiaLS();
           renderProgramaDia();
+          try{ if(document.getElementById('page-reportes')?.classList.contains('active')&&repMode==='programa') renderReportes(); }catch(e){}
         }
       }catch(e){ console.warn('refreshProgramaDiaFromCloud parse error', e); }
+      if(typeof done==='function') done();
     },
-    ()=>{ /* falla en silencio — se queda con lo que ya tenía en local */ }
+    ()=>{ _progFetching=false; /* falla en silencio — se queda con lo que ya tenía en local */ }
   );
 }
 let _progLastKey='';
@@ -2950,7 +2990,7 @@ function renderProgramaDia(force){
   const sum=document.getElementById('programa-summary');
   if(sum){
     sum.innerHTML=PROGRAMA_MACHINES.map(m=>{
-      const r=getProgramaRecord(fecha,m);
+      const r=progViewRecord(fecha,m);
       if(!r) return canUpload?`<div class="programa-status-chip pend">${ic('alertCircle',11)} ${m} — sin cargar</div>`:'';
       const st=progStats(r), pct=st.total?Math.round(st.done/st.total*100):0;
       const done=progIsCompleted(r);
@@ -2965,9 +3005,9 @@ function renderProgramaDia(force){
     return;
   }
   try{ progAutoFillContext(); }catch(e){}
-  const rec=getProgramaRecord(fecha,machine);
+  const rec=progViewRecord(fecha,machine);
   if(!rec){
-    container.innerHTML=`<div class="empty-state">Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.</div>`;
+    container.innerHTML=`<div class="empty-state">${progSub==='sig'?`Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.`:`Aún no hay ningún programa cargado de <strong>${machine}</strong>.`}</div>`;
     container._progHtml=null; delete container.dataset.progKey;
     return;
   }
@@ -2997,7 +3037,7 @@ function renderProgramaDia(force){
     cierre=`<div class="programa-done-bar ready"><span>✓ <b>Todo el programa está cortado</b>${g.names.length>1?' en '+g.recs.map(r=>r.machine).join(' y '):''}.${falta} Márcalo como completado para seguir con el siguiente sin perderlo de vista.</span>
       <button class="btn btn-primary" onclick="programaCompletar('${fecha}','${machine}')" style="font-size:12px;padding:5px 12px">Marcar programa como completado</button></div>`;
   } else if(g.names.length>1){
-    const otros=g.names.filter(n=>n!==machine).map(n=>{ const r=getProgramaRecord(fecha,n); if(!r) return `${n}: sin programa`; const st=progStats(r); return `${n}: ${st.done}/${st.total}`; });
+    const otros=g.names.filter(n=>n!==machine).map(n=>{ const r=progViewRecord(fecha,n); if(!r) return `${n}: sin programa`; const st=progStats(r); return `${n}: ${st.done}/${st.total}`; });
     const mine=progStats(rec);
     if(mine.total>0&&mine.done===mine.total) cierre=`<div class="programa-done-bar"><span>✓ ${machine} ya cortó todo su programa · falta: ${otros.join(' · ')}</span></div>`;
   }
@@ -3010,7 +3050,7 @@ function renderProgramaDia(force){
     <div style="padding:1rem 1rem 0">
       ${aviso}
       <div class="programa-meta">
-        ${ic('activity',12)}${machine} · ${rec.fecha} <span style="color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:11px">(hoja: "${rec.sheetName}")</span>
+        ${ic('activity',12)}${machine} · ${rec.fecha} ${(progSub!=='sig'&&rec.fecha!==fecha)?`<span title="Este programa se mantiene vigente hasta que se suba otro que lo sustituya" style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:9px;background:rgba(74,158,255,.12);color:var(--blue)">Vigente · cargado el ${dayLabel(rec.fecha)}</span>`:''}<span style="color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:11px">(hoja: "${rec.sheetName}")</span>
         <span id="programa-progress" style="font-weight:600;color:var(--text)"></span>
         <span style="margin-left:auto">Subido por ${rec.uploadedByName} — ${hhmm}</span>
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
@@ -4286,6 +4326,7 @@ function normalizeAprovRow(r){
 }
 function loadFromCloud(){
   const isOperador=currentUser && currentUser.role==='operador';
+  try{ refreshProgramaDiaFromCloud(); }catch(e){}   // Programa_Dia se consulta aparte (programa vigente + últimos días)
   // Aprovechamiento se omite del sync solo si la cuenta
   // realmente no tiene acceso a esos menús (según sus permisos
   // personalizados) — ya no se asume por el rol, porque ahora Operador
@@ -4338,13 +4379,6 @@ function loadFromCloud(){
         const mapped=d.map(r=>({...r, allChecked: r.allChecked===true||r.allChecked==='true'||r.allChecked==='TRUE', items: safeParse(r.items,[])}));
         checklistRecords=mergeRecordsById(checklistRecords,mapped);
         localStorage.setItem(SK_CHECKLIST_RECORDS,JSON.stringify(checklistRecords));
-      }
-    }},
-    {name:'Programa_Dia', assign:(d)=>{
-      if(d && d.length){
-        const mapped=d.map(normProgRec);
-        programaDia=mergeProgramaDia(programaDia,mapped);
-        saveProgramaDiaLS();
       }
     }},
     {name:'CT_Targets', assign:(d)=>{
@@ -6758,13 +6792,16 @@ function repState(){ return {mode:repMode,fecha:document.getElementById('rep-fec
 function repSetMode(m,el){
   repMode=m;
   document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
-  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=m==='semanal'?'Semana que contiene el día':'Día';
+  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=m==='semanal'?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
+  const ctSel=document.getElementById('rep-ct'); if(ctSel) ctSel.style.display=(m==='programa')?'none':'';
+  if(m==='programa'){ try{ refreshProgramaDiaFromCloud(); }catch(e){} }
   renderReportes();
 }
 function repShift(n){
   const inp=document.getElementById('rep-fecha'); if(!inp) return;
   inp.value=isoAddDays(inp.value||todayStr(),repMode==='semanal'?7*n:n); renderReportes();
 }
+function repGoFecha(f){ const inp=document.getElementById('rep-fecha'); if(inp&&/^\d{4}-\d{2}-\d{2}$/.test(f||'')){ inp.value=f; renderReportes(); try{ window.scrollTo(0,0); }catch(e){} } }
 function repHoy(){ const inp=document.getElementById('rep-fecha'); if(inp){ inp.value=todayStr(); renderReportes(); } }
 function repKey(){ const s=repState(); return s.mode==='semanal'?getWeekRange(s.fecha).start:s.fecha; }
 function renderReportes(){
@@ -6772,7 +6809,7 @@ function renderReportes(){
   const inp=document.getElementById('rep-fecha'); if(inp && !inp.value) inp.value=todayStr();
   const s=repState();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha)) return;
-  let html=''; try{ html=buildProdReportHtml(s.mode,repKey(),s.ct); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
+  let html=''; try{ html=s.mode==='programa'?buildProgramaReportHtml(s.fecha,{index:true}):buildProdReportHtml(s.mode,repKey(),s.ct); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
   const shown=html.replace('<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>','');
   // Solo se repinta si cambió el contenido (las sincronizaciones en segundo plano no mueven la pantalla)
   const stamp=shown.replace(/Generado el [^<]*/,'');
@@ -6783,7 +6820,7 @@ function renderReportes(){
   if(old){ old.style.display=(ini<limite)?'block':'none'; }
 }
 function repFit(f){ try{ const h=f.contentDocument.documentElement.scrollHeight; if(h>200) f.style.height=(h+10)+'px'; }catch(e){} }
-function repPrint(){ const s=repState(); openPrintHtml(buildProdReportHtml(s.mode,repKey(),s.ct)); }
+function repPrint(){ const s=repState(); openPrintHtml(s.mode==='programa'?buildProgramaReportHtml(s.fecha):buildProdReportHtml(s.mode,repKey(),s.ct)); }
 // Días fuera de lo que la app descarga al iniciar (últimos 45 días): se piden al Sheet bajo demanda
 function repCargarHistorial(){
   const s=repState(), ini=isoAddDays(s.mode==='semanal'?repKey():s.fecha,-1);
