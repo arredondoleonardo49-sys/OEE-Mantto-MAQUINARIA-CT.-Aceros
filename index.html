@@ -4578,6 +4578,15 @@ function getCTHoraGrandTotal(ct){
   const diaTot=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.piezas)||0),0);
   return horaTot+diaTot;
 }
+// ¿Ya terminó la jornada del CT? Mientras no termina, lo que falta por producir NO es un atraso: son
+// «faltantes por cortar». La jornada cierra al terminar el último turno con captura hoy
+// (Turno 1 / único 17:00). Con Turno 2 o 3 en curso no cierra antes de que cambie la fecha.
+function ctDiaTerminado(ct){
+  const today=todayStr();
+  const turnos=new Set(horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine)).map(r=>String(r.turno||'')));
+  if([...turnos].some(t=>/^Turno [23]/.test(t))) return false;
+  const n=new Date(); return (n.getHours()+n.getMinutes()/60)>=17;
+}
 function renderDashboard(){
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
@@ -4611,6 +4620,8 @@ function renderDashboard(){
     const piezasProducidasCT=getCTHoraGrandTotal(ct);
     const diffCT=piezasProducidasCT-piezasProgramadasCT;
     const esAdelanto=diffCT>=0;
+    const diaTerminado=ctDiaTerminado(ct);
+    const enCurso=!esAdelanto&&!diaTerminado;   // aún hay jornada: faltan piezas por cortar, no hay atraso
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
     const canEditMetas=canRegistrarAtraso;   // líder e ingeniería editan las metas aquí; operador solo las ve
@@ -4638,10 +4649,10 @@ function renderDashboard(){
               <div class="ct-highlight-sub">pzas / turno</div>
             </div>
             <div class="ct-highlight-box">
-              <div class="ct-highlight-label">${ic(esAdelanto?'target':'alertTriangle',12)}${esAdelanto?'Adelanto':'Atraso'}</div>
-              <div class="ct-highlight-val" style="color:${esAdelanto?'#3ecf8e':'#f06060'}">${esAdelanto?'+':''}${diffCT}</div>
-              <div class="ct-highlight-sub">vs. piezas programadas</div>
-              ${!esAdelanto && canRegistrarAtraso ? `
+              <div class="ct-highlight-label">${ic(esAdelanto?'target':(enCurso?'clock':'alertTriangle'),12)}${esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso')}</div>
+              <div class="ct-highlight-val" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}">${esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT)}</div>
+              <div class="ct-highlight-sub">${enCurso?'pzas por cortar · jornada en curso':'vs. piezas programadas'}</div>
+              ${!esAdelanto && diaTerminado && canRegistrarAtraso ? `
                 <button class="btn-registrar-atraso" onclick="toggleAtrasoForm()">+ Registrar atraso</button>
                 <div class="atraso-form" id="atraso-form" style="display:none">
                   <input type="number" id="atraso-piezas" placeholder="Piezas faltantes" min="0">
