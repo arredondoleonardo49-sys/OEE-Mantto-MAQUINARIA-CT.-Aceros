@@ -513,6 +513,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #page-dashboard:fullscreen .dash-note{display:none}
 #page-dashboard:fullscreen .programa-table-wrap{max-height:none!important}
 #page-dashboard:fullscreen .dash-hh-wrap{max-height:none!important}
+#page-dashboard:fullscreen .hh-grid{flex:1;min-height:0;grid-auto-rows:1fr}
+#page-dashboard:fullscreen .hh-pn{display:flex;flex-direction:column;min-height:0}
+#page-dashboard:fullscreen .hh-sc{flex:1;min-height:0}
+#page-dashboard:fullscreen .hh-in{height:100%}
+#page-dashboard:fullscreen .hh-bars{flex:1;height:auto;min-height:60px}
+#page-dashboard:fullscreen .hh-n td{font-size:14px}
 #page-dashboard:fullscreen .programa-table td,#page-dashboard:fullscreen .programa-table th{padding:4px 8px}
 #page-dashboard:fullscreen .mat-kpi{padding:5px 9px;min-width:90px}
 #page-dashboard:fullscreen .mat-kpi-v{font-size:15px}
@@ -656,6 +662,28 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .risk-item{font-size:12px;color:var(--text2);padding:2px 0;display:flex;gap:6px}
 .risk-item::before{content:"⚠";font-size:11px;flex-shrink:0}
 .check-item:hover{background:var(--bg3);border-radius:var(--radius)}
+
+/* Dashboard · hora × hora: una tarjeta por máquina, barras de fondo y número exacto debajo */
+.hh-top{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.hh-k{font-size:11px;color:var(--text2)}.hh-k b{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text);margin-left:5px}
+.hh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:12px}
+.hh-pn{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 10px 6px;min-width:0}
+.hh-ph{display:flex;align-items:center;gap:7px;margin-bottom:6px;font-size:13px}.hh-dot{width:9px;height:9px;border-radius:2px;flex:none}
+.hh-dh{font-size:10.5px;color:var(--red);background:rgba(240,96,96,.1);border-radius:99px;padding:1px 8px}
+.hh-pt{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px}
+.hh-empty{font-size:11px;color:var(--text3);margin-top:8px}
+.hh-sc{overflow-x:auto}
+.hh-in{display:flex;flex-direction:column}
+.hh-bars{display:grid;align-items:end;height:100px;border-bottom:1px solid var(--border)}
+.hh-c{height:100%;display:flex;align-items:flex-end;justify-content:center}
+.hh-c.now{background:rgba(245,166,35,.07);border-left:1px dashed rgba(245,166,35,.5);border-right:1px dashed rgba(245,166,35,.5)}
+.hh-bar{width:62%;border-radius:3px 3px 0 0;opacity:.55}
+.hh-t{width:100%;border-collapse:collapse;table-layout:fixed}
+.hh-t td{text-align:center;padding:0;font-size:12px}
+.hh-n td{font-family:'IBM Plex Mono',monospace;font-weight:600;padding:5px 0 1px;color:var(--text)}.hh-n td.z{color:var(--text3);font-weight:400}
+.hh-dr td{height:14px;font-size:10px}.hh-d{color:var(--red);font-family:'IBM Plex Mono',monospace;font-weight:600}
+.hh-t tfoot td{font-size:9.5px;color:var(--text3);padding:2px 1px;line-height:1.15}
+.hh-t td.now{color:var(--amber)!important}
 </style>
 </head>
 <body>
@@ -4898,41 +4926,78 @@ function dashHoraTableHtml(ct,short){
   const ctMachines=machines.filter(m=>m.ct===ct && LASER_MAQUINAS_HORA.includes(m.name)).map(m=>m.name).sort();
   const machineNames=Array.from(new Set([...ctMachines,...Object.keys(lastByMachine)])).sort();
   if(!machineNames.length) return {names:[],html:''};
-  // Mapa: máquina -> { franja: fabricadas } (vacío si aún no hay registro)
+  // Mapa: máquina -> { franja: {fab,dan} } (vacío si aún no hay registro). Las horas extra (⚡) se juntan en una columna «Extra».
   const dataByMachine={};
   machineNames.forEach(m=>{
     dataByMachine[m]={};
     const rec=lastByMachine[m];
     if(rec){
       const franjas=safeParse(rec.franjas,[]);
-      franjas.filter(f=>!f.isBreak).forEach(f=>{ dataByMachine[m][f.franja]=f.fabricadas||0; });
+      franjas.filter(f=>!f.isBreak).forEach(f=>{
+        const fab=Number(f.fabricadas)||0, dan=Number(f.danadas)||0;
+        if(FRANJA_DISPLAY[f.franja]) dataByMachine[m][f.franja]={fab,dan};
+        else if(fab||dan){ const x=dataByMachine[m].__x||(dataByMachine[m].__x={fab:0,dan:0}); x.fab+=fab; x.dan+=dan; }
+      });
     }
   });
   // Franjas con datos hoy; si nadie ha registrado nada aún, se usa el Turno 1 como estructura base.
-  let relevantFranjas=FRANJA_ORDER.filter(f=>machineNames.some(m=>dataByMachine[m][f]!==undefined));
-  if(!relevantFranjas.length){
-    relevantFranjas=(LASER_FRANJAS['Turno 1 (8:00–17:00)']||[]).filter(f=>!f.includes('Comida'));
-  }
-  const colTotals={};machineNames.forEach(m=>colTotals[m]=0);let grandTotal=0;
-  const bodyRows=relevantFranjas.map(f=>{
-    let rowTotal=0;
-    const cells=machineNames.map(m=>{
-      const v=dataByMachine[m][f];
-      if(v===undefined) return `<td style="text-align:center;color:var(--text3)">–</td>`;
-      rowTotal+=v; colTotals[m]+=v;
-      return `<td style="text-align:center;font-family:'IBM Plex Mono',monospace">${v}</td>`;
+  let cols=FRANJA_ORDER.filter(f=>machineNames.some(m=>dataByMachine[m][f]!==undefined));
+  if(!cols.length) cols=(LASER_FRANJAS['Turno 1 (8:00–17:00)']||[]).filter(f=>!f.includes('Comida'));
+  if(machineNames.some(m=>dataByMachine[m].__x)) cols=cols.concat('__x');
+  const nowKey=franjaNowKey(), nowIdx=cols.indexOf(nowKey), nowMin=(()=>{const n=new Date();return n.getHours()*60+n.getMinutes();})();
+  const startMin=f=>{const mm=(FRANJA_DISPLAY[f]||'').match(/^(\d+):(\d+)/);return mm?(+mm[1])*60+(+mm[2]):null;};
+  const colLabel=f=>{
+    if(f==='__x') return '⚡ Extra';
+    const mm=(FRANJA_DISPLAY[f]||f).match(/(\d+):(\d+)\s*–\s*(\d+):(\d+)/); if(!mm) return escH(f);
+    const h=(H,M)=>M==='00'?String(+H):H+':'+M;
+    return h(mm[1],mm[2])+'–<wbr>'+h(mm[3],mm[4]);
+  };
+  // Escala común para que las tarjetas de las máquinas se puedan comparar a simple vista
+  let maxV=10; machineNames.forEach(m=>cols.forEach(f=>{const c=dataByMachine[m][f]; if(c&&c.fab>maxV) maxV=c.fab;}));
+  const COLORS=['#b48cff','#f5a623','#2ec4c4','#ff8fb1','#e0d35c'], FIXED={GW1:'#4a9eff',GW2:'#3ecf8e'};
+  // Máquinas sin captura hoy no ocupan tarjeta (se listan en una línea); si nadie ha capturado aún, se muestran todas.
+  const conDatos=machineNames.filter(m=>Object.keys(dataByMachine[m]).length>0);
+  const sinDatos=conDatos.length?machineNames.filter(m=>!conDatos.includes(m)):[];
+  const cardNames=conDatos.length?conDatos:machineNames;
+  let grand=0, grandDan=0, extraCol=0;
+  const panels=cardNames.map((m,mi)=>{
+    const col=FIXED[m]||COLORS[(extraCol++)%COLORS.length];
+    let tot=0, dTot=0;
+    const bars=cols.map((f,i)=>{
+      const c=dataByMachine[m][f]; if(c){ tot+=c.fab; dTot+=c.dan; }
+      return `<div class="hh-c${i===nowIdx?' now':''}">${c&&c.fab>0?`<div class="hh-bar" style="height:${Math.max(3,Math.round(c.fab/maxV*92))}%;background:${col}"></div>`:''}</div>`;
     }).join('');
-    grandTotal+=rowTotal;
-    return `<tr><td>${FRANJA_DISPLAY[f]||f}</td>${cells}<td style="text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--text)">${rowTotal}</td></tr>`;
+    const nums=cols.map((f,i)=>{
+      const c=dataByMachine[m][f], st=startMin(f), futuro=(st!=null&&st>nowMin&&i!==nowIdx);
+      let txt, cls='';
+      if(c&&c.fab>0) txt=String(c.fab);
+      else if(i===nowIdx) txt='…';
+      else if(c&&!futuro) { txt='0'; cls='z'; }
+      else { txt='–'; cls='z'; }
+      return `<td class="${i===nowIdx?'now ':''}${cls}">${txt}</td>`;
+    }).join('');
+    const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
+    const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
+    grand+=tot; grandDan+=dTot;
+    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b>${escH(m)}</b>${dTot>0?`<span class="hh-dh">${dTot} dañada${dTot===1?'':'s'}</span>`:''}<span class="hh-pt">${tot} pzas</span></div>
+      <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*46}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
+      <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div></div>`;
   }).join('');
-  const totalRow=`<tr style="font-weight:700;background:var(--bg3)"><td>TOTAL</td>${machineNames.map(m=>`<td style="text-align:center;font-family:'IBM Plex Mono',monospace;color:var(--text)">${colTotals[m]}</td>`).join('')}<td style="text-align:center;font-family:'IBM Plex Mono',monospace;color:#3ecf8e">${grandTotal}</td></tr>`;
-  const html=`<div class="programa-table-wrap dash-hh-wrap" style="max-height:460px">
-    <table class="programa-table">
-      <thead><tr><th>Hora</th>${machineNames.map(m=>`<th style="text-align:center">${short?escH(m):'Producción '+escH(m)}</th>`).join('')}<th style="text-align:center">Total</th></tr></thead>
-      <tbody>${bodyRows}${totalRow}</tbody>
-    </table>
-  </div>`;
+  const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
+  const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
+  const vacias=sinDatos.length?`<div class="hh-empty">Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
+  const html=`${resumen}<div class="hh-grid">${panels}</div>${vacias}`;
   return {names:machineNames,html};
+}
+// Franja horaria en curso (clave de FRANJA_DISPLAY) según la hora del dispositivo; '' si ninguna.
+function franjaNowKey(){
+  const n=new Date(), now=n.getHours()*60+n.getMinutes();
+  for(const k of FRANJA_ORDER){
+    const mm=FRANJA_DISPLAY[k].match(/^(\d+):(\d+)\s*–\s*(\d+):(\d+)/); if(!mm) continue;
+    const st=(+mm[1])*60+(+mm[2]); let en=(+mm[3])*60+(+mm[4]); if(en<=st) en+=1440;
+    if(now>=st&&now<en) return k;
+  }
+  return '';
 }
 // ── REGISTRO ──
 function updateMachineAndTurno(){
