@@ -1277,7 +1277,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(1)" title="Siguiente">▶</button>
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 12px" onclick="repHoy()">Hoy</button>
       <select id="rep-ct" onchange="renderReportes()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
-      <button class="btn btn-primary" style="margin-left:auto;font-size:12px;padding:7px 14px" onclick="repPrint()">🖨 Imprimir / PDF</button>
+      <button class="btn" style="margin-left:auto;font-size:12px;padding:7px 12px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="repPrint()">🖨 Imprimir</button>
+      <button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="repDownload()">⬇ Descargar PDF</button>
     </div>
     <div id="rep-old" style="display:none;margin:.5rem 0;padding:8px 12px;border:1px solid rgba(245,166,35,.35);background:rgba(245,166,35,.07);border-radius:var(--radius);font-size:12px;color:var(--text2)">Este periodo es anterior a los últimos 45 días que la plataforma descarga al iniciar. <button class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text)" onclick="repCargarHistorial()">Cargar del Sheet</button> <span id="rep-old-msg" style="margin-left:6px"></span></div>
     <iframe id="rep-frame" title="Reporte" onload="window.repFit&&repFit(this)" style="width:100%;height:700px;border:1px solid var(--border);border-radius:var(--radius-lg);background:#e9ebf0"></iframe>
@@ -2922,7 +2923,7 @@ function buildProgramaReportHtml(fecha,opts){
     totalTramos+=tr; totalFilas+=lines.length;
     const col=MCOL[r.machine]||'#475569';
     return {machine:r.machine,col,n:lines.length,tr,html:`<section class="ps rp-m" style="--mc:${col}"><div class="rp-mh"><span class="rp-mn">${esc(r.machine.toUpperCase())}</span><span class="rp-mi">${lines.length} renglón${lines.length===1?'':'es'} con consumo · <b>${n2(tr)} tramos</b>${r.fecha!==fecha?` · programa del ${esc(dayLabel(r.fecha))}`:''}</span></div>
-      ${lines.length?`<table class="prog"><colgroup><col style="width:14%"><col style="width:11%"><col style="width:27%"><col style="width:9%"><col style="width:26%"><col style="width:13%"></colgroup><thead><tr><th>OP</th><th>Modelo</th><th>Tipo de tubular</th><th>PTR / Tubo</th><th>Consumo real</th><th class="n">Equiv. tramos</th></tr></thead><tbody>${lines.join('')}</tbody>
+      ${lines.length?`<table class="prog"><colgroup><col style="width:13%"><col style="width:14%"><col style="width:26%"><col style="width:9%"><col style="width:25%"><col style="width:13%"></colgroup><thead><tr><th>OP</th><th>Modelo</th><th>Tipo de tubular</th><th>PTR / Tubo</th><th>Consumo real</th><th class="n">Equiv. tramos</th></tr></thead><tbody>${lines.join('')}</tbody>
       <tfoot><tr><td colspan="5">Total ${esc(r.machine)}</td><td class="n">${n2(tr)}</td></tr></tfoot></table>`:'<div class="line muted">Aún no hay consumo registrado en este programa.</div>'}</section>`};
   });
   const sections=blocks.map(b=>b.html).join('');
@@ -2980,7 +2981,7 @@ function exportProgramaDia(){
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
   }
-  openPrintHtml(buildProgramaReportHtml(fecha));
+  downloadReportPdf(buildProgramaReportHtml(fecha),'Programa_de_corte_'+fecha+'.pdf');
 }
 // Habilita/deshabilita la pestaña "Programa del día" según la máquina seleccionada
 function updateProgramaTabState(machine){
@@ -3133,7 +3134,7 @@ function renderProgramaDia(force){
         <span id="programa-progress" style="font-weight:600;color:var(--text)"></span>
         <span style="margin-left:auto">Subido por ${rec.uploadedByName} — ${hhmm}</span>
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
-        <button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Abre el reporte imprimible del día (imprimir o guardar como PDF): programa por máquina, lo cortado y el consumo real de material">${ic('box',12)}Descargar registro del día</button>
+        <button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el reporte del día en PDF: consumo real de material de GW1 y GW2">${ic('box',12)}Descargar registro del día</button>
       </div>
       ${cierre}
       ${showTable?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
@@ -6501,6 +6502,85 @@ ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a 
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
 function printWeeklyReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
+// ── Descarga real de reportes en PDF (sin depender del cuadro de impresión) ──
+function repToast(msg,color,ms){
+  let t=document.getElementById('oee-toast');
+  if(!t){ t=document.createElement('div'); t.id='oee-toast'; t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99999;background:var(--bg2,#181b24);color:var(--text,#e8eaf0);border:1px solid var(--border,#2a2e3f);border-radius:10px;padding:10px 16px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.45);max-width:90vw'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.borderColor=color||'var(--border,#2a2e3f)'; t.style.display='block';
+  clearTimeout(t._h); if(ms) t._h=setTimeout(()=>{ t.style.display='none'; },ms);
+}
+let _pdfLibPromise=null;
+function loadScriptOnce(src,test){
+  return new Promise((ok,fail)=>{
+    if(test()) return ok();
+    const sc=document.createElement('script'); sc.src=src; sc.onload=()=>test()?ok():fail(new Error('lib')); sc.onerror=()=>fail(new Error('red')); document.head.appendChild(sc);
+  });
+}
+function loadPdfLib(){
+  if(!_pdfLibPromise){
+    _pdfLibPromise=loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>!!window.html2canvas)
+      .then(()=>loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>!!(window.jspdf&&window.jspdf.jsPDF)))
+      .catch(e=>{ _pdfLibPromise=null; throw e; });
+  }
+  return _pdfLibPromise;
+}
+// Genera el PDF del reporte (hoja carta, varias páginas) y lo descarga como archivo. Si no se puede
+// (p. ej. sin internet para cargar la librería), abre la vista de impresión.
+function downloadReportPdf(html,filename){
+  repToast('Generando PDF…','var(--blue,#4a9eff)');
+  const fallback=(why)=>{ repToast('No se pudo generar el PDF directo ('+why+'). Se abre la vista de impresión: elige "Guardar como PDF".','var(--amber,#f5a623)',7000); openPrintHtml(html); };
+  loadPdfLib().then(()=>{
+    const W=756;                                   // ancho de la hoja carta útil, en px de pantalla
+    const f=document.createElement('iframe');
+    f.style.cssText='position:fixed;left:0;top:0;width:'+W+'px;height:1200px;border:0;background:#fff;z-index:-9999;pointer-events:none';
+    document.body.appendChild(f);
+    const d=f.contentDocument; d.open(); d.write(html); d.close();
+    const end=()=>{ try{ f.remove(); }catch(e){} };
+    setTimeout(()=>{
+      try{
+        d.querySelectorAll('.bar,.noprint').forEach(x=>x.remove());
+        d.body.style.cssText='margin:0;background:#fff';
+        const page=d.querySelector('.page')||d.body;
+        page.style.cssText+=';width:'+W+'px;max-width:'+W+'px;margin:0;box-shadow:none;box-sizing:border-box';
+        const top0=page.getBoundingClientRect().top, totalH=Math.ceil(page.scrollHeight);
+        // Cortes de página solo entre renglones (nunca partiendo una fila ni dejando un título huérfano)
+        const cand=[0];
+        page.querySelectorAll('tbody tr,tfoot tr,.rp-head,.rp-kpis,table,section>.line,.line').forEach(e=>{ cand.push(Math.round(e.getBoundingClientRect().bottom-top0)); });
+        const heads=[]; page.querySelectorAll('.rp-mh,thead').forEach(e=>{ const r=e.getBoundingClientRect(); heads.push([Math.round(r.top-top0),Math.round(r.bottom-top0)]); });
+        const bad=y=>heads.some(h=>y>h[0]+1&&y<h[1]+40);   // no cortar sobre/pegado a un encabezado de tabla
+        const secTops=Array.from(page.querySelectorAll('section.rp-m')).map(e=>Math.round(e.getBoundingClientRect().top-top0));
+        const MM_W=199.9, MM_H=257.4, pageH=Math.floor(W*MM_H/MM_W);
+        const cuts=[0]; let y=0;
+        while(y<totalH-2){
+          const lim=y+pageH; if(lim>=totalH){ cuts.push(totalH); break; }
+          let best=0; cand.forEach(c=>{ if(c>y+40&&c<=lim&&!bad(c)&&c>best) best=c; });
+          if(!best) best=lim;
+          // si el corte cae a pocos renglones del inicio de una máquina, la tabla completa pasa a la página siguiente
+          secTops.forEach(t=>{ if(t>y+40&&t<best&&best-t<170) best=t; });
+          cuts.push(best); y=best;
+        }
+        window.html2canvas(page,{scale:2,backgroundColor:'#ffffff',useCORS:true,windowWidth:W,width:W,height:totalH,scrollX:0,scrollY:0}).then(cv=>{
+          const pdf=new window.jspdf.jsPDF({unit:'mm',format:'letter',orientation:'portrait'});
+          const k=cv.width/W;
+          for(let i=0;i<cuts.length-1;i++){
+            const y0=Math.round(cuts[i]*k), h=Math.round((cuts[i+1]-cuts[i])*k); if(h<=0) continue;
+            const sl=document.createElement('canvas'); sl.width=cv.width; sl.height=h;
+            const cx=sl.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,sl.width,h); cx.drawImage(cv,0,y0,cv.width,h,0,0,cv.width,h);
+            if(i>0) pdf.addPage();
+            pdf.addImage(sl.toDataURL('image/jpeg',.96),'JPEG',8,10,MM_W,MM_W*h/cv.width);
+          }
+          pdf.save(filename); end(); repToast('✓ PDF descargado: '+filename,'var(--green,#3ecf8e)',4000);
+        }).catch(e=>{ end(); fallback(String(e&&e.message||e).slice(0,60)); });
+      }catch(e){ end(); fallback(String(e&&e.message||e).slice(0,60)); }
+    },400);
+  }).catch(e=>fallback(e&&e.message==='red'?'sin conexión a internet':'error'));
+}
+function repFileName(){
+  const s=repState();
+  if(s.mode==='programa') return 'Programa_de_corte_'+s.fecha+'.pdf';
+  return (s.mode==='semanal'?'Reporte_semanal_'+repKey():'Reporte_diario_'+s.fecha)+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
+}
+function repDownload(){ const s=repState(); downloadReportPdf(s.mode==='programa'?buildProgramaReportHtml(s.fecha):buildProdReportHtml(s.mode,repKey(),s.ct),repFileName()); }
 function openPrintHtml(html){
   let w=null;
   try{ w=window.open('','_blank'); }catch(e){ w=null; }
