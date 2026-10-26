@@ -2881,6 +2881,14 @@ function progTubKind(name){
   if(/^\s*tubo\b/i.test(t)) return 'Tubo';
   return /\d\s*(?:in)?\s*x\s*\d/i.test(t)?'PTR':'Tubo';
 }
+// Se programa con 3 días hábiles de anticipación: el programa del día 26 (lun) se corta el 29 (jue). Solo cuentan lunes a viernes.
+const PROG_DIAS_ADELANTO=3;
+function addDiasHabiles(iso,n){ let d=iso, k=0; while(k<n){ d=isoAddDays(d,1); const w=isoDow(d); if(w!==0&&w!==6) k++; } return d; }
+function progCorteFecha(progFecha){ return /^\d{4}-\d{2}-\d{2}$/.test(progFecha||'')?addDiasHabiles(progFecha,PROG_DIAS_ADELANTO):''; }
+function fmtDMY(iso){ const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m?m[3]+'/'+m[2]+'/'+m[1]:String(iso||''); }
+function fechaLargaEs(iso){ try{ const t=new Date(iso+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); return t.replace(/^([^,\s]+),\s*/,'$1 ').replace(/^./,c=>c.toUpperCase()); }catch(e){ return iso; } }
+// Día de corte de lo que se ve en el reporte (el programa vigente de GW1/GW2 en esa fecha)
+function progReporteCorteIso(fecha){ const r=REPORT_LASER_MACHINES.map(m=>progActiveRecord(fecha,m)).filter(Boolean); const c=r.map(x=>progCorteFecha(x.fecha)).sort(); return c.length?c[c.length-1]:progCorteFecha(fecha); }
 function buildProgramaReportHtml(fecha,opts){
   opts=opts||{};
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2922,13 +2930,19 @@ function buildProgramaReportHtml(fecha,opts){
     });
     totalTramos+=tr; totalFilas+=lines.length;
     const col=MCOL[r.machine]||'#475569';
-    return {machine:r.machine,col,n:lines.length,tr,html:`<section class="ps rp-m" style="--mc:${col}"><div class="rp-mh"><span class="rp-mn">${esc(r.machine.toUpperCase())}</span><span class="rp-mi">${lines.length} renglón${lines.length===1?'':'es'} con consumo · <b>${n2(tr)} tramos</b>${r.fecha!==fecha?` · programa del ${esc(dayLabel(r.fecha))}`:''}</span></div>
+    return {machine:r.machine,col,n:lines.length,tr,html:`<section class="ps rp-m" style="--mc:${col}"><div class="rp-mh"><span class="rp-mn">${esc(r.machine.toUpperCase())}</span><span class="rp-mi">${lines.length} renglón${lines.length===1?'':'es'} con consumo · <b>${n2(tr)} tramos</b></span><span class="rp-mi" style="margin-left:auto">Programa ${esc(fmtDMY(r.fecha))} → Corte <b>${esc(fmtDMY(progCorteFecha(r.fecha)))}</b></span></div>
       ${lines.length?`<table class="prog"><colgroup><col style="width:13%"><col style="width:14%"><col style="width:26%"><col style="width:9%"><col style="width:25%"><col style="width:13%"></colgroup><thead><tr><th>OP</th><th>Modelo</th><th>Tipo de tubular</th><th>PTR / Tubo</th><th>Consumo real</th><th class="n">Equiv. tramos</th></tr></thead><tbody>${lines.join('')}</tbody>
       <tfoot><tr><td colspan="5">Total ${esc(r.machine)}</td><td class="n">${n2(tr)}</td></tr></tfoot></table>`:'<div class="line muted">Aún no hay consumo registrado en este programa.</div>'}</section>`};
   });
   const sections=blocks.map(b=>b.html).join('');
   const kpis=blocks.length?`<div class="rp-kpis">${blocks.map(b=>`<div class="rp-k" style="--mc:${b.col}"><small>${esc(b.machine.toUpperCase())}</small><b>${n2(b.tr)}</b><span>tramos · ${b.n} renglón${b.n===1?'':'es'}</span></div>`).join('')}<div class="rp-k tot"><small>TOTAL</small><b>${n2(totalTramos)}</b><span>tramos · ${totalFilas} renglón${totalFilas===1?'':'es'}</span></div></div>`:'';
-  const fechaLarga=(()=>{ try{ const t=new Date(fecha+'T12:00:00').toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); return t.charAt(0).toUpperCase()+t.slice(1); }catch(e){ return fecha; } })();
+  const progDias=Array.from(new Set(recs.map(r=>r.fecha))).sort();
+  const corteDias=Array.from(new Set(recs.map(r=>progCorteFecha(r.fecha)))).sort();
+  const unico=corteDias.length===1;
+  const tituloFull=unico?`Programa de corte ${fmtDMY(corteDias[0])}`:'Programa de corte';
+  const subHead=recs.length?(unico
+    ?`<div class="rp-date">Día de corte: ${esc(fechaLargaEs(corteDias[0]))}</div><div class="rp-prog">Día de programa: ${esc(fechaLargaEs(progDias[0]))} · ${PROG_DIAS_ADELANTO} días hábiles de anticipación</div>`
+    :recs.map(r=>`<div class="rp-prog"><b>${esc(r.machine)}</b> · programa ${esc(fmtDMY(r.fecha))} → corte ${esc(fmtDMY(progCorteFecha(r.fecha)))}</div>`).join('')):`<div class="rp-date">${esc(fechaLargaEs(fecha))}</div>`;
   const titulo='Programa de corte';
   let indexHtml='';
   if(opts.index){
@@ -2940,11 +2954,11 @@ function buildProgramaReportHtml(fecha,opts){
         return `<tr${f===fecha?' style="background:#eef2ff"':''}>${i===0?`<td rowspan="${byF[f].length}"><a href="#" onclick="parent.repGoFecha('${f}');return false" style="color:#1d4ed8;font-weight:600">${esc(dayLabel(f))} · ${esc(f)}</a></td>`:''}<td>${esc(r.machine)}</td><td class="n">${st.done} / ${st.total}</td><td class="n">${nf(st.pzDone)} / ${nf(st.pz)}</td><td class="n">${ct?(ct.total>0?n2(ct.total):'–'):'<span class="muted">n/a</span>'}</td><td>${progIsCompleted(r)?'<span class="pill ok">COMPLETADO</span>':(st.total&&st.done===st.total?'<span class="pill ok">TODO CORTADO</span>':'<span class="pill ns">EN CURSO</span>')}</td></tr>`; }).join('')).join('')}
       </tbody></table>`:'<div class="line muted">Aún no hay programas guardados.</div>'}</section>`;
   }
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(fecha)}</title>
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(tituloFull)}</title>
 ${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}
 .rp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:3px solid #1b1f2a;padding-bottom:10px;margin-bottom:14px}
 .rp-kick{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;font-weight:700}
-.rp-head h1{font-size:26px;margin:2px 0 1px;letter-spacing:-.3px}.rp-date{font-size:14px;color:#374151;font-weight:600}
+.rp-head h1{font-size:26px;margin:2px 0 1px;letter-spacing:-.3px}.rp-date{font-size:14px;color:#374151;font-weight:600}.rp-prog{font-size:11.5px;color:#6b7280;margin-top:2px}
 .rp-meta{font-size:10px;color:#6b7280;text-align:right;line-height:1.6}.rp-meta b{color:#1b1f2a;font-size:12px}
 .rp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
 .rp-k{border:1px solid #e5e7eb;border-left:4px solid var(--mc,#1b1f2a);border-radius:6px;padding:8px 12px;background:#fafbfd}
@@ -2966,7 +2980,7 @@ table.prog tfoot td{background:#eef1f7;font-weight:800;border-top:2px solid #cfd
 @media print{.noprint{display:none}}</style></head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
 <div class="page">
-<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Laser</div><h1>${titulo}</h1><div class="rp-date">${esc(fechaLarga)}</div></div>
+<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Laser</div><h1>${esc(tituloFull)}</h1>${subHead}</div>
 <div class="rp-meta"><b>${recs.length?recs.map(r=>esc(r.machine)).join(' · '):'GW1 · GW2'}</b><br>${quien?esc(quien)+'<br>':''}Generado el ${esc(generado)}</div></div>
 ${kpis}
 ${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un programa vigente en esta fecha (todavía no se había subido ninguno).</p>'}${sections}
@@ -2981,7 +2995,7 @@ function exportProgramaDia(){
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
   }
-  downloadReportPdf(buildProgramaReportHtml(fecha),'Programa_de_corte_'+fecha+'.pdf');
+  downloadReportPdf(buildProgramaReportHtml(fecha),'Programa_de_corte_'+progReporteCorteIso(fecha)+'.pdf');
 }
 // Habilita/deshabilita la pestaña "Programa del día" según la máquina seleccionada
 function updateProgramaTabState(machine){
@@ -6577,7 +6591,7 @@ function downloadReportPdf(html,filename){
 }
 function repFileName(){
   const s=repState();
-  if(s.mode==='programa') return 'Programa_de_corte_'+s.fecha+'.pdf';
+  if(s.mode==='programa') return 'Programa_de_corte_'+progReporteCorteIso(s.fecha)+'.pdf';
   return (s.mode==='semanal'?'Reporte_semanal_'+repKey():'Reporte_diario_'+s.fecha)+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
 }
 function repDownload(){ const s=repState(); downloadReportPdf(s.mode==='programa'?buildProgramaReportHtml(s.fecha):buildProdReportHtml(s.mode,repKey(),s.ct),repFileName()); }
