@@ -572,7 +572,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .prog-tub thead .programa-filter-row th.pc-cons,.prog-tub thead .programa-filter-row th.pc-eq{z-index:4}
 .programa-table tbody tr:hover td.pc-cons,.programa-table tbody tr:hover td.pc-eq{background:var(--bg3)}
 .programa-row-done td.pc-cons,.programa-row-done td.pc-eq{background:linear-gradient(rgba(62,207,142,.06),rgba(62,207,142,.06)),var(--bg2)}
-.prog-cons-btn{width:100%;text-align:left;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 9px;border:1px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap}
+.prog-cons-btn{width:100%;overflow:hidden;text-overflow:ellipsis;text-align:left;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 9px;border:1px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap}
 .prog-cons-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--bg3)}
 .prog-cons-btn.has{border-style:solid;border-color:rgba(62,207,142,.45);background:rgba(62,207,142,.08);color:var(--text);font-weight:500}
 .prog-cons-ro{color:var(--text);font-weight:500}
@@ -593,6 +593,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pcm-eq b{color:var(--green);font-family:'IBM Plex Mono',monospace}
 .pcm-m{color:var(--text3);font-size:11px}
 .pcm-w{color:var(--amber);font-size:11px}
+.pcm-ok{color:var(--green);font-size:11px}
+.pcm-r3{grid-template-columns:.8fr 12px 1.2fr 12px 1.2fr 26px}
+.pcm-chk{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;color:var(--text2);cursor:pointer}
+.pcm-chk input{width:auto!important}
 .pcm-bar{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
 .pcm-sec{font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:6px 12px;font-family:'IBM Plex Sans',sans-serif}
 .programa-cortado-check{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
@@ -1190,10 +1194,22 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="tab-lamina" class="tab-content active">
       <div class="ap-top">
-        <div class="form-group"><label>Fecha</label><input type="date" id="lam-fecha"></div>
+        <div class="form-group"><label>Fecha</label><input type="date" id="lam-fecha" onchange="renderLamTotals()"></div>
+      </div>
+      <div class="ap-card" id="lam-total-card" style="margin-bottom:12px">
+        <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamTotCard()"><span id="lam-total-caret" style="width:12px">▾</span> Hojas cortadas — Laser de Cama <span id="lam-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
+        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Se toma del <b>consumo real</b> que el operador anota en <b>Registrar turno › Programa del día</b> (Laser de Cama): hojas completas por calibre. Ya no se captura aquí.</div>
+        <div id="lam-total-body"></div>
+      </div>
+      <div class="ap-card" id="lam-rec-card" style="margin-bottom:12px">
+        <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-rec-count">0 recortes</span></div>
+        <div class="ap-note">Los recortes los anota el operador en el mismo consumo real. Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro. Si es de una pieza fuera de programa (prototipo, vacuna…), se marca en «Destino del recorte».</div>
+        <div id="lam-rec-body"></div>
+      </div>
+      <div class="ap-card" id="rt-ap-lam" style="margin-bottom:12px"></div>
+      <div id="lam-legacy" style="display:none" aria-hidden="true">
         <div class="form-group"><label>Turno</label><select id="lam-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
         <div class="form-group"><label>Operador</label><input type="text" id="lam-op" placeholder="Nombre del operador"></div>
-      </div>
       <div class="ap-cols">
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas<span class="ap-badge" id="lam-hojas-count">0 hojas</span><button class="ap-add" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button></div>
@@ -1217,6 +1233,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <span class="save-msg" id="lam-save-msg"></span>
         <button class="btn btn-primary" id="btn-save-lamina" onclick="saveLamina()">Guardar registro</button>
       </div>
+          </div>
     </div>
     <div id="tab-tubular" class="tab-content">
       <div class="ap-card" id="tub-total-card" style="margin-bottom:12px">
@@ -1224,6 +1241,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Almacén surte por centro de trabajo: aquí se suma el <b>consumo real</b> del Programa del día de las dos máquinas (tramos completos + equivalencia de recortes), por tipo de tubular.</div>
         <div id="tub-total-body"></div>
       </div>
+      <div class="ap-card" id="rt-ap-tub" style="margin-bottom:12px"></div>
       <div class="ap-top">
         <div class="form-group"><label>Máquina</label><select id="tub-machine" onchange="_tubTouchedUid=currentUser&&currentUser.id"><option>GW1</option><option>GW2</option></select></div>
         <div class="form-group"><label>Fecha</label><input type="date" id="tub-fecha" onchange="renderTubTotals()"></div>
@@ -2423,10 +2441,16 @@ function tubMatchCatalog(txt){ const n=tubNormName(txt); if(!n) return null; ret
 function progTubColIdx(rec){ return ((rec&&rec.rows&&rec.rows[0])||[]).findIndex(h=>String(h).trim().toLowerCase()==='tubular'); }
 function progConsTs(v){ const m=String(v==null?'':v).match(/@([0-9a-z]+)/); return m?(parseInt(m[1],36)||0):0; }
 function progConsParse(v){
-  const s=String(v==null?'':v), o={t:0,r:[],k:'',ts:'',note:''};
+  const s=String(v==null?'':v), o={t:0,r:[],k:'',ts:'',note:'',h:0,l:[],c:'',f:'',e:false};
   if(s.charAt(0)!=='§'){ o.note=s.trim(); return o; }
   s.slice(1).split(';').forEach(p=>{
     if(!p) return;
+    // Laser de Cama (lámina): H = hojas completas · L = N recortes de ancho×largo (cm) · C = calibre · F = destino del recorte · E = hojas de eventualidad
+    if(p.slice(0,2)==='C='){ o.c=p.slice(2); return; }
+    if(p.slice(0,2)==='F='){ o.f=p.slice(2); return; }
+    if(p==='E'){ o.e=true; return; }
+    if(p.charAt(0)==='H'){ o.h=parseFloat(p.slice(1))||0; return; }
+    if(p.charAt(0)==='L'){ const m=p.slice(1).split('x'), n=parseFloat(m[0])||0, a=parseFloat(m[1])||0, l=parseFloat(m[2])||0; if(n>0&&a>0&&l>0) o.l.push([n,a,l]); return; }
     if(p.charAt(0)==='T') o.t=parseFloat(p.slice(1))||0;
     else if(p.charAt(0)==='R'){ const m=p.slice(1).split('x'), n=parseFloat(m[0])||0, l=parseFloat(m[1])||0; if(n>0&&l>0) o.r.push([n,l]); }
     else if(p.slice(0,2)==='K=') o.k=p.slice(2);
@@ -2437,6 +2461,12 @@ function progConsParse(v){
 function progConsStr(o){
   const p=[]; if(o.t>0) p.push('T'+o.t);
   (o.r||[]).forEach(a=>{ if(a[0]>0&&a[1]>0) p.push('R'+a[0]+'x'+a[1]); });
+  const ls=(o.l||[]).filter(a=>a[0]>0&&a[1]>0&&a[2]>0);
+  if(o.h>0) p.push('H'+o.h);
+  ls.forEach(a=>p.push('L'+a[0]+'x'+a[1]+'x'+a[2]));
+  if(o.c && (o.h>0||ls.length)) p.push('C='+o.c);
+  if(o.f && ls.length) p.push('F='+o.f);
+  if(o.e && o.h>0) p.push('E');
   if(o.k && p.length) p.push('K='+o.k);
   p.push('@'+(o.ts||Date.now().toString(36)));
   return '§'+p.join(';');
@@ -2495,14 +2525,103 @@ function syncTubFromPrograma(fecha,machine){
     try{ renderAprovHist(); }catch(e){}
   }catch(e){ console.warn('syncTubFromPrograma',e); }
 }
+// ── Consumo real de lámina (Laser de Cama) ──────────────────────────────────────────────────────
+// Igual que en GW1/GW2: el operador anota por cada fila (OP) las hojas completas y los recortes que usó; se guarda en la celda
+// «Observaciones» y de ahí sale el registro de Aprovechamiento (lp_Laser de Cama_fecha). Regla del 40%: un recorte que equivale
+// al 40% o más de una lámina ya es parte del material explosionado (no es ahorro); por debajo es recuperación.
+const PROG_LAM_MACHINES=['Laser de Cama'];
+function progIsLamRec(rec){ return !!rec && PROG_LAM_MACHINES.includes(rec.machine); }
+function r2n(n){ return Math.round((Number(n)||0)*100)/100; }
+function r4n(n){ return Math.round((Number(n)||0)*10000)/10000; }
+// Si el archivo ya trae el calibre en alguna celda de la fila («Cal. 18», «calibre 14»), se preselecciona.
+function progLamSugerida(rec,row){
+  const oi=rec&&rec.obsColIdx;
+  for(let i=0;i<(row||[]).length;i++){
+    if(i===oi) continue;
+    const m=String(row[i]==null?'':row[i]).match(/\bcal(?:ibre)?\.?\s*(\d{1,2})\b/i); if(!m) continue;
+    const l=laminas.find(x=>{ const d=String(x.cal).match(/\d+/); return d&&parseInt(d[0],10)===parseInt(m[1],10); });
+    if(l) return l;
+  }
+  return null;
+}
+// Un recorte de lámina: peso, equivalencia en láminas, % y si cuenta como ahorro (<40%)
+function lamRecInfo(cal,ancho,largo){
+  const lam=getLaminaByCal(cal);
+  if(!(lam&&lam.peso>0&&ancho>0&&largo>0)) return {lam:lam||null,peso:0,eq:0,pct:0,cuenta:true,ahorro:0};
+  const peso=r4n(ancho*largo*lam.esp*7.85/1000), eq=peso/lam.peso, pct=Math.round(eq*100);
+  return {lam,peso,eq,pct,cuenta:pct<RECORTE_UMBRAL,ahorro:r2n(eq*lam.costo)};
+}
+function progConsRowLam(rec,r){
+  const oi=rec&&rec.obsColIdx, row=((rec&&rec.rows)||[])[r+1]||[];
+  const c=progConsParse(oi>=0?row[oi]:'');
+  const cal=c.c||'', lam=cal?getLaminaByCal(cal):null;
+  const recs=c.l.map(a=>Object.assign({n:a[0],ancho:a[1],largo:a[2]},lamRecInfo(cal,a[1],a[2])));
+  const eqRec=r3(recs.reduce((s,x)=>s+x.n*x.eq,0));
+  const eqAhorro=r3(recs.filter(x=>x.cuenta).reduce((s,x)=>s+x.n*x.eq,0));
+  const ahorro=r2n(recs.filter(x=>x.cuenta).reduce((s,x)=>s+x.n*x.ahorro,0));
+  return {c,cal,lam,h:c.h,recs,eqRec,eqAhorro,ahorro,sug:progLamSugerida(rec,row),has:(c.h>0||recs.length>0)};
+}
+function progConsTextLam(x){
+  const p=[]; if(x.h>0) p.push(f3(x.h)+(x.h===1?' hoja':' hojas')+(x.cal?' '+x.cal:''));
+  x.recs.forEach(q=>p.push(f3(q.n)+'×'+f3(q.ancho)+'×'+f3(q.largo)+' cm'));
+  return p.join(' + ');
+}
+// Consumo de todo el programa → renglones para Aprovechamiento (mismo formato que los registros manuales de lámina)
+function progLamDetalle(rec){
+  const hojas={}, order=[], recs=[]; let peso=0, ahorro=0;
+  const n=Math.max(0,((rec&&rec.rows)||[]).length-1);
+  for(let r=0;r<n;r++){
+    const x=progConsRowLam(rec,r); if(!x.has||!x.cal) continue;
+    if(x.h>0){ const k=x.cal+'|'+(x.c.e?'eventualidad':'programa'); if(!hojas[k]){ hojas[k]={cal:x.cal,hojas:0,origen:x.c.e?'eventualidad':'programa'}; order.push(hojas[k]); } hojas[k].hojas=r3(hojas[k].hojas+x.h); peso+=x.h*((x.lam&&x.lam.peso)||0); }
+    x.recs.forEach(q=>{ for(let i=0;i<Math.min(Math.round(q.n)||1,300);i++) recs.push({cal:x.cal,ancho:q.ancho,largo:q.largo,peso:q.peso,ahorro:q.ahorro,fueraProg:x.c.f||''}); if(q.cuenta) ahorro+=q.n*q.ahorro; });
+  }
+  order.sort((a,b)=>String(a.cal).localeCompare(String(b.cal))||String(a.origen).localeCompare(String(b.origen)));
+  return {hojasDetalle:order,recortesDetalle:recs,peso:r3(peso),ahorro:r2n(ahorro)};
+}
+function progLamTotals(rec){
+  const d=progLamDetalle(rec); let h=0; d.hojasDetalle.forEach(x=>h+=x.hojas);
+  let rc=0,ex=0; d.recortesDetalle.forEach(x=>{ const I=aprovRecInfo({tipo:'lamina'},x); rc++; if(!I.cuenta) ex++; });
+  return {hojas:r3(h),recortes:rc,explosionados:ex,ahorro:d.ahorro,kg:d.peso};
+}
+function syncLamFromPrograma(fecha,machine){
+  try{
+    const rec=getProgramaRecord(fecha,machine); if(!rec||!progIsLamRec(rec)) return;
+    const d=progLamDetalle(rec), id='lp_'+machine+'_'+fecha;
+    let ar=aprovRecords.find(r=>String(r.id)===id);
+    if(!ar && !d.hojasDetalle.length && !d.recortesDetalle.length) return;
+    if(ar && JSON.stringify(ar.hojasDetalle||[])===JSON.stringify(d.hojasDetalle) && JSON.stringify(ar.recortesDetalle||[])===JSON.stringify(d.recortesDetalle)) return;
+    const now=new Date().toISOString();
+    if(!ar){
+      ar={id,tipo:'lamina',maquina:machine,ct:'TROQUELES',fecha,turno:'Programa',op:'Programa del día',origen:'programa',
+          pesoTotal:0,merma:null,pctMerma:null,aprovechado:null,ahorro:0,hojasDetalle:[],recortesDetalle:[],explosionDetalle:[]};
+      aprovRecords.push(ar);
+    }
+    ar.hojasDetalle=d.hojasDetalle; ar.recortesDetalle=d.recortesDetalle; ar.pesoTotal=d.peso; ar.ahorro=d.ahorro; ar.updatedAt=now;
+    save('aprovRecords'); _aprovLastSync='pend';
+    cloudUpsertRow('Aprovechamiento',aprovCloudRow(ar),aprovSyncDone);
+    try{ renderAprovHist(); }catch(e){}
+    try{ renderLamTotals(); }catch(e){}
+  }catch(e){ console.warn('syncLamFromPrograma',e); }
+}
+// Un programa de Laser de Cama subido antes de esta función no trae la columna «Observaciones»: se agrega al abrirlo.
+function progEnsureObsCol(rec){
+  if(!rec||!progIsLamRec(rec)||!rec.rows||!rec.rows.length) return;
+  if(rec.obsColIdx>=0) return;
+  const h=rec.rows[0].map(v=>String(v).trim().toLowerCase()), i=h.indexOf('observaciones');
+  if(i>=0){ rec.obsColIdx=i; return; }
+  rec.rows[0].push('Observaciones'); for(let r=1;r<rec.rows.length;r++) rec.rows[r].push('');
+  rec.obsColIdx=rec.rows[0].length-1;
+}
 // ── Ventana «Consumo real» (solo Operador) ──
 let _consCtx=null;
 function programaOpenConsumo(fecha,machine,rIdx){
   if(!canCutPrograma()){ progMsg('Solo el Operador registra el consumo real.','var(--amber)'); return; }
-  const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]||!(rec.obsColIdx>=0)) return;
+  const rec=getProgramaRecord(fecha,machine); if(rec&&progIsLamRec(rec)) progEnsureObsCol(rec);
+  if(!rec||!rec.rows[rIdx+1]||!(rec.obsColIdx>=0)) return;
   if(progIsCompleted(rec)){ progMsg('Este programa está completado: reábrelo para corregirlo.','var(--amber)'); return; }
   programaCloseConsumo();
   _consCtx={fecha,machine,rIdx};
+  if(progIsLamRec(rec)) return programaOpenConsumoLam(rec,fecha,machine,rIdx);
   const x=progConsRow(rec,rIdx), h=(rec.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), row=rec.rows[rIdx+1];
   const g=n=>{ const i=h.indexOf(n); return i>=0&&row[i]!==''&&row[i]!=null?String(row[i]):''; };
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -2529,6 +2648,67 @@ function programaOpenConsumo(fecha,machine,rIdx){
   pcmCalc();
   ov.addEventListener('keydown',e=>{ if(e.key==='Escape') programaCloseConsumo(); });
   const first=document.getElementById('pcm-t'); if(first) setTimeout(()=>first.focus(),30);
+}
+function programaOpenConsumoLam(rec,fecha,machine,rIdx){
+  const x=progConsRowLam(rec,rIdx), h=(rec.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), row=rec.rows[rIdx+1];
+  const g=n=>{ const i=h.indexOf(n); return i>=0&&row[i]!==''&&row[i]!=null?String(row[i]):''; };
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const pre=x.lam||x.sug||null;
+  const opts=`<option value="">${pre?'':'Selecciona la lámina…'}</option>`+laminas.map(l=>`<option value="${esc(l.cal)}" ${pre&&pre.cal===l.cal?'selected':''}>${esc(l.cal)}${l.peso>0?' ('+l.peso+' kg)':''}</option>`).join('');
+  const dests=[['','En programa'],['Prototipo','Fuera de prog.: Prototipo'],['Vacuna','Fuera de prog.: Vacuna'],['Otro','Fuera de prog.: Otro']];
+  const ov=document.createElement('div'); ov.className='pcm-ov'; ov.id='prog-cons-modal';
+  ov.onclick=e=>{ if(e.target===ov) programaCloseConsumo(); };
+  ov.innerHTML=`<div class="pcm" role="dialog" aria-label="Consumo real">
+    <div class="pcm-h"><span>Consumo real · ${esc(machine)}</span><button class="pcm-x" onclick="programaCloseConsumo()" title="Cerrar">×</button></div>
+    <div class="pcm-ctx"><b>${esc(g('op'))}</b>${g('modelo')?' · '+esc(g('modelo')):''}${g('parte')?' · '+esc(g('parte')):''}<br>Programado: <b>${esc(g('cant.')||'–')}</b> pzas${x.sug&&!x.lam?` · Lámina del programa: <b>${esc(x.sug.cal)}</b>`:''}</div>
+    <label class="pcm-l">Lámina</label>
+    <select id="pcm-cal" oninput="pcmCalcLam()">${opts}</select>
+    <label class="pcm-l">Hojas completas</label>
+    <input type="number" id="pcm-h" min="0" step="any" placeholder="0" value="${x.h>0?x.h:''}" oninput="pcmCalcLam()">
+    <label class="pcm-chk"><input type="checkbox" id="pcm-ev" ${x.c.e?'checked':''} onchange="pcmCalcLam()"> Hojas de eventualidad <span class="pcm-m">(no estaban en la explosión)</span></label>
+    <label class="pcm-l">Recortes utilizados <span style="font-weight:400;text-transform:none;letter-spacing:0">(cantidad × ancho × largo del recorte)</span></label>
+    <div id="pcm-rs"></div>
+    <button class="pcm-add" onclick="pcmAddRecLam()">+ Agregar recortes</button>
+    <div id="pcm-dest-wrap" style="display:none"><label class="pcm-l">Destino del recorte</label>
+      <select id="pcm-fp" oninput="pcmCalcLam()">${dests.map(d=>`<option value="${d[0]}" ${x.c.f===d[0]?'selected':''}>${d[1]}</option>`).join('')}</select></div>
+    <div class="pcm-eq" id="pcm-eq"></div>
+    <div class="pcm-bar"><button class="btn btn-primary" onclick="programaSaveConsumo()" style="font-size:12px;padding:6px 16px">Guardar</button>
+      <button class="pcm-sec" onclick="programaClearConsumo()">Borrar consumo</button>
+      <button class="pcm-sec" onclick="programaCloseConsumo()">Cancelar</button><span id="pcm-msg" style="font-size:12px;color:var(--amber)"></span></div></div>`;
+  document.body.appendChild(ov);
+  x.c.l.forEach(a=>pcmAddRecLam(a[0],a[1],a[2]));
+  if(!x.c.l.length) pcmAddRecLam();
+  pcmCalcLam();
+  ov.addEventListener('keydown',e=>{ if(e.key==='Escape') programaCloseConsumo(); });
+  const first=document.getElementById('pcm-h'); if(first) setTimeout(()=>first.focus(),30);
+}
+function pcmAddRecLam(n,a,l){
+  const box=document.getElementById('pcm-rs'); if(!box) return;
+  const d=document.createElement('div'); d.className='pcm-r pcm-r3';
+  d.innerHTML=`<input type="number" class="pcm-rn" min="0" step="1" placeholder="N.º" value="${n>0?n:''}" oninput="pcmCalcLam()" title="Cantidad de recortes"><span>×</span><input type="number" class="pcm-ra" min="0" step="any" placeholder="Ancho cm" value="${a>0?a:''}" oninput="pcmCalcLam()"><span>×</span><input type="number" class="pcm-rl" min="0" step="any" placeholder="Largo cm" value="${l>0?l:''}" oninput="pcmCalcLam()"><button class="pcm-x" title="Quitar" onclick="this.parentNode.remove();pcmCalcLam()">×</button>`;
+  box.appendChild(d);
+}
+function pcmReadLam(){
+  const num=el=>parseFloat(el&&el.value)||0;
+  const l=Array.from(document.querySelectorAll('#pcm-rs .pcm-r')).map(d=>[Math.round(num(d.querySelector('.pcm-rn'))),num(d.querySelector('.pcm-ra')),num(d.querySelector('.pcm-rl'))]).filter(a=>a[0]>0&&a[1]>0&&a[2]>0);
+  const cal=document.getElementById('pcm-cal')?.value||'';
+  return {h:num(document.getElementById('pcm-h')),l,cal,lam:cal?getLaminaByCal(cal):null,e:!!document.getElementById('pcm-ev')?.checked,f:document.getElementById('pcm-fp')?.value||''};
+}
+function pcmCalcLam(){
+  const el=document.getElementById('pcm-eq'); if(!el) return;
+  const v=pcmReadLam(), out=[];
+  const dw=document.getElementById('pcm-dest-wrap'); if(dw) dw.style.display=v.l.length?'':'none';
+  if(v.h>0) out.push(`Hojas completas: <b>${f3(v.h)}</b>${v.lam&&v.lam.peso>0?` · ${fmt2(v.h*v.lam.peso)} kg`:''}${v.e?' <span class="pcm-m">(eventualidad)</span>':''}`);
+  let ahorro=0;
+  v.l.forEach(a=>{
+    const I=lamRecInfo(v.cal,a[1],a[2]);
+    if(!I.lam){ out.push(`${f3(a[0])}× ${f3(a[1])}×${f3(a[2])} cm <span class="pcm-w">· elige la lámina para calcular la equivalencia</span>`); return; }
+    if(I.cuenta){ ahorro+=a[0]*I.ahorro; out.push(`${f3(a[0])}× ${f3(a[1])}×${f3(a[2])} cm ≈ <b>${f3(r3(I.eq*a[0]))}</b> lám. <span class="pcm-m">(${I.pct}% c/u)</span> · <span class="pcm-ok">recuperación</span>`); }
+    else out.push(`${f3(a[0])}× ${f3(a[1])}×${f3(a[2])} cm ≈ <b>${f3(r3(I.eq*a[0]))}</b> lám. <span class="pcm-m">(${I.pct}% c/u)</span> · <span class="pcm-w">material explosionado: ${RECORTE_UMBRAL}% o más de una lámina, no cuenta como ahorro</span>`);
+  });
+  if(v.l.length&&v.lam&&ahorro>0) out.push(`Ahorro por recuperación: <b>$${fmtMoney(ahorro)}</b>`);
+  if(!v.lam&&(v.h>0||v.l.length)) out.push(`<span class="pcm-w">Elige la lámina (calibre) para poder guardar.</span>`);
+  el.innerHTML=out.filter(Boolean).join('<br>')||'<span class="pcm-m">Captura las hojas completas y/o los recortes que usaste.</span>';
 }
 function programaCloseConsumo(){ const m=document.getElementById('prog-cons-modal'); if(m) m.remove(); _consCtx=null; }
 function pcmAddRec(n,l){
@@ -2558,12 +2738,17 @@ function pcmSaveWith(clear){
   const rec=getProgramaRecord(c.fecha,c.machine); if(!rec||!rec.rows[c.rIdx+1]) { programaCloseConsumo(); return; }
   if(!canCutPrograma()){ programaCloseConsumo(); return; }
   if(progIsCompleted(rec)){ programaCloseConsumo(); progMsg('Este programa está completado: reábrelo para corregirlo.','var(--amber)'); return; }
-  const v=clear?{t:0,r:[],tub:null}:pcmRead();
-  if(!clear && !(v.t>0) && !v.r.length){ const m=document.getElementById('pcm-msg'); if(m) m.textContent='Captura tramos o recortes (o usa «Borrar consumo»).'; return; }
-  const o={t:v.t,r:v.r,k:(v.tub&&v.tub.sku)?v.tub.sku:'',ts:Date.now().toString(36)};
+  const lamRec=progIsLamRec(rec);
+  const v=clear?{t:0,r:[],tub:null,h:0,l:[],cal:'',e:false,f:''}:(lamRec?pcmReadLam():pcmRead());
+  const msg=document.getElementById('pcm-msg');
+  if(!clear && lamRec){
+    if(!(v.h>0) && !v.l.length){ if(msg) msg.textContent='Captura hojas o recortes (o usa «Borrar consumo»).'; return; }
+    if(!v.cal){ if(msg) msg.textContent='Elige la lámina (calibre).'; const s=document.getElementById('pcm-cal'); if(s) s.focus(); return; }
+  } else if(!clear && !(v.t>0) && !v.r.length){ if(msg) msg.textContent='Captura tramos o recortes (o usa «Borrar consumo»).'; return; }
+  const o=lamRec?{h:v.h,l:v.l,c:v.cal,f:v.f,e:v.e,ts:Date.now().toString(36)}:{t:v.t,r:v.r,k:(v.tub&&v.tub.sku)?v.tub.sku:'',ts:Date.now().toString(36)};
   rec.rows[c.rIdx+1][rec.obsColIdx]=clear?('§@'+o.ts):progConsStr(o);
   rec.updatedAt=new Date().toISOString();
-  progSave(rec); syncTubFromPrograma(c.fecha,c.machine);
+  progSave(rec); if(lamRec) syncLamFromPrograma(c.fecha,c.machine); else syncTubFromPrograma(c.fecha,c.machine);
   programaCloseConsumo();
   progMsg(clear?'✓ Consumo borrado':'✓ Consumo guardado');
   renderProgramaDia(true);
@@ -2700,6 +2885,7 @@ function processProgramaFile(file){
           hdr=keep.map(i=>hdr[i]); body=body.map(row=>keep.map(i=>row[i]));
           if(hdr.findIndex(h=>String(h).trim().toLowerCase()==='observaciones')<0){ hdr.push('Observaciones'); body.forEach(row=>row.push('')); }
         }
+        if(PROG_LAM_MACHINES.includes(machine) && hdr.findIndex(h=>String(h).trim().toLowerCase()==='observaciones')<0){ hdr.push('Observaciones'); body.forEach(row=>row.push('')); }
         const obsRaw=hdr.findIndex(h=>String(h).trim().toLowerCase()==='observaciones');
         // Se agrega una columna "Cortado" al inicio (no viene en el Excel original) para que el operador
         // marque pieza por pieza lo que ya se cortó. Esto recorre en +1 el índice de Observaciones.
@@ -2738,6 +2924,7 @@ function processProgramaFile(file){
         cloudUpsertRow('Programa_Dia', progCloudRow(rec));
         found.push(machine);
         if(PROG_TUB_MACHINES.includes(machine)) syncTubFromPrograma(fecha,machine);
+        if(PROG_LAM_MACHINES.includes(machine)) syncLamFromPrograma(fecha,machine);
       });
       saveProgramaDiaLS();
       if(found.length){
@@ -2762,6 +2949,7 @@ function renderProgramaProgress(rec){
   if(!el || rec.cortadoColIdx==null) return;
   const st=progStats(rec);
   let extra='';
+  if(progIsLamRec(rec) && rec.obsColIdx>=0){ const lt=progLamTotals(rec); if(lt.hojas>0||lt.recortes>0) extra=` · Consumo real: ${fmt2(lt.hojas)} hojas${lt.recortes>0?` · ${lt.recortes} recorte${lt.recortes===1?'':'s'}${lt.explosionados?` (${lt.explosionados} explosionado${lt.explosionados===1?'':'s'})`:''}`:''}`; }
   if(progIsTubRec(rec) && rec.obsColIdx>=0){ const ct=progConsTotals(rec); if(ct.total>0) extra=` · Consumo real: ${fmt2(ct.total)} tramos${ct.re>0?` (${fmt2(ct.tc)} completos + ${fmt2(ct.re)} de recortes)`:''}`; }
   el.textContent=`${st.done} / ${st.total} filas cortadas`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'')+extra;
 }
@@ -2806,12 +2994,12 @@ function applyProgramaFilters(){
 }
 // Columnas que se muestran en la tabla del programa. En GW1/GW2 «Observaciones» pasa a ser «Consumo real» seguida de
 // «Equiv. tramos», y se ocultan «Firma de entregado», «Pz x tramo» y «Tubos».
-function progDisplayCols(rec,tub){
+function progDisplayCols(rec,tub,lam){
   const out=[];
   ((rec.rows&&rec.rows[0])||[]).forEach((h,i)=>{
     const n=String(h).trim().toLowerCase();
     if(tub && PROG_HIDE_COLS.includes(n)) return;
-    if(tub && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'eq',i,label:'Equiv. tramos'}); return; }
+    if((tub||lam) && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'eq',i,label:lam?'Recortes (lám.)':'Equiv. tramos'}); return; }
     out.push({k:'d',i,label:h});
   });
   return out;
@@ -2820,13 +3008,15 @@ function renderProgramaTable(rec){
   const rows=rec&&rec.rows;
   if(!rows || !rows.length) return '<div class="empty-state">Sin datos en esta hoja.</div>';
   const body=rows.slice(1);
-  const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
   const canCut=canCutPrograma() && !progIsCompleted(rec);
   const cortes=progCortesParse(rec.cortes);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  if(progIsLamRec(rec) && !(rec.obsColIdx>=0)) progEnsureObsCol(rec);
+  const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
   const tub=progIsTubRec(rec) && obsColIdx>=0;
-  const cols=progDisplayCols(rec,tub);
+  const lam=progIsLamRec(rec) && obsColIdx>=0;
+  const cols=progDisplayCols(rec,tub,lam);
   const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
     <tr class="programa-filter-row">${cols.map((c,j)=>{
       if(c.k==='d' && c.i===cortadoColIdx){
@@ -2843,7 +3033,7 @@ function renderProgramaTable(rec){
   </thead>`;
   const tbody=`<tbody>${body.map((row,rIdx)=>{
     const isDone=row[cortadoColIdx]===true;
-    const x=tub?progConsRow(rec,rIdx):null;
+    const x=tub?progConsRow(rec,rIdx):(lam?progConsRowLam(rec,rIdx):null);
     return `<tr class="${isDone?'programa-row-done':''}">${cols.map(c=>{
     const cIdx=c.i;
     if(c.k==='d' && cIdx===cortadoColIdx){
@@ -2853,9 +3043,15 @@ function renderProgramaTable(rec){
       return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)"></td>`;
     }
     if(c.k==='cons'){
-      const txt=progConsText(x);
-      if(canCut) return `<td class="prog-cons-td pc-cons"><button type="button" class="prog-cons-btn ${x.has?'has':''}" title="${x.has?'Editar el consumo real de esta OP':'Registrar el consumo real: tramos completos o recortes'}" onclick="programaOpenConsumo('${rec.fecha}','${rec.machine}',${rIdx})">${x.has?esc(txt):'＋ Registrar'}</button>${x.c.note&&!x.has?`<span class="prog-cons-note" title="Nota anterior del archivo">${esc(x.c.note)}</span>`:''}</td>`;
+      const txt=lam?progConsTextLam(x):progConsText(x);
+      if(canCut) return `<td class="prog-cons-td pc-cons"><button type="button" class="prog-cons-btn ${x.has?'has':''}" title="${x.has?'Editar el consumo real de esta OP'+(lam?': '+esc(txt):''):(lam?'Registrar el consumo real: hojas completas y recortes':'Registrar el consumo real: tramos completos o recortes')}" onclick="programaOpenConsumo('${rec.fecha}','${rec.machine}',${rIdx})">${x.has?esc(txt):'＋ Registrar'}</button>${x.c.note&&!x.has?`<span class="prog-cons-note" title="Nota anterior del archivo">${esc(x.c.note)}</span>`:''}</td>`;
       return `<td class="prog-cons-td pc-cons">${x.has?`<span class="prog-cons-ro">${esc(txt)}</span>`:(x.c.note?`<span class="prog-cons-note">${esc(x.c.note)}</span>`:'')}</td>`;
+    }
+    if(c.k==='eq' && lam){
+      if(!x.has||!x.recs.length) return `<td class="prog-eq-td pc-eq">${x.has?'<span style="color:var(--text3)">–</span>':''}</td>`;
+      const nEx=x.recs.filter(q=>!q.cuenta).length;
+      const tip=x.recs.map(q=>`${f3(q.n)}×${f3(q.ancho)}×${f3(q.largo)} cm = ${q.pct}% de lámina c/u · ${q.cuenta?'recuperación':'material explosionado (≥'+RECORTE_UMBRAL+'%)'}`).join('\n');
+      return `<td class="prog-eq-td pc-eq" title="${esc(tip)}"><b>${f3(x.eqRec)}</b>${nEx?`<small style="color:var(--amber)">${nEx===x.recs.length?'explosionado':nEx+' explosionado'+(nEx===1?'':'s')}</small>`:'<small style="color:var(--green)">recuperación</small>'}</td>`;
     }
     if(c.k==='eq'){
       if(!x.has) return `<td class="prog-eq-td pc-eq"></td>`;
@@ -2871,7 +3067,7 @@ function renderProgramaTable(rec){
   }).join('')}</tr>`;
   }).join('')}</tbody>`;
   setTimeout(applyProgramaFilters,0);
-  return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table${tub?' prog-tub':''}">${thead}${tbody}</table></div>`;
+  return `<div class="programa-table-wrap" style="max-height:min(70vh,720px)"><table class="programa-table${(tub||lam)?' prog-tub':''}">${thead}${tbody}</table></div>`;
 }
 // ── Registro del día: reporte imprimible (mismo estilo que los demás reportes) ──
 // PTR (perfil tubular rectangular o cuadrado: «2 x 1», «1 3/4 x 3/4») o Tubo (redondo) según el nombre del tubular.
@@ -4482,7 +4678,7 @@ function loadFromCloud(){
         const localTime=localT&&localT.updatedAt?new Date(localT.updatedAt).getTime():0;
         const incomingTime=r.updatedAt?new Date(r.updatedAt).getTime():0;
         if(!localT || !localT.updatedAt || incomingTime>=localTime){
-          ctTargets[r.ct]={piezasProgramadas:parseFloat(r.piezasProgramadas)||0, capacidadInstalada:parseFloat(r.capacidadInstalada)||0, updatedAt:r.updatedAt};
+          ctTargets[r.ct]={piezasProgramadas:parseFloat(r.piezasProgramadas)||0, capacidadInstalada:parseFloat(r.capacidadInstalada)||0, adelantoManual:String(r.adelantoManual||''), updatedAt:r.updatedAt};
         }
       });
       localStorage.setItem(SK.ctTargets, JSON.stringify(ctTargets));
@@ -4672,6 +4868,26 @@ function getCTHoraGrandTotal(ct){
   const diaTot=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.piezas)||0),0);
   return horaTot+diaTot;
 }
+// Piezas procesadas del día a nivel CT: hora×hora de las máquinas que lo capturan + Cierre del día (piezas totales) de las demás.
+function getCTProcesadasDetalle(ct){
+  const today=todayStr();
+  const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine) && LASER_MAQUINAS_HORA.includes(r.machine));
+  const last={}; todays.forEach(r=>{ const k=r.machine+'|'+r.turno; if(!last[k]||isNewerRecord(r,last[k])) last[k]=r; });
+  const hora=Object.values(last).reduce((s,r)=>s+(Number(r.totalFabricadas)||0),0);
+  const dia=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.piezas)||0),0);
+  return {hora,dia,total:hora+dia};
+}
+// Adelanto / atraso capturado a mano (Troqueles): se guarda con la fecha, así solo vale para el día en curso.
+function adelantoManualHoy(ct){
+  const t=ctTargets[ct], m=String((t&&t.adelantoManual)||'').match(/^(\d{4}-\d{2}-\d{2})\|(-?\d+(?:\.\d+)?)$/);
+  return (m&&m[1]===todayStr())?parseFloat(m[2]):null;
+}
+function updateAdelantoManual(ct,value){
+  if(!ctTargets[ct]) ctTargets[ct]={piezasProgramadas:0,capacidadInstalada:0};
+  const v=String(value==null?'':value).trim();
+  ctTargets[ct].adelantoManual=(v===''||isNaN(parseFloat(v)))?'':todayStr()+'|'+parseFloat(v);
+  saveCtTarget(ct);
+}
 // ¿Ya terminó la jornada del CT? Mientras no termina, lo que falta por producir NO es un atraso: son
 // «faltantes por cortar». La jornada cierra al terminar el último turno con captura hoy
 // (Turno 1 / único 17:00). Con Turno 2 o 3 en curso no cierra antes de que cambie la fecha.
@@ -4712,7 +4928,11 @@ function renderDashboard(){
     const autoProgramadas=getCTProgramadasAuto(ct, todayStr());
     const piezasProgramadasCT=autoProgramadas!=null?autoProgramadas:(target.piezasProgramadas||0);
     const piezasProducidasCT=getCTHoraGrandTotal(ct);
-    const diffCT=piezasProducidasCT-piezasProgramadasCT;
+    // Troqueles: en lugar de «piezas programadas» se muestra lo procesado (hora×hora + cierre del día) y el adelanto/atraso se captura a mano
+    const modoProc=(ct==='TROQUELES');
+    const procDet=modoProc?getCTProcesadasDetalle(ct):null;
+    const adelMan=modoProc?adelantoManualHoy(ct):null;
+    const diffCT=modoProc?(adelMan||0):piezasProducidasCT-piezasProgramadasCT;
     const esAdelanto=diffCT>=0;
     const diaTerminado=ctDiaTerminado(ct);
     const enCurso=!esAdelanto&&!diaTerminado;   // aún hay jornada: faltan piezas por cortar, no hay atraso
@@ -4732,11 +4952,15 @@ function renderDashboard(){
         </div>
         <div class="ct-card-body">
           <div class="ct-highlight-row">
-            <div class="ct-highlight-box">
+            ${modoProc?`<div class="ct-highlight-box">
+              <div class="ct-highlight-label">${ic('barChart',12)}Piezas procesadas (CT)</div>
+              <div class="ct-highlight-val" style="color:var(--text)" id="ct-procesadas-val">${procDet.total}</div>
+              <div class="ct-highlight-sub">Hora×hora: ${procDet.hora} · Cierre del día: ${procDet.dia}</div>
+            </div>`:`<div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
               ${(autoProgramadas==null&&canEditMetas)?`<input type="number" min="0" class="ct-meta-input" value="${target.piezasProgramadas||0}" title="Meta de piezas programadas del CT (editable)" onchange="updateCtTargetField('${ct}','piezasProgramadas',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>`}
               <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}</div>
-            </div>
+            </div>`}
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('gauge',12)}Capacidad instalada (CT)</div>
               ${canEditMetas?`<input type="number" min="0" class="ct-meta-input" value="${target.capacidadInstalada||0}" title="Capacidad instalada del CT (editable)" onchange="updateCtTargetField('${ct}','capacidadInstalada',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${target.capacidadInstalada||0}</div>`}
@@ -4744,8 +4968,10 @@ function renderDashboard(){
             </div>
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic(esAdelanto?'target':(enCurso?'clock':'alertTriangle'),12)}${esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso')}</div>
-              <div class="ct-highlight-val" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}">${esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT)}</div>
-              <div class="ct-highlight-sub">${enCurso?'pzas por cortar · jornada en curso':'vs. piezas programadas'}</div>
+              ${modoProc&&canEditMetas
+                ?`<input type="number" step="1" class="ct-meta-input ct-adel-input" id="ct-adel-input" value="${adelMan==null?'':adelMan}" placeholder="0" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}" title="Captura el adelanto (+) o el atraso (−) del día en piezas" onchange="updateAdelantoManual('${ct}',this.value)">`
+                :`<div class="ct-highlight-val" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}">${esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT)}</div>`}
+              <div class="ct-highlight-sub">${modoProc?(canEditMetas?'editable · + adelanto / − atraso':'captura manual del día'):(enCurso?'pzas por cortar · jornada en curso':'vs. piezas programadas')}</div>
               ${!esAdelanto && diaTerminado && canRegistrarAtraso ? `
                 <button class="btn-registrar-atraso" onclick="toggleAtrasoForm()">+ Registrar atraso</button>
                 <div class="atraso-form" id="atraso-form" style="display:none">
@@ -5735,11 +5961,12 @@ function aprovRecInfo(r,x){
 // Si hay varios registros de lámina del mismo día/turno/máquina, solo el primero (por id) usa ese retrabajo.
 function aprovRtEqByCal(r){
   if(r.tipo!=='lamina') return {};
-  const sib=aprovRecords.filter(x=>x.tipo==='lamina'&&x.maquina===r.maquina&&x.fecha===r.fecha&&x.turno===r.turno)
+  const prog=(r.origen==='programa');   // el registro del Programa del día es de todo el día: usa el retrabajo de todos los turnos
+  const sib=aprovRecords.filter(x=>x.tipo==='lamina'&&x.maquina===r.maquina&&x.fecha===r.fecha&&(prog?x.origen==='programa':x.turno===r.turno))
     .sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}));
   if(sib.length&&String(sib[0].id)!==String(r.id)) return {};
   const out={};
-  rtCollect().forEach(e=>{ if(e.tipo!=='lamina'||e.machine!==r.maquina||e.fecha!==r.fecha||e.turno!==r.turno||!e.calibre) return; out[e.calibre]=(out[e.calibre]||0)+(Number(e.consumo)||0); });
+  rtCollect().forEach(e=>{ if(e.tipo!=='lamina'||e.machine!==r.maquina||e.fecha!==r.fecha||(!prog&&e.turno!==r.turno)||!e.calibre) return; out[e.calibre]=(out[e.calibre]||0)+(Number(e.consumo)||0); });
   return out;
 }
 // Recortes de lámina por calibre (solo los que cuentan como ahorro por la regla del 40%): q/v = equivalencia y valor;
@@ -5837,7 +6064,7 @@ function aprovDetailHtml(r){
       <div id="tot-row-${id}" style="${grid};padding:7px 0;font-size:12px;font-weight:700">
         <span>TOTAL</span><span id="tot-${id}-real" style="${mono}">${fmt2(T.totReal)}</span><span id="tot-${id}-expl" style="${mono}">–</span><span id="tot-${id}-dif" style="${mono}">–</span><span id="tot-${id}-val" style="${mono}">–</span>
       </div></div>${nuevoBtn}`;
-  } else if(!isLam && (r.origen==='programa' || (r.recortesDetalle||[]).some(x=>Number(x.largoRet)>0))){
+  } else if((!isLam && (r.origen==='programa' || (r.recortesDetalle||[]).some(x=>Number(x.largoRet)>0))) || (isLam && r.origen==='programa')){
     consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5">${r.origen==='programa'?'Aún no hay consumo real anotado en el Programa del día para esta máquina y fecha.':'Este registro solo trae <b>recuperación de recortes</b>: el consumo de tramos se toma del <b>Consumo real</b> del Programa del día (registro de la máquina para este día).'}</div>`;
   } else {
     consumo=`<div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px">Este registro se capturó antes de que se guardara el desglose por ${isLam?'calibre':'tipo'}. Captura aquí lo que se consumió (peso registrado: <b style="${mono}">${fmt2(r.pesoTotal)} kg</b>) para poder compararlo contra lo explosionado.</div>
@@ -5871,6 +6098,8 @@ function aprovDetailHtml(r){
           ${extra?`<div style="color:var(--text3);font-size:11px;margin-top:1px">${extra}</div>`:''}
         </div>`;
       }).join('')+(isLam?`<div id="rcov-${id}" style="margin-top:8px"></div>`:'')
+    : (r.origen==='programa'&&isLam)
+    ? `<div style="font-size:12px;color:var(--text3);line-height:1.5">Este registro se genera solo con el <b>Consumo real</b> que el operador anota en el Programa del día de Laser de Cama (hojas completas y recortes). Aquí aparecen los recortes que usó, con sus medidas.</div>`
     : r.origen==='programa'
     ? `<div style="font-size:12px;color:var(--text3);line-height:1.5">Este registro se genera solo con el <b>Consumo real</b> que el operador anota en el Programa del día (tramos completos y recortes en su equivalencia de tramos). La pedacera recuperada se registra en «Tubular — Laser».</div>`
     : `<div style="font-size:12px;color:var(--text3)">Sin recortes con desglose en este registro${(Number(r.ahorro)||0)>0?` — el ahorro registrado por recuperación fue <b style="${mono};color:#3ecf8e">$${fmtMoney(r.ahorro)}</b>`:''}.</div>`;
@@ -6191,8 +6420,91 @@ function renderTubTotals(){
   const f=document.getElementById('tub-total-fecha'); if(f) f.textContent=dayLabel(fecha)+' · '+fecha;
   const caret=document.getElementById('tub-total-caret'); if(caret) caret.textContent=_tubTotOpen?'▾':'▸';
   body.style.display=_tubTotOpen?'block':'none';
+  renderRtAprov('tub');
   if(!_tubTotOpen) return;
   body.innerHTML=tubTotalsHtml(tubTotalsData(laserTubRecords(fecha)),'Aún no hay tubulares registrados este día por GW1 ni GW2.');
+}
+
+// ── Aprovechamiento › Lámina: hojas cortadas y recuperación de recortes (del consumo real del Programa del día) ──
+let _lamTotOpen=true;
+function toggleLamTotCard(){ _lamTotOpen=!_lamTotOpen; renderLamTotals(); }
+function lamRecHtml(recs,empty){
+  const f2=fmt2, mono="font-family:'IBM Plex Mono',monospace", map={}, order=[];
+  (recs||[]).forEach(r=>(r.recortesDetalle||[]).forEach(x=>{
+    if(!x||!x.cal) return;
+    const I=aprovRecInfo(r,x), k=[x.cal,x.ancho,x.largo,x.fueraProg||'',I.cuenta?1:0].join('|');
+    const o=map[k]||(map[k]={cal:x.cal,ancho:Number(x.ancho)||0,largo:Number(x.largo)||0,fp:x.fueraProg||'',n:0,pct:I.pct,eqP:I.eqP,cuenta:I.cuenta,ahorro:0});
+    if(!map[k].n) order.push(o);
+    o.n++; if(I.cuenta) o.ahorro+=Number(x.ahorro)||0;
+  }));
+  const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  const nTot=order.reduce((a,o)=>a+o.n,0), nEx=order.filter(o=>!o.cuenta).reduce((a,o)=>a+o.n,0), eqAh=order.filter(o=>o.cuenta).reduce((a,o)=>a+o.n*o.eqP,0), eqEx=order.filter(o=>!o.cuenta).reduce((a,o)=>a+o.n*o.eqP,0), ah=order.reduce((a,o)=>a+o.ahorro,0);
+  set('lam-rec-count',nTot+(nTot===1?' recorte':' recortes'));
+  if(!order.length) return `<div class="ap-empty" style="display:block">${empty||'Sin recortes recuperados este día. Es opcional.'}</div>`;
+  const kpi=(l,v,c)=>`<div class="mat-kpi"><div class="mat-kpi-l">${l}</div><div class="mat-kpi-v" style="${mono};${c?'color:'+c:''}">${v}</div></div>`;
+  order.sort((a,b)=>String(a.cal).localeCompare(String(b.cal))||b.pct-a.pct);
+  return `<div class="mat-kpis">${kpi('Ahorro por recuperación','$'+fmtMoney(ah),'var(--green)')}${kpi('Recuperado (láminas)',f2(eqAh))}${nEx?kpi('Explosionado (láminas)',f2(eqEx),'var(--amber)'):''}${kpi('Recortes',nTot)}</div>
+    <div style="overflow:auto"><table class="mat-tbl"><thead><tr><th>Calibre</th><th>Medidas cm</th><th class="n">Cant.</th><th class="n">% de lámina</th><th class="n">Equiv. (lám.)</th><th>Resultado</th><th class="n">Ahorro ($)</th><th>Destino</th></tr></thead><tbody>
+    ${order.map(o=>`<tr><td>${escH(o.cal)}</td><td style="${mono}">${f2(o.ancho)} × ${f2(o.largo)}</td><td class="n">${o.n}</td><td class="n">${o.pct}%</td><td class="n">${f2(r3(o.n*o.eqP))}</td><td>${o.cuenta?'<span style="color:var(--green)">Recuperación</span>':`<span style="color:var(--amber)" title="${RECORTE_UMBRAL}% o más de una lámina: parte del material explosionado">Explosionado</span>`}</td><td class="n">${o.cuenta?'$'+fmtMoney(o.ahorro):'<span style="color:var(--text3)">–</span>'}</td><td>${o.fp?escH('Fuera de prog.: '+o.fp):'En programa'}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function renderLamTotals(){
+  const body=document.getElementById('lam-total-body'); if(!body) return;
+  const fecha=document.getElementById('lam-fecha')?.value||todayStr();
+  const f=document.getElementById('lam-total-fecha'); if(f) f.textContent=dayLabel(fecha)+' · '+fecha;
+  const caret=document.getElementById('lam-total-caret'); if(caret) caret.textContent=_lamTotOpen?'▾':'▸';
+  const recs=troqLamRecords(fecha);
+  body.style.display=_lamTotOpen?'block':'none';
+  if(_lamTotOpen) body.innerHTML=lamTotalsHtml(lamTotalsData(recs),'Aún no hay lámina registrada este día. El operador la anota en Registrar turno › Programa del día (Laser de Cama) › Consumo real.');
+  const rb=document.getElementById('lam-rec-body'); if(rb) rb.innerHTML=lamRecHtml(recs);
+  renderRtAprov('lam');
+}
+// ── Piezas rechazadas y retrabajo (Registrar turno › hora×hora) resumidos en Aprovechamiento, con el consumo extra de material ──
+let _rtApScope={lam:'dia',tub:'dia'};
+function rtApSetScope(kind,v){ _rtApScope[kind]=(v==='sem')?'sem':'dia'; renderRtAprov(kind); }
+function rtApData(kind,fechas){
+  const machines=kind==='lam'?['Laser de Cama']:['GW1','GW2'], set=new Set(fechas), best={};
+  horaRecords.forEach(r=>{ if(!r||!set.has(r.fecha)||!machines.includes(r.machine)||!machineInRoster(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
+  let rech=0; const porMaq={};
+  Object.values(best).forEach(r=>safeParse(r.franjas,[]).forEach(f=>{ if(!f||f.isBreak) return; const n=Number(f.danadas)||0; if(n>0){ rech+=n; porMaq[r.machine]=(porMaq[r.machine]||0)+n; } }));
+  const ents=rtCollect().filter(e=>machines.includes(e.machine)&&set.has(e.fecha)&&(Number(e.nPz)>0||e.modelo||e.causa||Number(e.consumo)>0));
+  ents.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
+  const mat={}, order=[]; let pz=0,cons=0,kg=0;
+  ents.forEach(e=>{
+    const key=(kind==='lam'?e.calibre:e.tubular)||'(sin material)';
+    const o=mat[key]||(mat[key]={key,pzas:0,cons:0,kg:0}); if(!o.pzas&&!o.cons) order.push(o);
+    o.pzas+=Number(e.nPz)||0; o.cons+=Number(e.consumo)||0; o.kg+=Number(e.kg)||0;
+    pz+=Number(e.nPz)||0; cons+=Number(e.consumo)||0; kg+=Number(e.kg)||0;
+  });
+  order.sort((a,b)=>b.cons-a.cons||String(a.key).localeCompare(String(b.key)));
+  return {kind,rech,porMaq,ents,order,pz,cons:r3(cons),kg:r2n(kg),sinDetalle:Math.max(0,rech-pz),unit:kind==='lam'?'láminas':'tramos'};
+}
+function rtApHtml(kind){
+  const fecha=document.getElementById(kind==='lam'?'lam-fecha':'tub-fecha')?.value||todayStr();
+  const scope=_rtApScope[kind]||'dia';
+  const fechas=scope==='sem'?[0,1,2,3,4].map(i=>isoAddDays(aprovWeekStartOf(fecha),i)):[fecha];
+  const d=rtApData(kind,fechas), f2=fmt2, mono="font-family:'IBM Plex Mono',monospace";
+  const kpi=(l,v,c)=>`<div class="mat-kpi"><div class="mat-kpi-l">${l}</div><div class="mat-kpi-v" style="${mono};${c?'color:'+c:''}">${v}</div></div>`;
+  const chip=(v,l)=>`<button type="button" onclick="rtApSetScope('${kind}','${v}')" style="font-size:11px;padding:2px 10px;border-radius:10px;border:1px solid ${scope===v?'var(--blue)':'var(--border)'};background:${scope===v?'rgba(74,158,255,.12)':'transparent'};color:${scope===v?'var(--blue)':'var(--text3)'};cursor:pointer;font-family:inherit">${l}</button>`;
+  const rango=scope==='sem'?`Semana ${weekLabelShort(aprovWeekStartOf(fecha))} (lun–vie)`:dayLabel(fecha)+' · '+fecha;
+  const head=`<div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f06060" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.29 3.86-8.18 14.14A2 2 0 0 0 3.84 21h16.32a2 2 0 0 0 1.73-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Piezas rechazadas y retrabajo<span class="ap-badge">${d.rech} rechazada${d.rech===1?'':'s'}</span><span style="margin-left:auto;display:flex;gap:6px;align-items:center"><span style="font-weight:500;color:var(--text3);font-size:11px">${escH(rango)}</span>${chip('dia','Día')}${chip('sem','Semana')}</span></div>
+    <div class="ap-note">Se toma del <b>Registro de retrabajo</b> que el operador captura en Registrar turno (hora×hora). Consumo extra = piezas rechazadas × medida de la pieza ÷ ${kind==='lam'?'peso de la lámina completa':'largo del tramo'}.</div>`;
+  if(!d.rech && !d.ents.length) return head+`<div class="ap-empty" style="display:block">Sin piezas rechazadas ni retrabajo registrados ${scope==='sem'?'esta semana':'este día'}.</div>`;
+  const unitTxt=kind==='lam'?'láminas':'tramos';
+  const kpis=`<div class="mat-kpis">${kpi('Piezas rechazadas',d.rech,d.rech?'#f06060':'')}${kpi('Con retrabajo (pzas)',d.pz)}${kpi('Consumo extra ('+unitTxt+')',f2(d.cons),d.cons>0?'var(--amber)':'')}${d.kg>0?kpi('Peso extra (kg)',f2(d.kg)):''}</div>`;
+  const sd=d.sinDetalle>0?`<div class="ap-note" style="margin:0 0 8px;color:var(--amber)">${d.sinDetalle} pieza${d.sinDetalle===1?'':'s'} rechazada${d.sinDetalle===1?'':'s'} sin detalle de material: falta el Registro de retrabajo en Registrar turno.</div>`:'';
+  const byMat=d.order.length?`<div style="overflow:auto;margin-bottom:10px"><table class="mat-tbl"><thead><tr><th>${kind==='lam'?'Material (calibre)':'Material (medida de tubular)'}</th><th class="n">Pzas rech.</th><th class="n">Consumo extra (${unitTxt})</th><th class="n">Peso (kg)</th></tr></thead><tbody>
+      ${d.order.map(o=>`<tr><td>${escH(o.key)}</td><td class="n">${o.pzas}</td><td class="n tot">${f2(r3(o.cons))}</td><td class="n">${o.kg>0?f2(o.kg):'<span style="color:var(--text3)">–</span>'}</td></tr>`).join('')}
+      <tr class="sum"><td>Total</td><td class="n">${d.pz}</td><td class="n tot">${f2(d.cons)}</td><td class="n">${d.kg>0?f2(d.kg):'–'}</td></tr></tbody></table></div>`:'';
+  const det=d.ents.length?`<div style="overflow:auto"><table class="mat-tbl"><thead><tr>${scope==='sem'?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th>Modelo / pza</th><th>Material</th><th class="n">Pzas</th><th>Causa</th><th class="n">Consumo extra</th></tr></thead><tbody>
+      ${d.ents.map(e=>`<tr>${scope==='sem'?`<td>${escH(dayLabel(e.fecha))}</td>`:''}<td>${escH(e.machine)}</td><td>${escH((e.turno?'T'+String(e.turno).replace(/^Turno\s*/i,'').slice(0,1)+' · ':'')+String(e.franja||'').replace(/⚡$/,''))}</td><td>${e.modelo?escH(e.modelo):'—'}</td><td>${escH((kind==='lam'?e.calibre:e.tubular)||'—')}</td><td class="n">${Number(e.nPz)||0}</td><td>${escH(rtCausaTxt(e)||'—')}</td><td class="n">${f2(r3(e.consumo))} <span style="color:var(--text3)">${kind==='lam'?'lám.':'tr.'}</span></td></tr>`).join('')}
+      </tbody></table></div>`:'';
+  const porMaq=Object.keys(d.porMaq).length>1?`<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Rechazadas por máquina: ${Object.keys(d.porMaq).sort().map(m=>escH(m)+' <b style="color:var(--text2)">'+d.porMaq[m]+'</b>').join(' · ')}</div>`:'';
+  return head+kpis+sd+porMaq+byMat+det;
+}
+function renderRtAprov(kind){
+  const el=document.getElementById('rt-ap-'+kind); if(!el) return;
+  try{ el.innerHTML=rtApHtml(kind); }catch(e){ console.warn('renderRtAprov',e); }
 }
 function toggleTubTot(gid){ const el=document.getElementById('tubtot-'+gid); if(el) el.style.display=el.style.display==='block'?'none':'block'; }
 function aprovGroupStats(g){
@@ -6219,6 +6531,7 @@ function aprovGroupStats(g){
 
 function renderAprovHist(force){
   try{ renderTubTotals(); }catch(e){}
+  try{ renderLamTotals(); }catch(e){}
   try{ if(document.getElementById('page-dashboard')?.classList.contains('active')) renderDashboard(); }catch(e){}
   const tbEl=document.getElementById('aprov-hist-body');
   // Si hay algo escrito sin guardar dentro del historial (explosión, merma,
@@ -7574,6 +7887,7 @@ function saveCtTarget(ct){
     id:'ct_'+ct.replace(/\s+/g,''), ct,
     piezasProgramadas:ctTargets[ct].piezasProgramadas,
     capacidadInstalada:ctTargets[ct].capacidadInstalada,
+    adelantoManual:ctTargets[ct].adelantoManual||'',
     updatedAt:ctTargets[ct].updatedAt
   });
   renderDashboard();
