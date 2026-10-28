@@ -391,6 +391,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .rt-entry input[readonly]{background:var(--bg);color:var(--text2)}
 .rt-add{font-size:11px;font-family:'IBM Plex Sans',sans-serif;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:4px 11px}
 .rt-warn{font-size:11px;color:var(--amber);margin-left:8px}
+.fp-wrap{border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.05)}
+.fp-wrap .rt-head{color:#a78bfa}
+.hora-row-grid{display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center}
+.hora-row-grid.fp{grid-template-columns:110px 1fr 1fr 1fr}
 @media(max-width:760px){.rt-wrap{margin-left:8px}.rt-l1{grid-template-columns:1fr 1fr}.rt-l2{grid-template-columns:1fr 1fr}}
 .ap-note{font-size:11px;color:var(--text3);line-height:1.45;margin:-.2rem 0 .55rem}
 .ped-row{display:block;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px}
@@ -1025,7 +1029,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Producción hora por hora — <span id="reg-hora-maquina"></span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:1rem">
+            <div id="hora-box-fp" style="background:var(--bg3);border-radius:var(--radius);padding:.75rem;text-align:center;display:none;order:2">
+              <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;margin-top:17px">Fuera de programa</div>
+              <div style="font-size:22px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#a78bfa" id="hora-total-fp">0</div>
+            </div>
             <div style="background:var(--bg3);border-radius:var(--radius);padding:.75rem;text-align:center">
               <div class="stat-box-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73V8Z"/><path d="M3.3 7.6 12 12.5l8.7-4.9"/><path d="M12 22.5V12.5"/></svg></div>
               <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Total fabricadas</div>
@@ -1044,10 +1052,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           </div>
           <!-- Tabla de franjas -->
           <div style="margin-bottom:1rem">
-            <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;padding:6px 8px;background:var(--bg3);border-radius:var(--radius);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">
-              <span>Hora</span><span style="text-align:center">Piezas prod.</span><span style="text-align:center">Piezas dañadas</span>
+            <div id="hora-head-row" class="hora-row-grid" style="padding:6px 8px;background:var(--bg3);border-radius:var(--radius);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px">
+              <span>Hora</span><span style="text-align:center">Piezas prod.</span><span id="hora-head-fp" style="text-align:center;color:#a78bfa;display:none" title="Piezas que no vienen en el programa del día (prototipo, vacuna, muestra…)">Fuera de programa</span><span style="text-align:center">Piezas dañadas</span>
             </div>
-            <div style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2/Laser de Cama) o un campo para el motivo (otras máquinas).</div>
+            <div id="hora-nota-fp" style="font-size:10px;color:var(--text3);padding:0 8px 6px;font-style:italic">Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2/Laser de Cama) o un campo para el motivo (otras máquinas).</div>
             <div id="hora-franjas-list"></div>
           </div>
           <!-- Horas extra -->
@@ -4192,7 +4200,7 @@ function loadData(){
 
 function parseCloudRows(rows){
   const numFields=['oee','disp','rend','cal','cumpl','parosNoProg','piezasProg','piezasTotal',
-    'piezasRechazo','tO','eficiencia','totalFabricadas','totalDanadas','capacidad',
+    'piezasRechazo','tO','eficiencia','totalFabricadas','totalDanadas','totalFueraProg','capacidad',
     'checkPct','checkDone','checkTotal','pesoTotal','merma','pctMerma','aprovechado','ahorro','tiempoDibujos'];
   return rows.map(r=>{
     const obj={...r};
@@ -4852,13 +4860,15 @@ function onCloudLoaded(hasError){
 function loadDataLegacy(){ loadLocal(); renderAll(); }
 function save(k){localStorage.setItem(SK[k],JSON.stringify(eval(k)));}
 // ── OEE CALC ──
-function calcIndicadores(turno,parosNoProg,piezasProg,piezasTotal,piezasRechazo,machineName){
+// fp = piezas fuera de programa: son producción de la máquina (rendimiento, calidad, OEE) pero no cuentan contra el programa (cumplimiento).
+function calcIndicadores(turno,parosNoProg,piezasProg,piezasTotal,piezasRechazo,machineName,fp){
+  fp=Math.max(0,Number(fp)||0);
   const dur=TURNO_MIN[turno]||540;const tP=dur-PAROS_PROG;const tO=Math.max(0,tP-parosNoProg);
   const mach=getMachineByName(machineName);const cap=mach?mach.cap:1;
-  const piezasBuenas=Math.max(0,piezasTotal-piezasRechazo);
+  const piezasBuenas=Math.max(0,piezasTotal+fp-piezasRechazo);
   const disp=tP>0?pct(Math.min(100,(tO/tP)*100)):0;
-  const rend=tO>0?pct(Math.min(100,(piezasTotal/cap)*100)):0;
-  const cal=piezasTotal>0?pct(Math.min(100,(piezasBuenas/piezasTotal)*100)):0;
+  const rend=tO>0?pct(Math.min(100,((piezasTotal+fp)/cap)*100)):0;
+  const cal=(piezasTotal+fp)>0?pct(Math.min(100,(piezasBuenas/(piezasTotal+fp))*100)):0;
   const oee=pct((disp*rend*cal)/10000);
   const cumpl=piezasProg>0?pct(Math.min(999,(piezasTotal/piezasProg)*100)):null;
   return{disp,rend,cal,oee,cumpl,tO,tP,dur,piezasBuenas,cap};
@@ -5491,18 +5501,19 @@ function calcOEE(){
   const turno=document.getElementById('reg-turno').value;const machine=document.getElementById('reg-machine').value;
   const paros=getTotalParosMin();const prog=parseInt(document.getElementById('reg-programadas').value)||0;
   const piezas=parseInt(document.getElementById('reg-piezas').value)||0;const rechazo=parseInt(document.getElementById('reg-rechazadas').value)||0;
-  if(piezas===0&&paros===0){
+  const hp=document.getElementById('reg-hora-panel'), fp=(hp&&hp.style.display!=='none'&&usaFP(machine))?(parseInt(document.getElementById('hora-total-fp')?.textContent)||0):0;
+  if(piezas===0&&paros===0&&fp===0){
     document.getElementById('oee-preview').textContent='–';document.getElementById('oee-preview').style.color='var(--text2)';
     ['b-cumpl','b-disp','b-rend','b-cal'].forEach(id=>{document.getElementById(id).textContent='–';document.getElementById(id).style.color='var(--text)';});
     ['b-cumpl-sub','b-disp-sub','b-rend-sub','b-cal-sub'].forEach(id=>document.getElementById(id).textContent='');return;
   }
-  const{disp,rend,cal,oee,cumpl,tO,tP,piezasBuenas,cap}=calcIndicadores(turno,paros,prog,piezas,rechazo,machine);
+  const{disp,rend,cal,oee,cumpl,tO,tP,piezasBuenas,cap}=calcIndicadores(turno,paros,prog,piezas,rechazo,machine,fp);
   const el=document.getElementById('oee-preview');el.textContent=oee+'%';el.style.color=oeeColor(oee);
   if(cumpl!==null){document.getElementById('b-cumpl').textContent=cumpl+'%';document.getElementById('b-cumpl').style.color=cumplColor(cumpl);document.getElementById('b-cumpl-sub').textContent=piezas+' / '+prog+' pzas';}
   else{document.getElementById('b-cumpl').textContent='–';document.getElementById('b-cumpl-sub').textContent='Sin meta';}
   document.getElementById('b-disp').textContent=disp+'%';document.getElementById('b-disp').style.color=oeeColor(disp);document.getElementById('b-disp-sub').textContent=tO+' / '+tP+' min';
-  document.getElementById('b-rend').textContent=rend+'%';document.getElementById('b-rend').style.color=oeeColor(rend);document.getElementById('b-rend-sub').textContent=piezas+' / '+cap+' pzas';
-  document.getElementById('b-cal').textContent=cal+'%';document.getElementById('b-cal').style.color=oeeColor(cal);document.getElementById('b-cal-sub').textContent=piezasBuenas+' buenas / '+piezas;
+  document.getElementById('b-rend').textContent=rend+'%';document.getElementById('b-rend').style.color=oeeColor(rend);document.getElementById('b-rend-sub').textContent=piezas+(fp?' + '+fp+' fuera de prog.':'')+' / '+cap+' pzas';
+  document.getElementById('b-cal').textContent=cal+'%';document.getElementById('b-cal').style.color=oeeColor(cal);document.getElementById('b-cal-sub').textContent=piezasBuenas+' buenas / '+(piezas+fp);
 }
 let _paroSeq=0;
 // El id lleva un contador: antes usaba solo la hora en milisegundos y, al restaurar varios
@@ -6818,6 +6829,7 @@ function buildWeeklyReportHtml(ws){
   const ahora=new Date();
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
   const RT=retrabajoReportParts(ws);
+  const FPR=fpReportParts(ws);
   const sections=groups.map(g=>{
     const st=g.st, isLam=g.tipo==='lamina';
     const itemRows=st.items.length?st.items.map(it=>`<tr><td>${esc(it.key)}${it.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${fmt2(it.real)}${it.ev>0?` <span class="muted">(${fmt2(it.ev)} event.)</span>`:''}${it.anyExpl&&Math.abs(it.realCmp+it.evCmp-it.real)>0.004?'*':''}</td><td class="n">${it.anyExpl?fmt2(it.expl):'—'}</td><td class="n ${it.anyExpl?colr(it.dif):''}">${it.anyExpl?sgn2(it.dif):'—'}</td><td class="n ${it.anyExpl?colr(it.valor):''}">${it.anyExpl?money(it.valor):'—'}</td></tr>`).join('')
@@ -6838,12 +6850,12 @@ function buildWeeklyReportHtml(ws){
       <div class="line sub">Ahorro teórico: <b class="${colr(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b> &nbsp;=&nbsp; material no consumido ${money(st.valorMat)} + recortes recuperados ${money(st.ahorroRec)}${st.cubierto>0?` <span class="muted">· no se contaron ${money(st.cubierto)} de recortes que equivalen al ${RECORTE_UMBRAL}% o más de una lámina/tramo (son parte del material explosionado)</span>`:''}${(st.compMat>0||st.compRec>0)?` <span class="muted">· compensación por calibre: ${money(st.compMat)} de material no consumido y ${money(st.compRec)} de recortes no se cuentan como ahorro (los recortes del mismo calibre cubren lo no consumido, o el retrabajo/pieza fuera de programa lo explica)</span>`:''}${st.noExpl?` <span class="muted">· ${st.items.some(i=>i.anyExpl&&Math.abs(i.realCmp+i.evCmp-i.real)>0.004)?'* ':''}${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: su material no entra en la diferencia</span>`:''}</div>
     </section>`;
   }).join('') || '<p class="muted">Sin registros de aprovechamiento en esta semana.</p>';
-  const hayRT=RT.groups.length>0;
+  const hayRT=RT.groups.length>0, hayFP=FPR.totP>0, nFp=hayRT?3:2;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte semanal de material — ${esc(weekLabelShort(ws))}</title>
 ${WEEKLY_REPORT_CSS}</head><body>
 <div class="bar"><button onclick="window.print()">🖨 Imprimir</button></div>
 <div class="page">
-<header><div><h1>Reporte semanal de material — aprovechamiento y retrabajo</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
+<header><div><h1>Reporte semanal de material — aprovechamiento${hayFP?',':' y'} retrabajo${hayFP?' y piezas fuera de programa':''}</h1><div class="wk">Semana del ${esc(weekLabel(ws))} <span style="font-weight:400;color:#667">(lunes a viernes)</span></div></div>
 <div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
 <div class="kpis">
   <div class="kpi"><div class="l">Material procesado</div><div class="v">${fmt2(totPeso)} kg</div><div class="s">${groups.reduce((s,g)=>s+g.recs.length,0)} registros</div></div>
@@ -6857,12 +6869,19 @@ ${hayRT?`<div class="kpis">
   <div class="kpi"><div class="l">Merma semanal (retrabajo)</div><div class="v">${RT.conMerma?fmt2(RT.totM)+' kg':'—'}</div><div class="s">${RT.pend.length?'falta merma: '+esc(RT.pend.join(', ')):'registrada'}</div></div>
   <div class="kpi"><div class="l">Máquinas con retrabajo</div><div class="v">${RT.groups.length}</div><div class="s">${esc(RT.groups.map(g=>g.machine).join(', '))}</div></div>
 </div>`:''}
+${hayFP?`<div class="kpis">
+  <div class="kpi"><div class="l">Piezas fuera de programa</div><div class="v">${FPR.totP}</div><div class="s">prototipo, vacuna, muestra…</div></div>
+  <div class="kpi"><div class="l">Material (fuera de programa)</div><div class="v">${[FPR.totC>0?FPR.totC.toFixed(3)+' tramos':'',FPR.totL>0?FPR.totL.toFixed(3)+' láminas':''].filter(Boolean).join(' + ')||'—'}</div><div class="s">${FPR.totK>0?fmt2(FPR.totK)+' kg equivalentes':'sin peso configurado'}</div></div>
+  <div class="kpi"><div class="l">Máquinas</div><div class="v">${FPR.machines.length}</div><div class="s">${esc(FPR.machines.join(', '))}</div></div>
+  <div class="kpi"><div class="l">Sin detalle de material</div><div class="v">${FPR.sinDetPz}</div><div class="s">${FPR.sinDetPz?'pzas por completar':'todo con detalle'}</div></div>
+</div>`:''}
 <h3 class="part">1 · Aprovechamiento de material — consumo vs. explosión</h3>
 ${sections}
 ${hayRT?`<h3 class="part">2 · Retrabajo — piezas rechazadas</h3>${RT.sections}`:''}
+${hayFP?`<h3 class="part">${nFp} · Piezas fuera de programa</h3>${FPR.sections}`:''}
 ${hayFinde?'<p class="muted">Incluye registros de fin de semana, que se suman a la semana en que ocurrieron.</p>':''}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
-<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes. Las láminas capturadas como «eventualidad» (no estaban en la explosión) se restan del consumo de su calibre antes de comparar.${hayRT?' Consumo extra por retrabajo: tubular = piezas rechazadas × largo de pieza ÷ largo del tramo; lámina = piezas rechazadas × peso de la pieza ÷ peso de la lámina. kg equivalentes = consumo extra × peso configurado.':''}</footer>
+<footer>Diferencia = explosionado − registrado. Positiva (+): se consumió menos de lo planeado. Ahorro teórico = valor de esa diferencia + ahorro por recuperación de recortes. Las láminas capturadas como «eventualidad» (no estaban en la explosión) se restan del consumo de su calibre antes de comparar.${hayRT?' Consumo extra por retrabajo: tubular = piezas rechazadas × largo de pieza ÷ largo del tramo; lámina = piezas rechazadas × peso de la pieza ÷ peso de la lámina. kg equivalentes = consumo extra × peso configurado.':''}${hayFP?' Piezas fuera de programa (prototipo, vacuna, muestra…): se capturan en la columna «Fuera de programa» del hora por hora; no cuentan contra el programa. Material = piezas × largo de pieza ÷ largo del tramo (tubular) o × peso de la pieza ÷ peso de la lámina (lámina).':''}</footer>
 </div></body></html>`;
 }
 // Abre el reporte en una pestaña nueva y lanza el diálogo de impresión.
@@ -7121,6 +7140,75 @@ function retrabajoReportParts(ws){
   return {groups,sections,totP,totL:Math.round(totL*1000)/1000,totC:Math.round(totC*1000)/1000,totK:Math.round(totK*100)/100,totM,conMerma,pend,turnos};
 }
 function printRetrabajoReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
+// ── PIEZAS FUERA DE PROGRAMA (hora×hora de GW1 / GW2 / Laser de Cama) en los reportes ──
+// ents = renglones del registro (pieza, material, cantidad, motivo, consumo); sinDet = piezas capturadas en la columna sin registro de material.
+function fpCollect(){
+  const best={};
+  horaRecords.forEach(r=>{ if(!r||!machineInRoster(r.machine)||!usaFP(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
+  const ents=[], sinDet=[];
+  Object.values(best).forEach(r=>{
+    const ws=aprovWeekStartOf(r.fecha), lam=rtLam(r.machine);
+    safeParse(r.franjas,[]).forEach(f=>{
+      if(!f||f.isBreak) return;
+      const fp=parseInt(f.fp)||0; if(!(fp>0)) return;
+      const det=(Array.isArray(f.fpDet)?f.fpDet:[]).filter(x=>x&&(x.modelo||x.motivo||Number(x.nPz)>0||x.tubular||x.calibre));
+      let asig=0;
+      det.forEach(x=>{
+        const n=Number(x.nPz)||0; asig+=n;
+        const tub=lam?getLaminaByCal(x.calibre):getTubularByTipo(x.tubular);
+        const cons=Number(x.consumo)>0?Number(x.consumo):(lam?rtConsumoLam(x.calibre,Number(x.anchoPza)||0,Number(x.largoPza)||0,n):rtConsumo(x.tubular,Number(x.largoPza)||0,n));
+        ents.push({...x,nPz:n,tipo:lam?'lamina':'tubular',consumo:cons,kg:cons*(tub&&tub.peso>0?tub.peso:0),machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:String(f.franja||'').replace(/⚡$/,''),ws});
+      });
+      if(fp>asig) sinDet.push({machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:String(f.franja||'').replace(/⚡$/,''),n:fp-asig,ws});
+    });
+  });
+  return {ents,sinDet};
+}
+function fpMat(e){ return (e.tipo==='lamina'?e.calibre:tubCanon(e.tubular))||'(sin material)'; }
+// Reporte semanal de material: sección con las piezas fuera de programa de la semana
+function fpReportParts(ws){
+  const esc=escH, C=fpCollect(), ents=C.ents.filter(e=>e.ws===ws), sd=C.sinDet.filter(e=>e.ws===ws);
+  const r3=n=>Math.round(n*1000)/1000;
+  const sum=l=>({pzas:l.reduce((a,e)=>a+(Number(e.nPz)||0),0),cons:r3(l.reduce((a,e)=>a+e.consumo,0)),kg:l.reduce((a,e)=>a+e.kg,0)});
+  const sinDetPz=sd.reduce((a,e)=>a+e.n,0);
+  const totP=sum(ents).pzas+sinDetPz;
+  if(!ents.length && !sd.length) return {sections:'',totP:0,totC:0,totL:0,totK:0,machines:[],sinDetPz:0};
+  const tipos=[['tubular','TUBULAR','tub','tramos'],['lamina','LÁMINA','lam','láminas']].map(([t,tag,cls,U])=>{
+    const l=ents.filter(e=>e.tipo===t); if(!l.length) return null;
+    const machines=Array.from(new Set(l.map(e=>e.machine))).sort(), tot=sum(l);
+    const by=(keyFn)=>{ const m={}; l.forEach(e=>{ const k=keyFn(e); const o=m[k]||(m[k]={k,pzas:0,cons:0,kg:0}); o.pzas+=e.nPz; o.cons+=e.consumo; o.kg+=e.kg; }); return Object.values(m).sort((a,b)=>b.cons-a.cons||b.pzas-a.pzas); };
+    const porMot=by(e=>fpMotivoTxt(e)||'Sin motivo'), porMat=by(e=>(e.modelo||'Sin nombre')+'||'+fpMat(e));
+    const det=l.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
+    const lam=t==='lamina';
+    return `<section>
+      <h2><span class="tag ${cls}">${tag}</span> ${esc(machines.join(' + '))} <small>${tot.pzas} pza${tot.pzas===1?'':'s'} fuera de programa</small></h2>
+      <div class="cols">
+        <table><thead><tr><th>Motivo</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th><th class="n">kg</th></tr></thead><tbody>${porMot.map(o=>`<tr><td>${esc(o.k)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${tot.pzas}</td><td class="n">${tot.cons.toFixed(3)}</td><td class="n">${tot.kg>0?fmt2(tot.kg):'—'}</td></tr></tbody></table>
+        <table><thead><tr><th>Pieza</th><th>${lam?'Calibre':'Tubular'}</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th></tr></thead><tbody>${porMat.map(o=>{ const [m,mt]=o.k.split('||'); return `<tr><td>${esc(m)}</td><td>${esc(mt)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td></tr>`; }).join('')}</tbody></table>
+      </div>
+      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Pieza</th><th>${lam?'Calibre':'Tubular'}</th><th class="n">${lam?'Ancho × largo cm':'Largo cm'}</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th><th>Motivo</th><th>Operador</th></tr></thead><tbody>${det.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${machines.length>1?esc(e.machine)+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${lam?fmt2(e.anchoPza||0)+' × '+fmt2(e.largoPza||0):fmt2(e.largoPza||0)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table></div>
+    </section>`;
+  }).filter(Boolean).join('');
+  const aviso=sinDetPz>0?`<div class="line"><span class="warn">${sinDetPz} pieza${sinDetPz===1?'':'s'} fuera de programa sin detalle de material (${esc(Array.from(new Set(sd.map(x=>x.machine))).join(', '))}): falta capturar pieza y material en Registrar turno.</span></div>`:'';
+  const t=ents.filter(e=>e.tipo==='tubular'), l=ents.filter(e=>e.tipo==='lamina');
+  return {sections:tipos+aviso,totP,totC:sum(t).cons,totL:sum(l).cons,totK:r3(sum(ents).kg),machines:Array.from(new Set(ents.concat(sd).map(e=>e.machine))).sort(),sinDetPz};
+}
+// Reportes de producción (día y semana): detalle de las piezas fuera de programa del centro de trabajo
+function repFueraProgHtml(ct,fechas,weekly,esc,dayLa){
+  const set=new Set(fechas), C=fpCollect();
+  const ents=C.ents.filter(e=>e.ct===ct&&set.has(e.fecha)&&repMachineOk(ct,e.machine)), sd=C.sinDet.filter(e=>e.ct===ct&&set.has(e.fecha)&&repMachineOk(ct,e.machine));
+  if(!ents.length && !sd.length) return '';
+  const tot=ents.reduce((a,e)=>a+e.nPz,0)+sd.reduce((a,e)=>a+e.n,0);
+  const porMot={}; ents.forEach(e=>{ const m=fpMotivoTxt(e)||'Sin motivo'; porMot[m]=(porMot[m]||0)+e.nPz; });
+  const sdn=sd.reduce((a,e)=>a+e.n,0); if(sdn) porMot['Sin detalle']=(porMot['Sin detalle']||0)+sdn;
+  const top=Object.entries(porMot).sort((a,b)=>b[1]-a[1]);
+  const rows=ents.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
+  const u=e=>e.tipo==='lamina'?'lám.':'tr.';
+  let html=`<div class="line"><b>Piezas fuera de programa</b> <span class="muted">${tot} pza${tot===1?'':'s'}${sdn?` · <span class="warn">${sdn} sin detalle de material</span>`:''} · no cuentan contra el programa</span></div>`;
+  html+=`<div class="ctline" style="margin-top:2px">${top.map(([m,n])=>`<span>${esc(m)}: <b>${n}</b></span>`).join('')}</div>`;
+  if(rows.length) html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th>Pieza</th><th>Material</th><th class="n">Pzas</th><th>Motivo</th><th class="n">Consumo</th></tr></thead><tbody>${rows.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(e.machine)}</b></td><td>${esc((e.turno?'T'+String(e.turno).replace(/^Turno\s*/i,'').slice(0,1)+' · ':'')+e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${e.nPz}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td class="n">${e.consumo>0?e.consumo.toFixed(3)+' '+u(e):'—'}</td></tr>`).join('')}</tbody></table>`;
+  return html;
+}
 
 // ── REPORTES DE PRODUCCIÓN (diario y semanal) ───────────────────────
 // Se calculan en vivo con lo ya capturado (hora×hora, cierre del día, OEE y atrasos), por centro de trabajo y
@@ -7339,6 +7427,7 @@ function buildProdReportHtml(mode,key,ctFilter){
         <table><thead><tr><th>Máquina</th><th class="n">Programadas</th><th class="n">Producidas</th><th class="n">Diferencia</th><th class="n">Cumpl.</th><th class="n">Rechazo</th><th class="n">OEE</th><th class="n">Paros (min)</th><th>Estado</th></tr></thead><tbody>${rows}${totRow}</tbody></table>
         <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,[{fecha:key,rows:c.rows,atrCT:c.atrCT}]))}
         ${repRechazosHtml(c.ct,[key],false,esc,dayLabel)}
+        ${repFueraProgHtml(c.ct,[key],false,esc,dayLabel)}
         ${repAprovCtBlock(c.ct,[key],false,esc,dayLabel)}
       </section>`;
     }).join('');
@@ -7358,6 +7447,7 @@ function buildProdReportHtml(mode,key,ctFilter){
         <div class="muted" style="margin-top:3px">Cada día: producidas / programadas. En rojo, día con atraso.</div>
         <div class="line"><b>Atrasos y motivos</b></div>${atrasoTable(atrasoRowsOf(c.ct,c.perDay))}
         ${repRechazosHtml(c.ct,repWeekDays(key),true,esc,dayLabel)}
+        ${repFueraProgHtml(c.ct,repWeekDays(key),true,esc,dayLabel)}
         ${repAprovCtBlock(c.ct,repWeekDays(key),true,esc,dayLabel)}
       </section>`;
     }).join('');
@@ -8245,7 +8335,7 @@ function updateFullscreenBtnVisibility(page){
 // Registros "en cero" (sin piezas ni paros): los generaba el guardado en vivo cuando
 // alguien solo pasaba por una máquina. Se pueden quitar de una vez.
 function isEmptyOee(r){ return !(Number(r.piezasProg)>0||Number(r.piezasTotal)>0||Number(r.piezasRechazo)>0||Number(r.parosNoProg)>0); }
-function isEmptyHora(r){ return !(Number(r.totalFabricadas)>0||Number(r.totalDanadas)>0||Number(r.tiempoDibujos)>0); }
+function isEmptyHora(r){ return !(Number(r.totalFabricadas)>0||Number(r.totalDanadas)>0||Number(r.totalFueraProg)>0||Number(r.tiempoDibujos)>0); }
 function updateEmptyRecordsBtn(){
   const b=document.getElementById('btn-quitar-vacios'); if(!b) return;
   const n=records.filter(isEmptyOee).length+horaRecords.filter(isEmptyHora).length;
@@ -8391,6 +8481,11 @@ function softRestoreHora(){
     });
     if(usaRetrabajo(machine) && Array.isArray(s.retrabajo) && s.retrabajo.length && !_hTouch.ids.has('hora-rt-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !rtHasContent(i)) setRetrabajoRows(i,s.retrabajo);
     if(parseInt(s.danadas)>0) toggleMotivoRow(i);
+    if(usaFP(machine) && document.getElementById('hora-fp-'+i) && !_hTouch.ids.has('hora-fp-'+i)){
+      const fe=document.getElementById('hora-fp-'+i); if(parseInt(s.fp)>0 && fe.value==='') fe.value=s.fp;
+      if(Array.isArray(s.fpDet) && s.fpDet.length && !fpHasContent(i)) setFpRows(i,s.fpDet);
+      if(parseInt(s.fp)>0) toggleFpRow(i);
+    }
   });
   if(!_hTouch.extra && !document.querySelector('#horas-extra-list .dynamic-row')){ const ex=extrasFromRecord(rec); if(ex.length) setExtraRows(ex); }
   if(MAQUINAS_DIBUJO.includes(machine) && !_hTouch.dib){
@@ -8410,6 +8505,7 @@ function protectHora(existing,data,extra,dibujos){
     if(!_hTouch.ids.has('hora-dan-'+i) && !d.danadas && parseInt(sv.danadas)>0) o.danadas=parseInt(sv.danadas);
     if(!_hTouch.ids.has('hora-motivo-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !d.motivo && sv.motivo) o.motivo=sv.motivo;
     if(!_hTouch.ids.has('hora-rt-'+i) && !_hTouch.ids.has('hora-dan-'+i) && !(o.retrabajo&&o.retrabajo.length) && Array.isArray(sv.retrabajo) && sv.retrabajo.length){ o.retrabajo=sv.retrabajo; if(!o.motivo) o.motivo=rtMotivoResumen(sv.retrabajo); }
+    if(!_hTouch.ids.has('hora-fp-'+i) && !(d.fp>0) && parseInt(sv.fp)>0){ o.fp=parseInt(sv.fp); o.fpDet=Array.isArray(sv.fpDet)?sv.fpDet:[]; }
     return o;
   });
   if(!extra.length && !_hTouch.extra){ const ex=extrasFromRecord(existing); if(ex.length) extra=ex; }
@@ -8451,24 +8547,38 @@ function renderHoraFranjas(machine, turno){
     extraBtn.title=canCapture?'':'Tu cuenta no tiene permiso para capturar (es del Operador).';
   }
   const list = document.getElementById('hora-franjas-list');
+  const FP = usaFP(machine);
+  { const hr=document.getElementById('hora-head-row'); if(hr) hr.classList.toggle('fp',FP);
+    const hf=document.getElementById('hora-head-fp'); if(hf) hf.style.display=FP?'':'none';
+    const bx=document.getElementById('hora-box-fp'); if(bx) bx.style.display=FP?'':'none';
+    const nt=document.getElementById('hora-nota-fp'); if(nt) nt.textContent=FP?'Al registrar piezas dañadas aparece el registro de retrabajo; al capturar piezas fuera de programa, el registro de pieza, material y cantidad.':'Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2/Laser de Cama) o un campo para el motivo (otras máquinas).'; }
   resetHoraTouch();
   _gridKey=horaKey(document.getElementById('reg-ct')?.value,machine,turno,document.getElementById('reg-fecha')?.value);
   list.innerHTML = franjas.map((f,i) => {
     const isBreak = f.includes('Comida');
     if(isBreak) return `
-      <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:6px 8px;border-bottom:0.5px solid var(--border);background:rgba(245,166,35,.06)">
+      <div class="hora-row-grid${FP?' fp':''}" style="padding:6px 8px;border-bottom:0.5px solid var(--border);background:rgba(245,166,35,.06)">
         <span style="font-size:12px;color:var(--amber);font-weight:600">⏸ ${f.replace(' ⏸ Comida','')}</span>
-        <div style="text-align:center;font-size:11px;color:var(--amber);grid-column:2/4;font-weight:500">Descanso para comida — 30 min</div>
+        <div style="text-align:center;font-size:11px;color:var(--amber);grid-column:2/-1;font-weight:500">Descanso para comida — 30 min</div>
       </div>`;
     return `
       <div style="border-bottom:0.5px solid var(--border)">
-        <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:8px;align-items:center;padding:5px 8px">
+        <div class="hora-row-grid${FP?' fp':''}" style="padding:5px 8px">
           <span style="font-size:12px;color:var(--text2);font-weight:500">${f}</span>
           <input type="number" id="hora-fab-${i}" min="0" placeholder="0" ${dis} oninput="toggleMotivoRow(${i});scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);text-align:center;width:100%">
+          ${FP?`<input type="number" id="hora-fp-${i}" min="0" placeholder="0" ${dis} title="Piezas fuera de programa (prototipo, vacuna, muestra…): al capturarlas se pide pieza, material y cantidad" oninput="toggleFpRow(${i});scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
+            style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid rgba(167,139,250,.35);border-radius:var(--radius);background:rgba(167,139,250,.06);color:#a78bfa;text-align:center;width:100%">`:''}
           <input type="number" id="hora-dan-${i}" min="0" placeholder="0" ${dis} oninput="toggleMotivoRow(${i});scheduleLiveSync();calcHoraTotales('${machine}','${turno}')"
             style="font-size:13px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:#f06060;text-align:center;width:100%">
         </div>
+        ${FP?`<div id="hora-fp-row-${i}" class="rt-wrap fp-wrap" style="display:none">
+          <button type="button" class="rt-head" onclick="fpToggle(${i})"><span class="rt-caret">▾</span>＋ Piezas fuera de programa<span class="ap-badge" id="fp-count-${i}">0</span><span class="rt-warn" id="fp-warn-${i}"></span><span class="rt-sum" id="fp-sum-${i}"></span></button>
+          <div class="rt-body">
+            <div id="hora-fp-list-${i}" data-kind="${rtLam(machine)?'lam':'tub'}"></div>
+            <button type="button" class="rt-add" onclick="fpAdd(${i})" ${canCapture?'':'disabled'}>+ Agregar otra pieza</button>
+          </div>
+        </div>`:''}
         ${usaRetrabajo(machine)?`<div id="hora-motivo-row-${i}" class="rt-wrap" style="display:none">
           <button type="button" class="rt-head" onclick="rtToggle(${i})"><span class="rt-caret">▾</span>⚠ Registro de retrabajo<span class="ap-badge" id="rt-count-${i}">0</span><span class="rt-warn" id="rt-warn-${i}"></span><span class="rt-sum" id="rt-sum-${i}"></span></button>
           <div class="rt-body">
@@ -8507,6 +8617,7 @@ function renderHoraFranjas(machine, turno){
       if(motEl && saved.motivo) motEl.value=saved.motivo;
       if(usaRetrabajo(machine)) setRetrabajoRows(i,saved.retrabajo);
       if(saved.danadas>0) toggleMotivoRow(i);
+      if(FP){ const fpEl=document.getElementById('hora-fp-'+i); if(fpEl && saved.fp) fpEl.value=saved.fp; setFpRows(i,saved.fpDet); if(parseInt(saved.fp)>0) toggleFpRow(i); }
     });
   }
   // calcHoraTotales() actualiza (entre otras cosas) una gráfica de
@@ -8639,6 +8750,103 @@ function syncRetrabajoPanel(i,dan){
   rtChanged(i,true);
 }
 
+// ── PIEZAS FUERA DE PROGRAMA (GW1 / GW2 / Laser de Cama) ──
+// Columna intermedia del hora×hora. Son piezas que no vienen en el programa del día (prototipo, vacuna, muestra…).
+// Al capturarlas se despliega un registro igual al de retrabajo: modelo / pieza, material, medida, cantidad y motivo.
+// NO cuentan contra el programa (cumplimiento), pero sí son producción de la máquina para rendimiento y eficiencia.
+const FP_MOTIVOS=['Prototipo','Vacuna','Muestra','Pedido urgente'];
+function usaFP(machine){ return MAQUINAS_RETRABAJO.includes(machine); }
+function fpEntries(i){ return Array.from(document.querySelectorAll('#hora-fp-list-'+i+' .rt-entry')); }
+function fpEntryData(e){
+  const mot=rtGet(e,'motivo'), n=parseInt(rtGet(e,'nPz'))||0, base={modelo:rtGet(e,'modelo').trim(),nPz:n,motivo:mot,motivoOtro:rtGet(e,'motivoOtro').trim(),operador:e.dataset.op||''};
+  if(e.dataset.kind==='lam'){
+    const cal=rtGet(e,'calibre'), ancho=parseFloat(rtGet(e,'anchoPza'))||0, largo=parseFloat(rtGet(e,'largoPza'))||0;
+    return Object.assign(base,{calibre:cal,anchoPza:ancho,largoPza:largo,consumo:rtConsumoLam(cal,ancho,largo,n)});
+  }
+  const tub=rtGet(e,'tubular'), largo=parseFloat(rtGet(e,'largoPza'))||0;
+  return Object.assign(base,{tubular:tub,largoPza:largo,consumo:rtConsumo(tub,largo,n)});
+}
+function fpMeaningful(x){ return !!(x.modelo||x.largoPza>0||x.motivo||x.tubular||x.calibre); }
+function getFp(i){ return fpEntries(i).map(fpEntryData).filter(fpMeaningful); }
+function fpHasContent(i){ return fpEntries(i).some(e=>fpMeaningful(fpEntryData(e))); }
+function fpMotivoTxt(x){ return x.motivo===RT_OTRO?(x.motivoOtro||'Otro'):(x.motivo||''); }
+function addFpRow(i,data){
+  const list=document.getElementById('hora-fp-list-'+i); if(!list) return null;
+  const dis=canCaptureHora()?'':'disabled';
+  const d=document.createElement('div'); d.className='rt-entry fp-entry';
+  const isLam=list.dataset.kind==='lam'; d.dataset.kind=isLam?'lam':'tub';
+  d.dataset.op=(data&&data.operador)||(currentUser&&currentUser.name)||'';
+  const f=(l,inner)=>`<label class="ped-f"><span>${l}</span>${inner}</label>`;
+  const T=`data-touch="hora-fp-${i}" oninput="fpChanged(${i})"`;
+  const motOpts='<option value="">Selecciona motivo…</option>'+FP_MOTIVOS.concat([RT_OTRO]).map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
+  const nPz=`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" data-touch="hora-fp-${i}" oninput="this.dataset.auto='';fpChanged(${i})" ${dis}>`;
+  const l2=`<div class="rt-l2">
+      ${f('Motivo',`<select data-f="motivo" ${T} ${dis}>${motOpts}</select><input type="text" data-f="motivoOtro" placeholder="Especifica el motivo" style="display:none;margin-top:4px" ${T} ${dis}>`)}
+      ${f('Consumo ('+(isLam?'láminas':'tramos')+')',`<input type="text" data-f="consumo" readonly placeholder="auto" title="Piezas × ${isLam?'peso de la pieza ÷ peso de la lámina completa':'largo de pieza ÷ largo del tramo'}">`)}
+      ${f('Operador',`<input type="text" data-f="operador" readonly title="Según la cuenta de acceso">`)}
+      <button type="button" class="btn-del" style="align-self:end" title="Quitar" onclick="fpDel(${i},this)" ${dis}>×</button>
+    </div>`;
+  d.innerHTML=isLam?`<div class="rt-l1 rt-l1-lam">
+      ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. Prototipo F.6630" ${T} ${dis}>`)}
+      ${f('Calibre de lámina',`<select data-f="calibre" ${T} ${dis}><option value="">Selecciona…</option>${laminas.map(l=>`<option value="${escH(l.cal)}">${escH(l.cal)}</option>`).join('')}</select>`)}
+      ${f('Ancho de pza (cm)',`<input type="number" data-f="anchoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Largo de pza (cm)',`<input type="number" data-f="largoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Cantidad',nPz)}
+    </div>${l2}`:`<div class="rt-l1">
+      ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. Prototipo F.6630" ${T} ${dis}>`)}
+      ${f('Medida de tubular',`<select data-f="tubular" ${T} ${dis}>${tubOptionsHtml('',true,'Selecciona…')}</select>`)}
+      ${f('Largo de pza (cm)',`<input type="number" data-f="largoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
+      ${f('Cantidad',nPz)}
+    </div>${l2}`;
+  list.appendChild(d);
+  const set=(n,v)=>{ const el=d.querySelector(`[data-f="${n}"]`); if(el&&v!=null&&v!=='') el.value=v; };
+  if(data){
+    const sel=d.querySelector(isLam?'[data-f="calibre"]':'[data-f="tubular"]'), sv=isLam?data.calibre:data.tubular;
+    if(sv && !Array.from(sel.options).some(o=>o.value===sv)){ const o=document.createElement('option'); o.value=sv; o.textContent=sv; sel.appendChild(o); }
+    const ms=d.querySelector('[data-f="motivo"]');
+    if(data.motivo && !Array.from(ms.options).some(o=>o.value===data.motivo)){ const o=document.createElement('option'); o.value=data.motivo; o.textContent=data.motivo; ms.appendChild(o); }
+    set('modelo',data.modelo);set('tubular',data.tubular);set('calibre',data.calibre);set('anchoPza',data.anchoPza);set('largoPza',data.largoPza);set('nPz',data.nPz);set('motivo',data.motivo);set('motivoOtro',data.motivoOtro);
+  }
+  d.querySelector('[data-f="operador"]').value=d.dataset.op;
+  return d;
+}
+function setFpRows(i,list){
+  const box=document.getElementById('hora-fp-list-'+i); if(!box) return;
+  box.innerHTML='';
+  (list||[]).forEach(x=>addFpRow(i,x));
+  fpChanged(i,true);
+}
+function fpChanged(i,quiet){
+  let tot=0,asig=0,n=0;
+  fpEntries(i).forEach(e=>{
+    const x=fpEntryData(e); n++; asig+=x.nPz; tot+=x.consumo;
+    const c=e.querySelector('[data-f="consumo"]'); if(c) c.value=x.consumo>0?x.consumo.toFixed(3):'';
+    const o=e.querySelector('[data-f="motivoOtro"]'); if(o) o.style.display=(x.motivo===RT_OTRO)?'':'none';
+  });
+  const fp=parseInt(document.getElementById('hora-fp-'+i)?.value)||0;
+  const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  const lamK=document.getElementById('hora-fp-list-'+i)?.dataset.kind==='lam';
+  set('fp-count-'+i,String(n));
+  set('fp-sum-'+i,tot>0?`Consumo: ${tot.toFixed(3)} ${lamK?'láminas':'tramos'}`:'');
+  set('fp-warn-'+i,(n>0&&asig!==fp)?`⚠ ${asig} de ${fp} pzas asignadas`:'');
+  if(!quiet){ try{ scheduleLiveSync(); }catch(e){} }
+}
+function fpToggle(i){ const w=document.getElementById('hora-fp-row-'+i); if(w) w.classList.toggle('rt-closed'); }
+function fpAdd(i){ _hTouch.ids.add('hora-fp-'+i); const d=addFpRow(i); fpChanged(i); if(d){ const w=document.getElementById('hora-fp-row-'+i); if(w) w.classList.remove('rt-closed'); const f=d.querySelector('input'); if(f) f.focus(); } }
+function fpDel(i,btn){ _hTouch.ids.add('hora-fp-'+i); const e=btn.closest('.rt-entry'); if(e) e.remove(); fpChanged(i); }
+// Con piezas fuera de programa el registro se despliega con un renglón listo; si solo hay uno y «Cantidad» no se ha tocado, sigue el número de la franja.
+function toggleFpRow(i){
+  const fp=parseInt(document.getElementById('hora-fp-'+i)?.value)||0;
+  const row=document.getElementById('hora-fp-row-'+i); if(!row) return;
+  row.style.display=fp>0?'block':'none';
+  if(!(fp>0)) return;
+  let es=fpEntries(i);
+  if(!es.length){ const d=addFpRow(i); if(d){ d.querySelector('[data-f="nPz"]').dataset.auto='1'; } es=fpEntries(i); }
+  if(es.length===1){ const nz=es[0].querySelector('[data-f="nPz"]'); if(nz && (nz.dataset.auto==='1' || nz.value==='')){ nz.value=fp; nz.dataset.auto='1'; } }
+  fpChanged(i,true);
+}
+function horaFpSum(data){ return (data||[]).reduce((a,d)=>a+((d&&!d.isBreak)?(parseInt(d.fp)||0):0),0); }
+
 function getHoraData(machine, turno){
   const franjas = LASER_FRANJAS[turno] || [];
   return franjas.map((f,i)=>({
@@ -8651,6 +8859,10 @@ function getHoraData(machine, turno){
     if(!d.isBreak && usaRetrabajo(machine) && document.getElementById('hora-rt-list-'+i)){
       const rt=d.danadas>0?getRetrabajo(i):[];
       d.retrabajo=rt; d.motivo=rtMotivoResumen(rt);
+    }
+    if(!d.isBreak && usaFP(machine) && document.getElementById('hora-fp-'+i)){
+      d.fp=parseInt(document.getElementById('hora-fp-'+i).value)||0;
+      d.fpDet=d.fp>0?getFp(i):[];
     }
     return d;
   });
@@ -8834,7 +9046,7 @@ function liveSyncHoraAndParos(ctxOverride){
   // La cuadrícula en pantalla debe ser la de este turno; si no, leería datos de otra máquina/turno
   if(LASER_MAQUINAS_HORA.includes(machine) && _gridKey!==horaKey(ct,machine,turno,fecha)) return;
 
-  let totalFab=0, totalDan=0;
+  let totalFab=0, totalDan=0, totalFP=0;
   const isHoraMachineReal=LASER_MAQUINAS_HORA.includes(machine);
   // Las máquinas de cierre del día (sin hora por hora) no generan registro de OEE
   if(!isHoraMachineReal) return;
@@ -8851,7 +9063,7 @@ function liveSyncHoraAndParos(ctxOverride){
       let any=getParos().some(p=>(p.min||0)>0);
       if(!any && isHoraMachine){
         const d0=getHoraData(machine,turno), x0=getHorasExtra(machine,turno);
-        any=[...d0.filter(x=>!x.isBreak),...x0].some(x=>x.fabricadas>0||x.danadas>0);
+        any=[...d0.filter(x=>!x.isBreak),...x0].some(x=>x.fabricadas>0||x.danadas>0||x.fp>0);
         if(!any && MAQUINAS_DIBUJO.includes(machine)) any=getDibujos().some(x=>x.minutos>0||x.nombre!=='Sin nombre');
       }
       if(!any) return;
@@ -8869,11 +9081,12 @@ function liveSyncHoraAndParos(ctxOverride){
     const allFrames=[...data.filter(d=>!d.isBreak), ...extra];
     totalFab=allFrames.reduce((a,d)=>a+d.fabricadas,0);
     totalDan=allFrames.reduce((a,d)=>a+d.danadas,0);
+    totalFP=horaFpSum(data);
     const mach=getMachineByName(machine);
     const baseCap=mach?mach.cap:0;
     const baseFranjas=data.filter(d=>!d.isBreak).length||1;
     const cap=Math.round(baseCap+extra.length*(baseCap/baseFranjas));
-    const efic=cap>0?Math.round((totalFab/cap)*100):0;
+    const efic=cap>0?Math.round(((totalFab+totalFP)/cap)*100):0;
     const dibujos=prot.dibujos;
     const tiempoDibujos=dibujos.reduce((a,d)=>a+d.minutos,0);
     const allFranjas=[...data, ...extra.map(e=>({...e, franja:e.franja+'⚡'}))];
@@ -8882,7 +9095,7 @@ function liveSyncHoraAndParos(ctxOverride){
     const horaRec={
       id:horaId, fecha, ct, machine, turno, op,
       franjas: JSON.stringify(allFranjas), horasExtra: extra.length,
-      totalFabricadas: totalFab, totalDanadas: totalDan,
+      totalFabricadas: totalFab, totalDanadas: totalDan, totalFueraProg: totalFP,
       capacidad: cap, eficiencia: efic,
       dibujos: JSON.stringify(dibujos), tiempoDibujos,
       updatedAt: nowIso
@@ -8911,7 +9124,7 @@ function liveSyncHoraAndParos(ctxOverride){
   const parosNoProg=paros.reduce((a,p)=>a+(p.min||0),0);
   let piezasProg=parseInt(document.getElementById('reg-programadas')?.value)||0;
   if(!piezasProg && prevOee && Number(prevOee.piezasProg)>0) piezasProg=Number(prevOee.piezasProg);
-  const {disp,rend,cal,oee,cumpl,tO}=calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine);
+  const {disp,rend,cal,oee,cumpl,tO}=calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine,totalFP);
   const oeeRec={id:oeeId,ct,machine,turno,fecha,op,paros:JSON.stringify(paros),parosNoProg,
     piezasProg,piezasTotal:totalFab,piezasRechazo:totalDan,tO,disp,rend,cal,oee,cumpl,updatedAt:nowIso};
   const oIdx=records.findIndex(r=>r.id===oeeId);
@@ -8932,6 +9145,7 @@ function calcHoraTotales(machine, turno){
   const allData = [...data.filter(d=>!d.isBreak), ...extra];
   const totalFab = allData.reduce((a,d)=>a+d.fabricadas,0);
   const totalDan = allData.reduce((a,d)=>a+d.danadas,0);
+  const totalFP = horaFpSum(data);
   const mach = getMachineByName(machine);
   const baseCap = mach ? mach.cap : 0;
   // Each extra franja adds proportional capacity (cap / base franjas count)
@@ -8939,11 +9153,12 @@ function calcHoraTotales(machine, turno){
   const capPerFranja = baseCap / baseFranjas;
   const totalCap = baseCap + (extra.length * capPerFranja);
   const cap = Math.round(totalCap);
-  const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
+  const efic = cap>0 ? Math.round(((totalFab+totalFP)/cap)*100) : 0;
   const eficColor = efic>=85?'#3ecf8e':efic>=60?'#f5a623':'#f06060';
 
   document.getElementById('hora-total-fab').textContent = totalFab;
   document.getElementById('hora-total-dan').textContent = totalDan;
+  { const fe=document.getElementById('hora-total-fp'); if(fe) fe.textContent=totalFP; }
   const efEl = document.getElementById('hora-eficiencia');
   efEl.textContent = efic+'%';
   efEl.style.color = eficColor;
@@ -8999,11 +9214,12 @@ function saveHoraRecord(){
   const allFrames = [...data.filter(d=>!d.isBreak), ...extra];
   const totalFab = allFrames.reduce((a,d)=>a+d.fabricadas,0);
   const totalDan = allFrames.reduce((a,d)=>a+d.danadas,0);
+  const totalFP = horaFpSum(data);
   const mach = getMachineByName(machine);
   const baseCap = mach ? mach.cap : 0;
   const baseFranjas2 = data.filter(d=>!d.isBreak).length || 1;
   const cap = Math.round(baseCap + extra.length*(baseCap/baseFranjas2));
-  const efic = cap>0 ? Math.round((totalFab/cap)*100) : 0;
+  const efic = cap>0 ? Math.round(((totalFab+totalFP)/cap)*100) : 0;
 
   const dibujos = prot.dibujos;
   const tiempoDibujos = dibujos.reduce((a,d)=>a+d.minutos,0);
@@ -9013,7 +9229,7 @@ function saveHoraRecord(){
     id: horaId, fecha, ct, machine, turno, op,
     franjas: JSON.stringify(allFranjas),
     horasExtra: extra.length,
-    totalFabricadas: totalFab, totalDanadas: totalDan,
+    totalFabricadas: totalFab, totalDanadas: totalDan, totalFueraProg: totalFP,
     capacidad: cap, eficiencia: efic,
     dibujos: JSON.stringify(dibujos), tiempoDibujos,
     updatedAt: new Date().toISOString()
@@ -9032,7 +9248,7 @@ function saveHoraRecord(){
   const machOee = getMachineByName(machine);
   const oeeCapAdj = machOee ? Math.round(machOee.cap + extra.length*(machOee.cap/(data.filter(d=>!d.isBreak).length||1))) : cap;
   const machWithCap = {...(machOee||{}), cap: oeeCapAdj};
-  const {disp,rend,cal,oee,cumpl,tO} = calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine);
+  const {disp,rend,cal,oee,cumpl,tO} = calcIndicadores(turno,parosNoProg,piezasProg,totalFab,totalDan,machine,totalFP);
   const oeeId = getOeeStableId(ct,machine,turno,fecha);
   const oeeRec = {id:oeeId,ct,machine,turno,fecha,op,paros:JSON.stringify(paros),parosNoProg,
     piezasProg,piezasTotal:totalFab,piezasRechazo:totalDan,tO,disp,rend,cal,oee,cumpl,updatedAt:new Date().toISOString()};
@@ -9116,8 +9332,8 @@ function renderHoraHist(){
   if(fturno) horaF = horaF.filter(r=>r.turno===fturno);
   // Una máquina que se seleccionó pero nunca llegó a producir nada ese día (0 piezas fabricadas y 0 dañadas) deja un registro
   // "en cero" — este filtro permite ocultarlo, o ver solo esos, según convenga.
-  if(fstatus==='con') horaF = horaF.filter(r=>nz(r.totalFabricadas)>0 || nz(r.totalDanadas)>0);
-  if(fstatus==='sin') horaF = horaF.filter(r=>nz(r.totalFabricadas)===0 && nz(r.totalDanadas)===0);
+  if(fstatus==='con') horaF = horaF.filter(r=>nz(r.totalFabricadas)>0 || nz(r.totalDanadas)>0 || nz(r.totalFueraProg)>0);
+  if(fstatus==='sin') horaF = horaF.filter(r=>nz(r.totalFabricadas)===0 && nz(r.totalDanadas)===0 && nz(r.totalFueraProg)===0);
   // Cierre del día (piezas totales) de las máquinas sin hora×hora. No tienen turno: con un turno elegido no se muestran.
   let diaF = diaRecords.filter(r=>r && machineInRoster(r.machine));
   if(fct) diaF = diaF.filter(r=>r.ct===fct);
@@ -9150,8 +9366,15 @@ function renderHoraHist(){
         <span style="color:var(--text2)">${f.franja}</span>
         <span style="font-family:'IBM Plex Mono',monospace;text-align:center">${f.fabricadas}</span>
         <span style="font-family:'IBM Plex Mono',monospace;text-align:center;color:${f.danadas>0?'#f06060':'var(--text3)'}">${f.danadas>0?f.danadas:'–'}</span>
-        <span style="font-size:11px;color:${f.motivo?'var(--amber)':'var(--text3)'}">${f.motivo||''}</span>
+        <span style="font-size:11px;color:${f.motivo?'var(--amber)':'var(--text3)'}">${f.motivo||''}${f.fp>0?`<span style="color:#a78bfa;${f.motivo?'margin-left:8px':''}">＋${f.fp} fuera de prog.</span>`:''}</span>
       </div>`).join('');
+    // Piezas fuera de programa (detalle: pieza, material, cantidad, motivo)
+    const fpRows=franjas.filter(f=>!f.isBreak&&Array.isArray(f.fpDet)).flatMap(f=>f.fpDet.map(x=>({fr:f.franja,x})));
+    const fpTot=Number(r.totalFueraProg)||franjas.reduce((a,f)=>a+(f.isBreak?0:(parseInt(f.fp)||0)),0);
+    const fpSection=fpTot>0?`<div style="padding:.5rem 1rem;background:rgba(167,139,250,.06);border-top:1px solid rgba(167,139,250,.2)">
+        <div style="font-size:10px;font-weight:600;color:#a78bfa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Piezas fuera de programa — ${fpTot} pza${fpTot===1?'':'s'}</div>
+        ${fpRows.map(({fr,x})=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#a78bfa;font-family:'IBM Plex Mono',monospace">${escH(fr)}</span> — ${escH(x.modelo||'Sin nombre')} · ${Number(x.nPz)||0} pza${(Number(x.nPz)||0)===1?'':'s'} · ${escH(x.tubular||x.calibre||'sin material')}${x.largoPza>0?` · ${x.anchoPza>0?x.anchoPza+'×':''}${x.largoPza} cm`:''}${(fpMotivoTxt(x))?` <span style="color:var(--amber)">· ${escH(fpMotivoTxt(x))}</span>`:''}${x.consumo>0?` <span style="color:var(--text3)">· ${Number(x.consumo).toFixed(3)} ${x.calibre?'lám.':'tramos'}</span>`:''}</div>`).join('')||'<div style="font-size:12px;color:var(--text3)">Sin detalle de material.</div>'}
+      </div>`:'';
     // Dibujos/nidos section
     const dibujos = safeParse(r.dibujos,[]);
     const dibujoSection = dibujos.length>0 ? `
@@ -9204,6 +9427,7 @@ function renderHoraHist(){
         ${(currentUser && currentUser.role!=='operador') ? checklistBadgeHtml(r.ct,r.machine,r.turno,r.fecha) : ''}
         <div style="display:flex;gap:12px;margin-left:auto;align-items:center;flex-wrap:wrap">
           <div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Fabricadas</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace">${r.totalFabricadas}</div></div>
+          ${Number(r.totalFueraProg)>0?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Fuera de prog.</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#a78bfa">${r.totalFueraProg}</div></div>`:''}
           ${r.totalDanadas>0?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Dañadas</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#f06060">${r.totalDanadas}</div></div>`:''}
           <div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Eficiencia</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${eficColor}">${r.eficiencia}%</div></div>
           ${(oeeMatch&&oeeMatch.oee!=null&&oeeMatch.oee!=='')?`<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">OEE</div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(Number(oeeMatch.oee))}">${oeeMatch.oee}%</div></div>`:''}
@@ -9217,6 +9441,7 @@ function renderHoraHist(){
           <span>Franja</span><span style="text-align:center">Piezas</span><span style="text-align:center">Dañadas</span><span>Motivo rechazo</span>
         </div>
         ${franjaRows}
+        ${fpSection}
         ${parosSection}
         ${dibujoSection}
         ${rechazadas.length>0?`<div style="padding:.5rem 1rem;background:rgba(240,96,96,.05);border-top:1px solid rgba(240,96,96,.1)">
@@ -9336,8 +9561,8 @@ function renderEvaluacion(){
   if(fct) filtered = filtered.filter(r=>r.ct===fct);
   if(fmachine) filtered = filtered.filter(r=>r.machine===fmachine);
   if(fturno) filtered = filtered.filter(r=>r.turno===fturno);
-  if(fstatus==='con') filtered = filtered.filter(r=>(r.totalFabricadas||0)>0 || (r.totalDanadas||0)>0);
-  if(fstatus==='sin') filtered = filtered.filter(r=>(r.totalFabricadas||0)===0 && (r.totalDanadas||0)===0);
+  if(fstatus==='con') filtered = filtered.filter(r=>(r.totalFabricadas||0)>0 || (r.totalDanadas||0)>0 || (r.totalFueraProg||0)>0);
+  if(fstatus==='sin') filtered = filtered.filter(r=>(r.totalFabricadas||0)===0 && (r.totalDanadas||0)===0 && (r.totalFueraProg||0)===0);
   filtered = filtered.filter(r=>r.op&&r.op!=='–');
 
   // Solo Operador y Líder registran piezas como parte de su trabajo — un
