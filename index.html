@@ -550,6 +550,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .programa-table-wrap{overflow:auto;max-height:520px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg2)}
 .programa-table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
 .programa-table thead th{position:sticky;top:0;background:var(--bg3);color:var(--text2);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);z-index:1}
+.mat-search{display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:0 8px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius)}
+.mat-search:focus-within{border-color:var(--blue)}
+.mat-search svg{flex-shrink:0;color:var(--text3)}
+.mat-search input{flex:1;min-width:0;border:none;background:transparent;color:var(--text);font-size:13px;padding:7px 0;font-family:'IBM Plex Sans',sans-serif}
+.mat-search input:focus{outline:none}
+.mat-search .ms-count{font-size:11px;color:var(--text3);white-space:nowrap}
+.mat-search button{border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px}
+.mat-search button:hover{color:var(--text)}
 .programa-filter-row th{position:sticky;top:29px;background:var(--bg2);padding:2px 6px 5px;z-index:1}
 .programa-filter-input,.programa-filter-select{width:100%;font-size:10px;padding:2px 3px;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:var(--text3);transition:border-color .15s,background .15s}
 .programa-filter-input::placeholder{color:var(--text3);opacity:.6}
@@ -1343,6 +1351,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="cfg-laminas" class="tab-content">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>Calibres de lámina</div>
+        <div class="mat-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="lam-search" placeholder="Buscar calibre o SKU…" autocomplete="off" oninput="matSearchSet('lam',this.value)"><span class="ms-count" id="lam-search-count"></span><button type="button" id="lam-search-x" title="Limpiar búsqueda" style="display:none" onclick="matSearchClear('lam')">×</button></div>
         <div class="mat-header lam" style="margin-bottom:6px"><span>Calibre</span><span>SKU</span><span>Espesor (cm)</span><span>Peso/lám (kg)</span><span>Costo ($)</span><span></span></div>
         <div id="lam-config-list"></div>
         <div style="display:grid;grid-template-columns:80px 110px 90px 120px 120px 80px;gap:8px;margin-top:10px;align-items:end">
@@ -1360,6 +1369,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div id="cfg-tubulares" class="tab-content">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Tipos de tubular (tramos 6m)</div>
         <div id="tub-audit"></div>
+        <div class="mat-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="tub-search" placeholder="Buscar tipo, medida o SKU…  (ej: 2 x 2, cal 14, 10508017)" autocomplete="off" oninput="matSearchSet('tub',this.value)"><span class="ms-count" id="tub-search-count"></span><button type="button" id="tub-search-x" title="Limpiar búsqueda" style="display:none" onclick="matSearchClear('tub')">×</button></div>
         <div class="mat-header tub" style="margin-bottom:6px"><span>Tipo / geometría <span style="text-transform:none;letter-spacing:0;font-weight:400">(se puede editar)</span></span><span>SKU</span><span>Peso/tramo (kg)</span><span>Costo/tramo ($)</span><span></span></div>
         <div id="tub-config-list"></div>
         <div style="display:grid;grid-template-columns:1fr 110px 90px 120px 80px;gap:8px;margin-top:10px;align-items:end">
@@ -7461,8 +7471,25 @@ function renderConfig(){
   </div><button class="btn-del-machine" onclick="deleteMachine('${m.id}')">Eliminar</button></div>`).join('');
   });
 }
+// Búsqueda en los catálogos de materiales (calibres de lámina y tipos de tubular): por nombre, medida o SKU
+const matSearch={lam:'',tub:''};
+function matNormTxt(t){ return String(t==null?'':t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+// Un término corto («14») solo se busca en el nombre/medida; el SKU se busca con 3 o más caracteres, para que «cal 14» no traiga SKU que contienen 14
+function matSearchOk(q,text,sku){
+  const n=matNormTxt(text), c=n.replace(/[\s.,"'×]/g,''), k=matNormTxt(sku||'');
+  return matNormTxt(q).split(/\s+/).filter(Boolean).every(tk=>{ const t2=tk.replace(/[.,"'×]/g,''); return n.includes(tk)||c.includes(t2)||(tk.length>=3&&/\d/.test(tk)&&k.includes(tk)); });
+}
+function matSearchSet(kind,v){ matSearch[kind]=String(v||'').trim(); if(kind==='lam') renderLamConfig(); else renderTubConfig(); }
+function matSearchClear(kind){ const el=document.getElementById(kind+'-search'); if(el){ el.value=''; el.focus(); } matSearchSet(kind,''); }
+function matSearchInfo(kind,shown,total){
+  const c=document.getElementById(kind+'-search-count'), x=document.getElementById(kind+'-search-x'), q=matSearch[kind];
+  if(c) c.textContent=q?(shown+' de '+total):(total+' registros');
+  if(x) x.style.display=q?'':'none';
+}
 function renderLamConfig(){
-  document.getElementById('lam-config-list').innerHTML=laminas.map((l,i)=>`<div class="mat-row mat-row-lam"><div class="mat-row-label">${l.cal}</div><input type="text" value="${l.sku||''}" placeholder="SKU" onchange="laminas[${i}].sku=this.value.trim();matEdit('lamina',${i})"><input type="number" value="${l.esp}" step="0.001" onchange="laminas[${i}].esp=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.peso}" step="0.001" onchange="laminas[${i}].peso=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.costo}" step="0.01" onchange="laminas[${i}].costo=parseFloat(this.value)||0;matEdit('lamina',${i})"><button class="btn-del" onclick="matDelete('lamina',${i})" title="Eliminar">×</button></div>`).join('');
+  const lq=matSearch.lam, lvis=laminas.map((l,i)=>i).filter(i=>!lq||matSearchOk(lq,laminas[i].cal,laminas[i].sku));
+  matSearchInfo('lam',lvis.length,laminas.length);
+  document.getElementById('lam-config-list').innerHTML=(lq&&!lvis.length)?'<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Ningún calibre coincide con «'+escH(lq)+'».</div>':lvis.map(i=>{const l=laminas[i];return `<div class="mat-row mat-row-lam"><div class="mat-row-label">${l.cal}</div><input type="text" value="${l.sku||''}" placeholder="SKU" onchange="laminas[${i}].sku=this.value.trim();matEdit('lamina',${i})"><input type="number" value="${l.esp}" step="0.001" onchange="laminas[${i}].esp=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.peso}" step="0.001" onchange="laminas[${i}].peso=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.costo}" step="0.01" onchange="laminas[${i}].costo=parseFloat(this.value)||0;matEdit('lamina',${i})"><button class="btn-del" onclick="matDelete('lamina',${i})" title="Eliminar">×</button></div>`;}).join('');
 }
 // SKU que aparecen una sola vez en el Concentrado del programa para tubulares que no estaban en el catálogo (el peso y el costo se capturan a mano)
 const TUB_SKU_HINTS={'tubo 1 1/4 in':'10508017','tubo mofle 2" cal.18':'10508040','tubo mofle 3" cal18':'10509216','3 x 3 cal. 14':'10509202','3 x 2 cal.14':'10509217'};
@@ -7531,11 +7558,14 @@ function tubAuditAdd(i){
 function renderTubConfig(){
   const el=document.getElementById('tub-config-list'); if(!el) return;
   try{ renderTubAudit(); }catch(e){ console.warn('renderTubAudit',e); }
-  if(!tubulares.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Sin tubulares.</div>';return; }
+  if(!tubulares.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Sin tubulares.</div>'; matSearchInfo('tub',0,0); return; }
   const ea=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const order=tubulares.map((t,i)=>i).sort((a,b)=>{ const k=t=>String(t.tipo||'').replace(/^tub(?:ular|o)\s+/i,''); return k(tubulares[a]).localeCompare(k(tubulares[b]),'es',{numeric:true}); });
+  const tq=matSearch.tub, vis=tq?order.filter(i=>matSearchOk(tq,tubulares[i].tipo,tubulares[i].sku)):order;
+  matSearchInfo('tub',vis.length,tubulares.length);
+  if(tq&&!vis.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Ningún tubular coincide con «'+escH(tq)+'».</div>'; return; }
   const byNorm={}, bySku={}; tubulares.forEach((t,i)=>{ (byNorm[tubNormName(t.tipo)]=byNorm[tubNormName(t.tipo)]||[]).push(i); const s=String(t.sku||'').trim(); if(s) (bySku[s]=bySku[s]||[]).push(i); });
-  el.innerHTML=order.map(i=>{
+  el.innerHTML=vis.map(i=>{
     const t=tubulares[i];
     const same=(byNorm[tubNormName(t.tipo)]||[]).filter(j=>j!==i), sameSku=(bySku[String(t.sku||'').trim()]||[]).filter(j=>j!==i);
     const other=same.length?same[0]:(sameSku.length?sameSku[0]:-1);
