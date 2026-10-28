@@ -191,6 +191,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ct-card-body{display:flex;gap:1.75rem;flex-wrap:wrap;align-items:center}
 .ct-card-hero{flex:1 1 200px;min-width:180px}
 .ct-highlight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.ct-highlight-row.hl4{grid-template-columns:repeat(4,1fr)}
 .ct-highlight-box{background:linear-gradient(180deg,var(--bg3),var(--bg2));border:1px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1rem;text-align:center;position:relative}
 .ct-highlight-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:5px}
 .ct-meta-input{width:100%;max-width:150px;text-align:center;background:transparent;border:0;border-bottom:1px dashed var(--border);border-radius:0;color:var(--text);font-size:26px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;padding:0 0 2px;outline:none;-moz-appearance:textfield}.ct-meta-input::-webkit-outer-spin-button,.ct-meta-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.ct-meta-input:hover{border-bottom-color:var(--text3)}.ct-meta-input:focus{border-bottom:1px solid var(--blue)}
@@ -3680,6 +3681,7 @@ function oeeBadge(v){if(v>=85)return'<span class="badge world">Clase mundial</sp
 function oeeBadge(v){if(v>=85)return'<span class="badge world">Clase mundial</span>';if(v>=60)return'<span class="badge good">Aceptable</span>';if(v>=40)return'<span class="badge avg">Bajo</span>';return'<span class="badge low">Crítico</span>';}
 // ── Iconos SVG sutiles (correlación visual con el dato que acompañan) ──
 const ICONS={
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
   troqueles:'<rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/>',
   laser:'<path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><line x1="4" y1="21" x2="20" y2="21"/>',
   muebles:'<path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2Z"/><path d="M5 18v2"/><path d="M19 18v2"/>',
@@ -4911,13 +4913,19 @@ function getCTHoraGrandTotal(ct){
   return horaTot+diaTot;
 }
 // Piezas procesadas del día a nivel CT: hora×hora de las máquinas que lo capturan + Cierre del día (piezas totales) de las demás.
+// Prensa 60 y Prensa 90 trabajan como maquila: sus piezas no entran en la producción diaria del CT, se muestran aparte.
+const MAQUILA_MAQUINAS=['Prensa 60','Prensa 90'];
+function esMaquila(machine){ return MAQUILA_MAQUINAS.includes(machine); }
 function getCTProcesadasDetalle(ct){
   const today=todayStr();
   const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine) && LASER_MAQUINAS_HORA.includes(r.machine));
   const last={}; todays.forEach(r=>{ const k=r.machine+'|'+r.turno; if(!last[k]||isNewerRecord(r,last[k])) last[k]=r; });
-  const hora=Object.values(last).reduce((s,r)=>s+(Number(r.totalFabricadas)||0),0);
-  const dia=getCTDiaToday(ct).reduce((s,r)=>s+(Number(r.piezas)||0),0);
-  return {hora,dia,total:hora+dia};
+  const maqBy={}; MAQUILA_MAQUINAS.forEach(m=>{ if(machineInRoster(m)) maqBy[m]=0; });
+  let hora=0, dia=0;
+  Object.values(last).forEach(r=>{ const n=Number(r.totalFabricadas)||0; if(esMaquila(r.machine)) maqBy[r.machine]=(maqBy[r.machine]||0)+n; else hora+=n; });
+  getCTDiaToday(ct).forEach(r=>{ const n=Number(r.piezas)||0; if(esMaquila(r.machine)) maqBy[r.machine]=(maqBy[r.machine]||0)+n; else dia+=n; });
+  const maquila=Object.values(maqBy).reduce((a,b)=>a+b,0);
+  return {hora,dia,total:hora+dia,maquila,maqBy};
 }
 // Adelanto / atraso capturado a mano (Troqueles): se guarda con la fecha, así solo vale para el día en curso.
 function adelantoManualHoy(ct){
@@ -4993,11 +5001,16 @@ function renderDashboard(){
           </div>
         </div>
         <div class="ct-card-body">
-          <div class="ct-highlight-row">
+          <div class="ct-highlight-row${modoProc?' hl4':''}">
             ${modoProc?`<div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas procesadas (CT)</div>
               <div class="ct-highlight-val" style="color:var(--text)" id="ct-procesadas-val">${procDet.total}</div>
               <div class="ct-highlight-sub">Hora×hora: ${procDet.hora} · Cierre del día: ${procDet.dia}</div>
+            </div>
+            <div class="ct-highlight-box">
+              <div class="ct-highlight-label">${ic('wrench',12)}Pz maquiladas</div>
+              <div class="ct-highlight-val" style="color:var(--text)" id="ct-maquila-val">${procDet.maquila}</div>
+              <div class="ct-highlight-sub">${Object.keys(procDet.maqBy).map(m=>escH(m)+': '+procDet.maqBy[m]).join(' · ')||'Prensa 60 · Prensa 90'}</div>
             </div>`:`<div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
               ${(autoProgramadas==null&&canEditMetas)?`<input type="number" min="0" class="ct-meta-input" value="${target.piezasProgramadas||0}" title="Meta de piezas programadas del CT (editable)" onchange="updateCtTargetField('${ct}','piezasProgramadas',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>`}
@@ -5335,7 +5348,7 @@ function dashHoraTableHtml(ct,short){
     const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
     const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
     grand+=tot; grandDan+=dTot;
-    const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${dif}</b><span>pzas bajo el ritmo</span></div>`):'';
+    const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
       <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
