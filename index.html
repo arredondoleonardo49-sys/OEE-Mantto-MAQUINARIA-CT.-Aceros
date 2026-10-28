@@ -1219,24 +1219,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="ap-top">
         <div class="form-group"><label>Fecha</label><input type="date" id="lam-fecha" onchange="renderLamTotals()"></div>
       </div>
-      <div class="ap-card" id="lam-total-card" style="margin-bottom:12px">
-        <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamTotCard()"><span id="lam-total-caret" style="width:12px">▾</span> Hojas cortadas — Laser de Cama <span id="lam-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
-        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Se toma del <b>consumo real</b> que el operador anota en <b>Registrar turno › Programa del día</b> (Laser de Cama): hojas completas por calibre. Ya no se captura aquí.</div>
-        <div id="lam-total-body"></div>
-      </div>
-      <div class="ap-card" id="lam-rec-card" style="margin-bottom:12px">
-        <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-rec-count">0 recortes</span></div>
-        <div class="ap-note">Los recortes los anota el operador en el mismo consumo real. Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro. Si es de una pieza fuera de programa (prototipo, vacuna…), se marca en «Destino del recorte».</div>
-        <div id="lam-rec-body"></div>
-      </div>
-      <div class="ap-card" id="rt-ap-lam" style="margin-bottom:12px"></div>
-      <div id="lam-legacy" style="display:none" aria-hidden="true">
-        <div class="form-group"><label>Turno</label><select id="lam-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
-        <div class="form-group"><label>Operador</label><input type="text" id="lam-op" placeholder="Nombre del operador"></div>
+      <div class="ap-card" id="lam-man-card" style="margin-bottom:12px">
+        <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamMan()"><span id="lam-man-caret" style="width:12px">▾</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Registro de láminas — sin programa<span class="ap-badge" id="lam-man-count">0 registros</span></div>
+        <div id="lam-man-body">
+        <div class="ap-note" style="margin-top:0">Laser de Cama no recibe un programa como GW1/GW2, así que aquí se registran las <b>hojas cortadas por calibre</b> y los <b>recortes</b> del turno. Se suman a las «Hojas cortadas» de arriba y a la comparación contra la explosión. Si el día ya tiene Programa del día con consumo real, no lo captures aquí otra vez (se sumaría doble).</div>
+        <div id="lam-man-warn" class="ap-note" style="display:none;color:var(--amber);margin-bottom:8px"></div>
+        <div class="lam-man-top" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:10px">
+          <div class="form-group" style="margin:0"><label>Turno</label><select id="lam-turno"><option>Turno 1 (8:00–17:00)</option><option>Turno 2 (17:00–01:40)</option><option>Turno 3 (23:00–07:00)</option></select></div>
+          <div class="form-group" style="margin:0"><label>Operador</label><input type="text" id="lam-op" placeholder="Nombre del operador"></div>
+        </div>
       <div class="ap-cols">
         <div class="ap-card">
           <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Z"/><path d="M3 7l9 5 9-5"/><path d="M12 22V12"/></svg>Hojas cortadas<span class="ap-badge" id="lam-hojas-count">0 hojas</span><button class="ap-add" id="btn-add-lam-hoja" onclick="addLamHoja()">+ Agregar calibre</button></div>
-          <div class="dynamic-row-header dynamic-row-hojas" id="lam-hojas-head" style="display:none"><span>Calibre</span><span>Hojas</span><span title="De programa, o por eventualidad (no estaba en la explosión)">Origen</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
+          <div class="dynamic-row-header dynamic-row-hojas" id="lam-hojas-head" style="display:none"><span>Calibre</span><span>Hojas</span><span title="Normal (en la explosión) o eventualidad (no estaba en la explosión)">Origen</span><span>Peso/lám (kg)</span><span>Peso total (kg)</span><span></span></div>
           <div id="lam-hojas-list"></div>
           <div class="ap-empty" id="lam-hojas-empty">Aún no hay calibres. Toca «+ Agregar calibre».</div>
         </div>
@@ -1256,7 +1251,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <span class="save-msg" id="lam-save-msg"></span>
         <button class="btn btn-primary" id="btn-save-lamina" onclick="saveLamina()">Guardar registro</button>
       </div>
-          </div>
+        </div>
+      </div>
+      <div class="ap-card" id="lam-total-card" style="margin-bottom:12px">
+        <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamTotCard()"><span id="lam-total-caret" style="width:12px">▾</span> Hojas cortadas — Laser de Cama <span id="lam-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
+        <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Se toma del <b>consumo real</b> que el operador anota en <b>Registrar turno › Programa del día</b> (Laser de Cama): hojas completas por calibre, más lo que se registra abajo en «Registro de láminas — sin programa».</div>
+        <div id="lam-total-body"></div>
+      </div>
+      <div class="ap-card" id="lam-rec-card" style="margin-bottom:12px">
+        <div class="ap-card-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recuperación de recortes<span class="ap-badge" id="lam-rec-count">0 recortes</span></div>
+        <div class="ap-note">Los recortes los anota el operador en el consumo real o en el registro de láminas de abajo. Si el recorte equivale al 40% o más de una lámina, ya forma parte del material explosionado: no cuenta como ahorro. Si es de una pieza fuera de programa (prototipo, vacuna…), se marca en «Destino del recorte».</div>
+        <div id="lam-rec-body"></div>
+      </div>
+      <div class="ap-card" id="rt-ap-lam" style="margin-bottom:12px"></div>
     </div>
     <div id="tab-tubular" class="tab-content">
       <div class="ap-card" id="tub-total-card" style="margin-bottom:12px">
@@ -5584,7 +5591,7 @@ function tubOptionsHtml(sel,withBlank,blankText){
   return (withBlank?`<option value="">${esc(blankText||'')}</option>`:'')+tubSorted().map(t=>`<option value="${esc(t.tipo)}" ${sel&&sel===t.tipo?'selected':''}>${esc(dup[tubNormName(t.tipo)]>1&&t.sku?t.tipo+' · '+t.sku:t.tipo)}</option>`).join('');
 }
 
-function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><select data-f="org" onchange="calcLamina()" title="De programa: está en la explosión. Eventualidad: no estaba programada; se resta del consumo del calibre al compararlo contra lo explosionado"><option value="programa">De programa</option><option value="eventualidad">Eventualidad</option></select><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
+function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><select data-f="org" onchange="calcLamina()" title="Normal: está en la explosión del día. Eventualidad: no estaba programada; se resta del consumo del calibre al compararlo contra lo explosionado"><option value="programa">Normal</option><option value="eventualidad">Eventualidad</option></select><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row dynamic-row-lamr';d.id=id;d.innerHTML=`<select data-f="cal" onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><select data-f="fp" onchange="calcLamina()" title="¿Sobró de una pieza fuera de programa?"><option value="">En programa</option><option value="Prototipo">Fuera de prog.: Prototipo</option><option value="Vacuna">Fuera de prog.: Vacuna</option><option value="Otro">Fuera de prog.: Otro</option></select><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE LÁMINA (localStorage) ──
 // Aprovechamiento no tenía ninguna forma de recuperar lo capturado si la
@@ -5726,7 +5733,7 @@ function saveLamina(){
   aprovRecords.push(rec);save('aprovRecords');_aprovLastSync='pend';cloudUpsertRow('Aprovechamiento',aprovCloudRow(rec),aprovSyncDone);
   clearLamDraft();
   document.getElementById('lam-hojas-list').innerHTML='';document.getElementById('lam-recortes-list').innerHTML='';document.getElementById('lam-merma').value=0;calcLamina();
-  aprovAfterSave('lam-save-msg');renderAprovHist();
+  aprovAfterSave('lam-save-msg');renderAprovHist();try{ renderLamTotals(); }catch(e){}
 }
 function addTubRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='tr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row ped-row';d.id=id;
   const f=(lbl,inner)=>`<label class="ped-f"><span>${lbl}</span>${inner}</label>`;
@@ -6458,6 +6465,21 @@ function lamTotalsHtml(d,empty){
       <tr class="sum"><td>Total</td><td class="n">${f2(d.prog)}</td><td class="n">${f2(d.ev)}</td><td class="n tot">${f2(d.total)}</td><td class="n">${f2(d.kg)}</td></tr>
     </tbody></table></div>`;
 }
+let _lamManOpen=true;
+function toggleLamMan(){ _lamManOpen=!_lamManOpen; const b=document.getElementById('lam-man-body'), c=document.getElementById('lam-man-caret'); if(b) b.style.display=_lamManOpen?'':'none'; if(c) c.textContent=_lamManOpen?'▾':'▸'; }
+// Registros manuales (sin Programa del día) de la fecha y aviso si ya hay consumo real del programa ese día
+function lamManInfo(fecha){
+  const recs=troqLamRecords(fecha), isProg=r=>r.origen==='programa'||String(r.id).indexOf('lp_')===0;
+  const man=recs.filter(r=>!isProg(r)), prog=recs.filter(r=>isProg(r)&&(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0));
+  return {man,prog};
+}
+function renderLamManInfo(fecha){
+  const I=lamManInfo(fecha), set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  set('lam-man-count',I.man.length+(I.man.length===1?' registro':' registros'));
+  const w=document.getElementById('lam-man-warn'); if(!w) return;
+  if(I.prog.length){ w.style.display=''; w.textContent='⚠ Este día ya tiene consumo real de láminas en el Programa del día. Registra aquí solo lo que NO esté anotado allá; si no, las hojas se sumarían dos veces.'; }
+  else w.style.display='none';
+}
 function troqLamRecords(fecha){ return aprovVisibleRecords().filter(r=>r.tipo==='lamina'&&r.ct==='TROQUELES'&&r.fecha===fecha); }
 function laserTubRecords(fecha){ return aprovVisibleRecords().filter(r=>r.tipo==='tubular'&&r.ct==='LASER'&&r.fecha===fecha); }
 let _tubTotOpen=true;
@@ -6504,7 +6526,8 @@ function renderLamTotals(){
   const caret=document.getElementById('lam-total-caret'); if(caret) caret.textContent=_lamTotOpen?'▾':'▸';
   const recs=troqLamRecords(fecha);
   body.style.display=_lamTotOpen?'block':'none';
-  if(_lamTotOpen) body.innerHTML=lamTotalsHtml(lamTotalsData(recs),'Aún no hay lámina registrada este día. El operador la anota en Registrar turno › Programa del día (Laser de Cama) › Consumo real.');
+  if(_lamTotOpen) body.innerHTML=lamTotalsHtml(lamTotalsData(recs),'Aún no hay lámina registrada este día. Anótala abajo en «Registro de láminas — sin programa» (o en Registrar turno › Programa del día › Consumo real, si hay programa).');
+  try{ renderLamManInfo(fecha); }catch(e){}
   const rb=document.getElementById('lam-rec-body'); if(rb) rb.innerHTML=lamRecHtml(recs);
   renderRtAprov('lam');
 }
