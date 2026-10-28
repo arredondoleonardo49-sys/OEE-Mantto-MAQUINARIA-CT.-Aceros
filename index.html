@@ -624,6 +624,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .mat-row:last-child{border-bottom:none}
 .mat-row-lam{grid-template-columns:80px 110px 90px 120px 120px 36px}
 .mat-row-tub{grid-template-columns:1fr 110px 90px 120px 36px}
+.mat-row input.mat-name{font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:500}
+.mat-dup{grid-column:1 / -1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--amber);margin-top:-2px}
+.mat-dup button{font-size:11px;background:transparent;border:1px solid var(--amber);color:var(--amber);border-radius:var(--radius);cursor:pointer;padding:2px 9px;font-family:inherit}
+.tub-audit{border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg3);padding:.6rem .8rem;margin-bottom:.8rem;font-size:12px;color:var(--text2)}
+.tub-audit h4{font-size:12px;margin:0 0 6px;color:var(--text);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tub-audit .ta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 0;border-top:0.5px solid var(--border)}
+.tub-audit .ta-row button{font-size:11px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.35);color:var(--blue);border-radius:var(--radius);cursor:pointer;padding:2px 9px;font-family:inherit}
 .mat-row input{font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);width:100%}
 .mat-row input:focus{outline:none;border-color:var(--blue)}
 .mat-row-label{font-size:13px;color:var(--text);font-weight:500}
@@ -1352,7 +1359,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
     <div id="cfg-tubulares" class="tab-content">
       <div class="form-card"><div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Tipos de tubular (tramos 6m)</div>
-        <div class="mat-header tub" style="margin-bottom:6px"><span>Tipo / geometría</span><span>SKU</span><span>Peso/tramo (kg)</span><span>Costo/tramo ($)</span><span></span></div>
+        <div id="tub-audit"></div>
+        <div class="mat-header tub" style="margin-bottom:6px"><span>Tipo / geometría <span style="text-transform:none;letter-spacing:0;font-weight:400">(se puede editar)</span></span><span>SKU</span><span>Peso/tramo (kg)</span><span>Costo/tramo ($)</span><span></span></div>
         <div id="tub-config-list"></div>
         <div style="display:grid;grid-template-columns:1fr 110px 90px 120px 80px;gap:8px;margin-top:10px;align-items:end">
           <div class="form-group"><label>Tipo</label><input type="text" id="new-tub-tipo" placeholder="Ej: Cuadro 1x1 Cal18"></div>
@@ -1517,6 +1525,8 @@ const DEFAULT_TUBULARES=[
   {tipo:'Tubular 3 x 1 Cal 18',sku:'10509219',peso:11.029,costo:0}
 ];
 // ── STATE ──
+let matAlias={};   // nombre anterior de un tubular (renombrado o unificado) -> nombre vigente
+try{ matAlias=JSON.parse(localStorage.getItem('oee_mat_alias_v1'))||{}; }catch(e){ matAlias={}; }
 let machines=[],records=[],laminas=[],tubulares=[],aprovRecords=[],mermaSemanalRecs=[],ctTargets={},atrasos=[];
 let dashChart=null,lamChart=null,tubChart=null,currentPhotoId=null,paroRows=[];
 const SK={machines:'oee_machines_v5',records:'oee_records_v5',laminas:'oee_laminas_v2',tubulares:'oee_tubulares_v2',aprovRecords:'oee_aprov_v2',mermaSemanalRecs:'oee_merma_semanal_v1',mantLogs:'oee_mant_v1',mantPlan:'oee_mant_plan_v1',ctTargets:'oee_ct_targets_v1',atrasos:'oee_atrasos_v1'};
@@ -2325,6 +2335,7 @@ function mergeProgramaDia(local,incoming){
 function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||''}; }
 function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progCloudRow(rec)); }
 // Solo el Operador (con permiso de captura) registra cortes y observaciones.
+function canFinalizarPrograma(){ return !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero'); }
 function canCutPrograma(){ return !!currentUser && currentUser.role==='operador' && canCaptureHora(); }
 function progGroupInfo(fecha,machine){
   const names=PROG_GRUPO[machine]||[machine];
@@ -2435,7 +2446,8 @@ function f3(n){ return String(r3(n)); }
 function tubNormName(s){
   return String(s==null?'':s).toLowerCase().replace(/[×]/g,'x').replace(/["”“″′']/g,' ')
     .replace(/\b(tubular|tubo|in|pulg)\b/g,' ').replace(/\d+(?:[.,]\d+)?\s*m(?:ts?|etros)?\b/g,' ')
-    .replace(/cal\.?\s*/g,'cal').replace(/[^a-z0-9\/.]/g,'');
+    .replace(/cal\.?\s*/g,'cal').replace(/[^a-z0-9\/.]/g,'')
+    .replace(/^([0-9\/.]+)x([0-9\/.]+)(cal.*)$/,(m,a,b,c)=>[a,b].sort().join('x')+c);   // el perfil 1 x 1/2 es el mismo que 1/2 x 1
 }
 function tubMatchCatalog(txt){ const n=tubNormName(txt); if(!n) return null; return tubulares.find(t=>tubNormName(t.tipo)===n)||null; }
 function progTubColIdx(rec){ return ((rec&&rec.rows&&rec.rows[0])||[]).findIndex(h=>String(h).trim().toLowerCase()==='tubular'); }
@@ -2625,7 +2637,7 @@ function programaOpenConsumo(fecha,machine,rIdx){
   const x=progConsRow(rec,rIdx), h=(rec.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), row=rec.rows[rIdx+1];
   const g=n=>{ const i=h.indexOf(n); return i>=0&&row[i]!==''&&row[i]!=null?String(row[i]):''; };
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  const opts=`<option value="">${x.tub?'':'Selecciona el tubular…'}</option>`+tubulares.map(t=>`<option value="${esc(t.tipo)}" ${x.tub&&x.tub.tipo===t.tipo?'selected':''}>${esc(t.tipo)}</option>`).join('');
+  const opts=tubOptionsHtml(x.tub?x.tub.tipo:'',true,x.tub?'':'Selecciona el tubular…');
   const ov=document.createElement('div'); ov.className='pcm-ov'; ov.id='prog-cons-modal';
   ov.onclick=e=>{ if(e.target===ov) programaCloseConsumo(); };
   ov.innerHTML=`<div class="pcm" role="dialog" aria-label="Consumo real">
@@ -2764,6 +2776,7 @@ function programaSetObs(fecha,machine,rIdx,value){
   progSave(rec); progMsg('✓ Guardado');
 }
 function programaCompletar(fecha,machine){
+  if(!canFinalizarPrograma()){ progMsg('Solo un Líder o Ingeniero puede marcar el programa como finalizado'); return; }
   const g=progGroupInfo(fecha,machine); if(!g.recs.length||!g.complete) return;
   const ts=new Date().toISOString(), tsk=Date.now().toString(36);
   g.recs.forEach(r=>{ r.completado='1'; r.compTs=ts; r.compBy=currentUser?currentUser.name:''; r.updatedAt=ts; progSave(r); });
@@ -2771,6 +2784,7 @@ function programaCompletar(fecha,machine){
   progMsg('✓ Programa completado: queda guardado y consultable'); renderProgramaDia(true);
 }
 function programaReabrir(fecha,machine){
+  if(!canFinalizarPrograma()){ progMsg('Solo un Líder o Ingeniero puede reabrir el programa'); return; }
   const g=progGroupInfo(fecha,machine); if(!g.recs.length) return;
   const ts=new Date().toISOString();
   g.recs.forEach(r=>{ r.completado=''; r.compTs=ts; r.compBy=currentUser?currentUser.name:''; r.updatedAt=ts; progSave(r); });
@@ -3316,16 +3330,16 @@ function renderProgramaDia(force){
     aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
   }
   // Programa completo en el grupo de máquinas → ofrecer completarlo
-  let cierre='';
+  let cierre=''; const canFin=canFinalizarPrograma();
   if(completed){
     const por=rec.compBy?` por ${rec.compBy}`:'';
     cierre=`<div class="programa-done-bar"><span>✓ <b>Programa completado</b>${por}${g.names.length>1?' en '+g.names.join(' y '):''}. Sigue disponible para consulta.</span>
       <button class="btn" onclick="toggleProgDone('${key}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)">${progShowDone[key]?'Ocultar programa':'Ver programa'}</button>
-      <button class="btn" onclick="programaReabrir('${fecha}','${machine}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--text3)">↩ Reabrir</button></div>`;
+      ${canFin?`<button class="btn" onclick="programaReabrir('${fecha}','${machine}')" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:transparent;color:var(--text3)">↩ Reabrir</button>`:''}</div>`;
   } else if(g.complete){
     const falta=g.missing.length?` <span style="color:var(--text3)">(${g.missing.join(', ')} no tiene programa cargado)</span>`:'';
-    cierre=`<div class="programa-done-bar ready"><span>✓ <b>Todo el programa está cortado</b>${g.names.length>1?' en '+g.recs.map(r=>r.machine).join(' y '):''}.${falta} Márcalo como completado para seguir con el siguiente sin perderlo de vista.</span>
-      <button class="btn btn-primary" onclick="programaCompletar('${fecha}','${machine}')" style="font-size:12px;padding:5px 12px">Marcar programa como completado</button></div>`;
+    cierre=`<div class="programa-done-bar ready"><span>✓ <b>Todo el programa está cortado</b>${g.names.length>1?' en '+g.recs.map(r=>r.machine).join(' y '):''}.${falta} ${canFin?'Márcalo como completado para seguir con el siguiente sin perderlo de vista.':'<b>Un Líder o Ingeniero debe marcarlo como finalizado.</b>'}</span>
+      ${canFin?`<button class="btn btn-primary" onclick="programaCompletar('${fecha}','${machine}')" style="font-size:12px;padding:5px 12px">Marcar programa como completado</button>`:''}</div>`;
   } else if(g.names.length>1){
     const otros=g.names.filter(n=>n!==machine).map(n=>{ const r=progViewRecord(fecha,n); if(!r) return `${n}: sin programa`; const st=progStats(r); return `${n}: ${st.done}/${st.total}`; });
     const mine=progStats(rec);
@@ -3703,7 +3717,8 @@ function ensureSeedMachines(){
 }
 
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
-function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t);}
+function tubCanon(n){ let k=n, g=0; while(k!=null && !tubulares.some(t=>t.tipo===k) && matAlias[k] && g++<6) k=matAlias[k]; return (k==null||k==='')?n:k; }
+function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t) || tubulares.find(x=>x.tipo===tubCanon(t));}
 // ── CLOUD JSONP ──
 let _gasReqCounter=0;
 const GAS_WRITE_ACTIONS=['upsert','write','delete','writeAll'];
@@ -5536,7 +5551,18 @@ function saveTurno(){
 // ── APROVECHAMIENTO ──
 function getLaminaOptions(){return laminas.map(l=>`<option value="${l.cal}">${l.cal} (${l.peso}kg)</option>`).join('');}
 function getLaminaOptionsShort(){return laminas.map(l=>`<option value="${l.cal}">${l.cal}</option>`).join('');}
-function getTubularOptions(){return tubulares.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('');}
+function getTubularOptions(){return tubOptionsHtml('',false);}
+// ── Listas de tubulares que ven los operadores: ordenadas y, si dos tienen la misma medida, con su SKU para distinguirlas ──
+function tubSorted(){
+  const k=t=>String(t.tipo||'').replace(/^tub(?:ular|o)\s+/i,'');
+  return tubulares.slice().sort((a,b)=>k(a).localeCompare(k(b),'es',{numeric:true}));
+}
+function tubDupCount(){ const c={}; tubulares.forEach(t=>{ const k=tubNormName(t.tipo); c[k]=(c[k]||0)+1; }); return c; }
+function tubOptionsHtml(sel,withBlank,blankText){
+  const dup=tubDupCount(), esc=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return (withBlank?`<option value="">${esc(blankText||'')}</option>`:'')+tubSorted().map(t=>`<option value="${esc(t.tipo)}" ${sel&&sel===t.tipo?'selected':''}>${esc(dup[tubNormName(t.tipo)]>1&&t.sku?t.tipo+' · '+t.sku:t.tipo)}</option>`).join('');
+}
+
 function addLamHoja(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lh'+Date.now();const d=document.createElement('div');d.className='dynamic-row dynamic-row-hojas';d.id=id;d.innerHTML=`<select onchange="calcLamina()">${getLaminaOptions()}</select><input type="number" min="0" placeholder="0" oninput="calcLamina()"><select data-f="org" onchange="calcLamina()" title="De programa: está en la explosión. Eventualidad: no estaba programada; se resta del consumo del calibre al compararlo contra lo explosionado"><option value="programa">De programa</option><option value="eventualidad">Eventualidad</option></select><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="auto"><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-hojas-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 function addLamRecorte(skipPermCheck){if(!skipPermCheck&&!canCaptureAprov())return;const id='lr'+Date.now()+Math.floor(Math.random()*1000);const d=document.createElement('div');d.className='dynamic-row dynamic-row-lamr';d.id=id;d.innerHTML=`<select data-f="cal" onchange="calcLamina()">${getLaminaOptionsShort()}</select><input type="number" min="0" step="1" placeholder="Ancho cm" oninput="calcLamina()" title="Ancho del recorte en cm"><input type="number" min="0" step="1" placeholder="Largo cm" oninput="calcLamina()" title="Largo del recorte en cm"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Peso kg" title="Calculado automáticamente"><input type="number" readonly style="background:var(--bg);color:var(--text2)" placeholder="Ahorro $"><select data-f="fp" onchange="calcLamina()" title="¿Sobró de una pieza fuera de programa?"><option value="">En programa</option><option value="Prototipo">Fuera de prog.: Prototipo</option><option value="Vacuna">Fuera de prog.: Vacuna</option><option value="Otro">Fuera de prog.: Otro</option></select><button class="btn-del" onclick="document.getElementById('${id}').remove();calcLamina()">×</button>`;document.getElementById('lam-recortes-list').appendChild(d);calcLamina();if(!skipPermCheck)apFocus(d);}
 // ── BORRADOR DE LÁMINA (localStorage) ──
@@ -5864,7 +5890,8 @@ function aprovMakeTubDay(fecha,raw){
     (r.recortesDetalle||[]).forEach(x=>rec.push(x));
     (r.tramosDetalle||[]).forEach(x=>{
       if(!x||!x.tipo) return; const q=Number(x.cant)||0; if(!(q>0)) return;
-      let o=tmap[x.tipo]; if(!o){ o=tmap[x.tipo]={tipo:x.tipo,cant:0,tc:0,re:0,pesoTotal:0,by:{}}; tord.push(o); }
+      const tk=tubCanon(x.tipo);
+      let o=tmap[tk]; if(!o){ o=tmap[tk]={tipo:tk,cant:0,tc:0,re:0,pesoTotal:0,by:{}}; tord.push(o); }
       o.cant+=q; o.pesoTotal+=Number(x.pesoTotal)||0;
       o.tc+=(x.tc!=null&&x.tc!=='')?(Number(x.tc)||0):q; o.re+=Number(x.re)||0;
       o.by[r.maquina]=(o.by[r.maquina]||0)+q;
@@ -5905,7 +5932,7 @@ const APROV_INPUT="width:100%;max-width:110px;font-size:12px;font-family:'IBM Pl
 function aprovItems(r){
   const raw = r.tipo==='lamina'
     ? (r.hojasDetalle||[]).map(h=>({key:h.cal,kind:'cal',real:Number(h.hojas)||0,ev:h.origen==='eventualidad'?(Number(h.hojas)||0):0}))
-    : (r.tramosDetalle||[]).map(t=>({key:t.tipo,kind:'tipo',real:Number(t.cant)||0,tc:Number(t.tc)||0,re:Number(t.re)||0,by:t.by||null}));
+    : (r.tramosDetalle||[]).map(t=>({key:tubCanon(t.tipo),kind:'tipo',real:Number(t.cant)||0,tc:Number(t.tc)||0,re:Number(t.re)||0,by:t.by||null}));
   const map={}, out=[];
   raw.forEach(it=>{
     if(!it.key) return;
@@ -6185,7 +6212,7 @@ function recalcAprovDetail(id){
 function aprovExtraOptions(id){
   const rec=findAprov(id); if(!rec) return [];
   const present=new Set(Array.from(document.querySelectorAll('.explosion-cal-input-'+id)).filter(i=>!i.closest('[data-removed]')).map(i=>i.dataset.key));
-  return (rec.tipo==='lamina'?laminas.map(l=>l.cal):tubulares.map(t=>t.tipo)).filter(k=>!present.has(k));
+  return (rec.tipo==='lamina'?laminas.map(l=>l.cal):tubSorted().map(t=>t.tipo)).filter(k=>!present.has(k));
 }
 function aprovCostoDe(rec,key){ const cfg=rec.tipo==='lamina'?getLaminaByCal(key):getTubularByTipo(key); return (cfg&&cfg.costo)||0; }
 // Agrega un renglón para material que venía en la explosión y no se consumió
@@ -6254,7 +6281,7 @@ function addLegacyRow(id){
   const rec=findAprov(id); if(!rec) return;
   const wrap=document.getElementById('legacy-rows-'+id); if(!wrap) return;
   const isLam=rec.tipo==='lamina';
-  const opts=(isLam?laminas.map(l=>l.cal):tubulares.map(t=>t.tipo)).map(v=>`<option value="${v}">${v}</option>`).join('');
+  const opts=(isLam?laminas.map(l=>l.cal):tubSorted().map(t=>t.tipo)).map(v=>`<option value="${v}">${v}</option>`).join('');
   const d=document.createElement('div');
   d.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:6px';
   d.innerHTML=`<select class="legacy-key-${id}" onchange="recalcLegacy('${id}')" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text)">${opts}</select>
@@ -6356,7 +6383,8 @@ function tubTotalsData(recs){
     (r.tramosDetalle||[]).forEach(x=>{
       const q=Number(x&&x.cant)||0; if(!x||!x.tipo||!(q>0)) return;
       mset.add(r.maquina);
-      const o=map[x.tipo]||(map[x.tipo]={tipo:x.tipo,by:{},total:0});
+      const tk=tubCanon(x.tipo);
+      const o=map[tk]||(map[tk]={tipo:tk,by:{},total:0});
       o.by[r.maquina]=(o.by[r.maquina]||0)+q; o.total+=q; total+=q;
       const cfg=getTubularByTipo(x.tipo); kg+=q*((cfg&&cfg.peso)||0);
     });
@@ -6471,7 +6499,7 @@ function rtApData(kind,fechas){
   ents.sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
   const mat={}, order=[]; let pz=0,cons=0,kg=0;
   ents.forEach(e=>{
-    const key=(kind==='lam'?e.calibre:e.tubular)||'(sin material)';
+    const key=(kind==='lam'?e.calibre:tubCanon(e.tubular))||'(sin material)';
     const o=mat[key]||(mat[key]={key,pzas:0,cons:0,kg:0}); if(!o.pzas&&!o.cons) order.push(o);
     o.pzas+=Number(e.nPz)||0; o.cons+=Number(e.consumo)||0; o.kg+=Number(e.kg)||0;
     pz+=Number(e.nPz)||0; cons+=Number(e.consumo)||0; kg+=Number(e.kg)||0;
@@ -7436,12 +7464,117 @@ function renderConfig(){
 function renderLamConfig(){
   document.getElementById('lam-config-list').innerHTML=laminas.map((l,i)=>`<div class="mat-row mat-row-lam"><div class="mat-row-label">${l.cal}</div><input type="text" value="${l.sku||''}" placeholder="SKU" onchange="laminas[${i}].sku=this.value.trim();matEdit('lamina',${i})"><input type="number" value="${l.esp}" step="0.001" onchange="laminas[${i}].esp=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.peso}" step="0.001" onchange="laminas[${i}].peso=parseFloat(this.value)||0;matEdit('lamina',${i})"><input type="number" value="${l.costo}" step="0.01" onchange="laminas[${i}].costo=parseFloat(this.value)||0;matEdit('lamina',${i})"><button class="btn-del" onclick="matDelete('lamina',${i})" title="Eliminar">×</button></div>`).join('');
 }
+// SKU que aparecen una sola vez en el Concentrado del programa para tubulares que no estaban en el catálogo (el peso y el costo se capturan a mano)
+const TUB_SKU_HINTS={'tubo 1 1/4 in':'10508017','tubo mofle 2" cal.18':'10508040','tubo mofle 3" cal18':'10509216','3 x 3 cal. 14':'10509202','3 x 2 cal.14':'10509217'};
+// Nombre limpio para el catálogo a partir del que viene escrito en un programa («2 X 2 Cal. 14» → «Tubular 2 x 2 Cal 14»)
+function tubCleanName(raw){
+  let t=String(raw||'').replace(/\s+/g,' ').trim();
+  if(/^tubo\b/i.test(t)) return t.charAt(0).toUpperCase()+t.slice(1).toLowerCase().replace(/\bmofle\b/,'Mofle').replace(/\bcal\.?\s*/i,'Cal ').replace(/\s+/g,' ').trim();
+  t=t.replace(/\s*[x×]\s*/gi,' x ').replace(/\bcal\.?\s*/i,'Cal ').replace(/\s+/g,' ').trim();
+  return /^tubular\b/i.test(t)?t:'Tubular '+t;
+}
+// Qué tubulares aparecen en programas, registros y retrabajo pero no están en el catálogo, y cuáles están repetidos
+function tubAuditData(){
+  const used={};
+  const add=(name,src)=>{
+    const n=String(name==null?'':name).trim();
+    if(!n||n.charAt(0)==='#'||/^[\d.,]+$/.test(n)||/turno/i.test(n)||n.length>60) return;
+    if(tubulares.some(t=>t.tipo===n)||tubMatchCatalog(n)||getTubularByTipo(n)) return;
+    const o=used[n]||(used[n]={name:n,n:0,srcs:{}}); o.n++; o.srcs[src]=(o.srcs[src]||0)+1;
+  };
+  (programaDia||[]).forEach(rec=>{
+    if(!rec||!progIsTubRec(rec)) return;
+    const ti=progTubColIdx(rec); if(ti<0) return;
+    (rec.rows||[]).slice(1).forEach(row=>add(row[ti],'Programa '+rec.machine));
+  });
+  (aprovRecords||[]).forEach(r=>{ if(!r||r.tipo!=='tubular') return;
+    (r.tramosDetalle||[]).forEach(x=>add(x&&x.tipo,'Aprovechamiento'));
+    (r.recortesDetalle||[]).forEach(x=>add(x&&x.tipo,'Aprovechamiento')); });
+  (horaRecords||[]).forEach(r=>{ if(!r||!['GW1','GW2'].includes(r.machine)) return;
+    safeParse(r.franjas,[]).forEach(f=>{ if(f&&Array.isArray(f.retrabajo)) f.retrabajo.forEach(x=>add(x&&x.tubular,'Retrabajo')); }); });
+  const faltan=Object.values(used).sort((a,b)=>b.n-a.n||a.name.localeCompare(b.name)).map(o=>{
+    const clean=tubCleanName(o.name), hint=TUB_SKU_HINTS[o.name.toLowerCase()]||TUB_SKU_HINTS[o.name.toLowerCase().replace(/\s+/g,' ')]||'';
+    // posible coincidencia por error de captura (distancia de edición pequeña)
+    const nk=tubNormName(o.name); let near=null, best=3;
+    const calOf=x=>(String(x).match(/cal(\d+)/)||[])[1]||'';
+    tubulares.forEach(t=>{ const tn=tubNormName(t.tipo); if(calOf(tn)!==calOf(nk)) return; const d=tubLev(tn,nk); if(d<best){ best=d; near=t; } });   // mismo calibre: un 2 x 2 Cal 14 no es un 2 x 2 Cal 18
+    return {name:o.name,n:o.n,srcs:Object.keys(o.srcs).map(k=>k+' ×'+o.srcs[k]).join(' · '),clean,sku:hint,near:near&&best<=2?near.tipo:''};
+  });
+  const g={}; tubulares.forEach((t,i)=>{ const k='n:'+tubNormName(t.tipo); (g[k]=g[k]||[]).push(i); if(String(t.sku||'').trim()){ const k2='s:'+String(t.sku).trim(); (g[k2]=g[k2]||[]).push(i); } });
+  const dupes=Object.keys(g).filter(k=>g[k].length>1).map(k=>({by:k.charAt(0)==='s'?'SKU':'medida',idx:g[k]}));
+  return {faltan,dupes};
+}
+function tubLev(a,b){ if(a===b) return 0; if(Math.abs(a.length-b.length)>2) return 9; const m=[]; for(let i=0;i<=a.length;i++){ m[i]=[i]; } for(let j=1;j<=b.length;j++) m[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return m[a.length][b.length]; }
+function renderTubAudit(){
+  const el=document.getElementById('tub-audit'); if(!el) return;
+  const d=tubAuditData(), e=escH;
+  const nd=new Set(); d.dupes.forEach(x=>x.idx.forEach(i=>nd.add(i)));
+  let h=`<div class="tub-audit"><h4>Revisión del catálogo <span class="ap-badge">${tubulares.length} tubulares</span><span class="ap-badge" style="${nd.size?'color:var(--amber)':''}">${nd.size} repetido${nd.size===1?'':'s'}</span><span class="ap-badge" style="${d.faltan.length?'color:var(--amber)':''}">${d.faltan.length} usado${d.faltan.length===1?'':'s'} y sin catálogo</span></h4>`;
+  if(!nd.size && !d.faltan.length) h+=`<div style="color:var(--green)">✓ Sin repetidos y todos los tubulares de los programas y registros están en el catálogo.</div>`;
+  if(nd.size) h+=`<div style="margin-bottom:6px">Los <b>repetidos</b> están marcados en la lista con el botón «Unificar» (deja uno solo y los registros anteriores siguen sumando bajo ese nombre).</div>`;
+  if(d.faltan.length){
+    h+=`<div style="margin:4px 0">Aparecen en programas o registros, pero <b>no están en el catálogo</b>, así que al operador no le salen para elegir:</div>`;
+    d.faltan.forEach((x,i)=>{
+      h+=`<div class="ta-row"><b style="font-weight:600">${e(x.name)}</b><span style="color:var(--text3)">${x.n} ${x.n===1?'vez':'veces'} · ${e(x.srcs)}</span>${x.near?`<span style="color:var(--amber)">¿será «${e(x.near)}»? Puede ser un error de captura en el archivo.</span>`:''}<button type="button" onclick="tubAuditAdd(${i})">+ Agregar al catálogo</button></div>`;
+    });
+  }
+  el.innerHTML=h+'</div>';
+  el._faltan=d.faltan;
+}
+function tubAuditAdd(i){
+  const el=document.getElementById('tub-audit'), x=el&&el._faltan&&el._faltan[i]; if(!x) return;
+  document.getElementById('new-tub-tipo').value=x.clean; document.getElementById('new-tub-sku').value=x.sku||''; document.getElementById('new-tub-peso').value=''; document.getElementById('new-tub-costo').value='';
+  const m=document.getElementById('tub-config-msg'); if(m){ m.textContent='Completa el SKU y el peso/tramo, revisa el nombre y presiona «Agregar».'; m.style.color='var(--amber)'; }
+  const f=document.getElementById('new-tub-sku'); if(f){ try{ f.scrollIntoView({block:'center'}); }catch(e){} f.focus(); }
+}
 function renderTubConfig(){
-  const el=document.getElementById('tub-config-list');if(!tubulares.length){el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Sin tubulares.</div>';return;}
-  el.innerHTML=tubulares.map((t,i)=>`<div class="mat-row mat-row-tub"><div class="mat-row-label" style="font-size:12px">${t.tipo}</div><input type="text" value="${t.sku||''}" placeholder="SKU" onchange="tubulares[${i}].sku=this.value.trim();matEdit('tubular',${i})"><input type="number" value="${t.peso}" step="0.01" onchange="tubulares[${i}].peso=parseFloat(this.value)||0;matEdit('tubular',${i})"><input type="number" value="${t.costo}" step="0.01" onchange="tubulares[${i}].costo=parseFloat(this.value)||0;matEdit('tubular',${i})"><button class="btn-del" onclick="matDelete('tubular',${i})" title="Eliminar">×</button></div>`).join('');
+  const el=document.getElementById('tub-config-list'); if(!el) return;
+  try{ renderTubAudit(); }catch(e){ console.warn('renderTubAudit',e); }
+  if(!tubulares.length){ el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:.5rem 0">Sin tubulares.</div>';return; }
+  const ea=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const order=tubulares.map((t,i)=>i).sort((a,b)=>{ const k=t=>String(t.tipo||'').replace(/^tub(?:ular|o)\s+/i,''); return k(tubulares[a]).localeCompare(k(tubulares[b]),'es',{numeric:true}); });
+  const byNorm={}, bySku={}; tubulares.forEach((t,i)=>{ (byNorm[tubNormName(t.tipo)]=byNorm[tubNormName(t.tipo)]||[]).push(i); const s=String(t.sku||'').trim(); if(s) (bySku[s]=bySku[s]||[]).push(i); });
+  el.innerHTML=order.map(i=>{
+    const t=tubulares[i];
+    const same=(byNorm[tubNormName(t.tipo)]||[]).filter(j=>j!==i), sameSku=(bySku[String(t.sku||'').trim()]||[]).filter(j=>j!==i);
+    const other=same.length?same[0]:(sameSku.length?sameSku[0]:-1);
+    const why=same.length?'la misma medida':'el mismo SKU';
+    return `<div class="mat-row mat-row-tub"><input class="mat-name" type="text" value="${ea(t.tipo)}" title="Nombre del tubular (editable)" onchange="renameTub(${i},this)"><input type="text" value="${ea(t.sku||'')}" placeholder="SKU" onchange="tubulares[${i}].sku=this.value.trim();matEdit('tubular',${i});renderTubAudit()"><input type="number" value="${t.peso}" step="0.001" onchange="tubulares[${i}].peso=parseFloat(this.value)||0;matEdit('tubular',${i})"><input type="number" value="${t.costo}" step="0.01" onchange="tubulares[${i}].costo=parseFloat(this.value)||0;matEdit('tubular',${i})"><button class="btn-del" onclick="matDelete('tubular',${i})" title="Eliminar">×</button>${other>=0?`<div class="mat-dup">⚠ Repetido: tiene ${why} que «${ea(tubulares[other].tipo)}»${tubulares[other].sku?' ['+ea(tubulares[other].sku)+']':''}<button type="button" onclick="tubMerge(${i},${other})">Unificar en «${ea(tubulares[other].tipo)}»</button></div>`:''}</div>`;
+  }).join('');
+}
+// Renombrar un tubular: el nombre anterior queda apuntando al nuevo, así lo ya registrado sigue sumando en un solo renglón
+function renameTub(i,inp){
+  const it=tubulares[i]; if(!it) return;
+  const old=it.tipo, nn=String(inp.value||'').replace(/\s+/g,' ').trim();
+  const msg=document.getElementById('tub-config-msg'), say=(t,c)=>{ if(msg){ msg.textContent=t; msg.style.color=c||'var(--amber)'; setTimeout(()=>{ if(msg.textContent===t) msg.textContent=''; },5000); } };
+  if(!nn){ inp.value=old; say('⚠ El nombre no puede quedar vacío.'); return; }
+  if(nn===old){ inp.value=old; return; }
+  if(tubulares.some((t,j)=>j!==i&&t.tipo===nn)){ inp.value=old; say('⚠ Ya existe un tubular con ese nombre.'); return; }
+  const dup=tubulares.find((t,j)=>j!==i&&tubNormName(t.tipo)===tubNormName(nn));
+  if(dup && !confirm('«'+dup.tipo+'» ya tiene la misma medida.\n\n¿Cambiar el nombre de todos modos? (Si es el mismo tubular, mejor usa «Unificar».)')){ inp.value=old; return; }
+  const prev=Object.assign({},it);
+  it.tipo=nn;
+  matPublish('tubular',prev,true,nn);     // lápida del nombre anterior con alias al nuevo
+  matPublish('tubular',it,false);
+  renderTubConfig(); try{ refreshMaterialSelects(); }catch(e){}
+  say('✓ Nombre actualizado y publicado para todos los dispositivos.','var(--green)');
+}
+// Unificar dos repetidos: se quita el primero y su nombre pasa a apuntar al que se conserva
+function tubMerge(i,j){
+  const a=tubulares[i], b=tubulares[j]; if(!a||!b||i===j) return;
+  if(!confirm('Se quita «'+a.tipo+'» y se conserva «'+b.tipo+'».\n\nLos programas y registros que usaban «'+a.tipo+'» seguirán sumando en «'+b.tipo+'». Se aplica en TODOS los dispositivos.')) return;
+  if(!String(b.sku||'').trim() && String(a.sku||'').trim()) b.sku=a.sku;
+  if(!(b.peso>0) && a.peso>0) b.peso=a.peso;
+  if(!(b.costo>0) && a.costo>0) b.costo=a.costo;
+  tubulares.splice(i,1);
+  matPublish('tubular',a,true,b.tipo);
+  matPublish('tubular',b,false);
+  renderTubConfig(); try{ refreshMaterialSelects(); }catch(e){}
+  const msg=document.getElementById('tub-config-msg'); if(msg){ msg.textContent='✓ Unificados.'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',4000); }
 }
 function addLamConfig(){const cal=document.getElementById('new-lam-cal').value.trim();const sku=document.getElementById('new-lam-sku').value.trim();const esp=parseFloat(document.getElementById('new-lam-esp').value)||0;const peso=parseFloat(document.getElementById('new-lam-peso').value)||0;const costo=parseFloat(document.getElementById('new-lam-costo').value)||0;const msg=document.getElementById('lam-config-msg');if(!cal){msg.textContent='⚠ Ingresa el calibre.';msg.style.color='var(--amber)';return;}if(laminas.find(l=>l.cal===cal)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}const nl={cal,sku,esp,peso,costo};laminas.push(nl);matPublish('lamina',nl,false);renderLamConfig();['new-lam-cal','new-lam-sku','new-lam-esp','new-lam-peso','new-lam-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado y publicado para todos los dispositivos.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',4000);}
-function addTubConfig(){const tipo=document.getElementById('new-tub-tipo').value.trim();const sku=document.getElementById('new-tub-sku').value.trim();const peso=parseFloat(document.getElementById('new-tub-peso').value)||0;const costo=parseFloat(document.getElementById('new-tub-costo').value)||0;const msg=document.getElementById('tub-config-msg');if(!tipo){msg.textContent='⚠ Ingresa el tipo.';msg.style.color='var(--amber)';return;}if(tubulares.find(t=>t.tipo===tipo)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}const nt={tipo,sku,peso,costo};tubulares.push(nt);matPublish('tubular',nt,false);renderTubConfig();['new-tub-tipo','new-tub-sku','new-tub-peso','new-tub-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado y publicado para todos los dispositivos.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',4000);}
+function addTubConfig(){const tipo=document.getElementById('new-tub-tipo').value.trim();const sku=document.getElementById('new-tub-sku').value.trim();const peso=parseFloat(document.getElementById('new-tub-peso').value)||0;const costo=parseFloat(document.getElementById('new-tub-costo').value)||0;const msg=document.getElementById('tub-config-msg');if(!tipo){msg.textContent='⚠ Ingresa el tipo.';msg.style.color='var(--amber)';return;}if(tubulares.find(t=>t.tipo===tipo)){msg.textContent='⚠ Ya existe.';msg.style.color='var(--amber)';return;}const dupT=tubulares.find(t=>tubNormName(t.tipo)===tubNormName(tipo))||(sku?tubulares.find(t=>String(t.sku||'').trim()===sku):null);if(dupT){msg.textContent='⚠ Ya existe «'+dupT.tipo+'» con esa medida o SKU: edítalo en la lista en lugar de agregar otro.';msg.style.color='var(--amber)';return;}const nt={tipo,sku,peso,costo};tubulares.push(nt);matPublish('tubular',nt,false);renderTubConfig();['new-tub-tipo','new-tub-sku','new-tub-peso','new-tub-costo'].forEach(id=>document.getElementById(id).value='');msg.textContent='✓ Agregado y publicado para todos los dispositivos.';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',4000);}
 // ── CATÁLOGO DE MATERIALES COMPARTIDO (calibres de lámina y tipos de tubular) ──
 // Antes el catálogo vivía solo en el navegador de quien lo editaba, así que un calibre nuevo
 // nunca llegaba al operador. Ahora cada material es una fila de la hoja "Materiales_Config"
@@ -7456,15 +7589,21 @@ function matKey(kind,item){ return kind==='lamina'?item.cal:item.tipo; }
 function matId(kind,item){ return (kind==='lamina'?'lam:':'tub:')+matKey(kind,item); }
 function matSig(kind,item){ return JSON.stringify([item.sku||'',kind==='lamina'?(+item.esp||0):0,+item.peso||0,+item.costo||0]); }
 function matTs(v){ const t=v?new Date(v).getTime():0; return isNaN(t)?0:t; }
-function matRow(kind,item,deleted,when){
-  return {id:matId(kind,item),kind,key:matKey(kind,item),sku:String(item.sku||''),
+function matRow(kind,item,deleted,when,alias){
+  const r={id:matId(kind,item),kind,key:matKey(kind,item),sku:String(item.sku||''),
     esp:kind==='lamina'?(+item.esp||0):'',peso:+item.peso||0,costo:+item.costo||0,
     deleted:!!deleted,updatedAt:when||new Date().toISOString()};
+  r.alias=(deleted&&alias)?String(alias):'';   // al renombrar o unificar, el nombre anterior apunta al vigente
+  return r;
 }
 function matPersist(kind){ try{ save(kind==='lamina'?'laminas':'tubulares'); }catch(e){} }
-function matPublish(kind,item,deleted){
+function matPublish(kind,item,deleted,alias){
   if(!item) return;
-  const row=matRow(kind,item,deleted);
+  const row=matRow(kind,item,deleted,null,alias);
+  if(kind==='tubular'){
+    if(deleted&&alias){ matAlias[row.key]=alias; } else if(!deleted&&matAlias[row.key]){ delete matAlias[row.key]; }
+    try{ localStorage.setItem('oee_mat_alias_v1',JSON.stringify(matAlias)); }catch(e){}
+  }
   item.updatedAt=row.updatedAt; item._sig=matSig(kind,item);
   if(deleted){ matTombs[row.id]=row.updatedAt; saveMatTombs(); } else if(matTombs[row.id]){ delete matTombs[row.id]; saveMatTombs(); }
   matRemoteIds.add(row.id);
@@ -7506,11 +7645,13 @@ function applyMaterialesConfig(rows){
     const idx=list.findIndex(x=>x[kf]===key); const local=idx>=0?list[idx]:null;
     const tR=matTs(r.updatedAt);
     if(del){
+      if(kind==='tubular' && r.alias && matAlias[key]!==String(r.alias)){ matAlias[key]=String(r.alias); try{ localStorage.setItem('oee_mat_alias_v1',JSON.stringify(matAlias)); }catch(e){} changed=true; }
       if(!matTombs[id] || matTs(matTombs[id])<tR){ matTombs[id]=r.updatedAt||new Date(0).toISOString(); changed=true; }
       if(local && tR>=matTs(local.updatedAt)){ list.splice(idx,1); changed=true; }
       return;
     }
     if(matTombs[id]){ if(matTs(matTombs[id])>tR) return; delete matTombs[id]; changed=true; }
+    if(kind==='tubular' && matAlias[key]){ delete matAlias[key]; try{ localStorage.setItem('oee_mat_alias_v1',JSON.stringify(matAlias)); }catch(e){} }
     const fields={sku:String(r.sku||''),peso:parseFloat(r.peso)||0,costo:parseFloat(r.costo)||0};
     if(kind==='lamina') fields.esp=parseFloat(r.esp)||0;
     if(!local){
@@ -8394,7 +8535,7 @@ function addRetrabajoRow(i,data){
   d.dataset.op=(data&&data.operador)||(currentUser&&currentUser.name)||'';
   const f=(l,inner)=>`<label class="ped-f"><span>${l}</span>${inner}</label>`;
   const T=`data-touch="hora-rt-${i}" oninput="rtChanged(${i})"`;
-  const tubOpts='<option value="">Selecciona…</option>'+tubulares.map(t=>`<option value="${escH(t.tipo)}">${escH(t.tipo)}</option>`).join('');
+  const tubOpts=tubOptionsHtml('',true,'Selecciona…');
   const causaOpts='<option value="">Selecciona causa…</option>'+RETRABAJO_CAUSAS.concat([RT_OTRO]).map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
   const calOpts='<option value="">Selecciona…</option>'+laminas.map(l=>`<option value="${escH(l.cal)}">${escH(l.cal)}</option>`).join('');
   d.innerHTML=isLam?`<div class="rt-l1 rt-l1-lam">
