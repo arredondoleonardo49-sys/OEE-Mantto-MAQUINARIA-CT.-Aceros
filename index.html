@@ -1256,7 +1256,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
       <div class="ap-card" id="lam-total-card" style="margin-bottom:12px">
         <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamTotCard()"><span id="lam-total-caret" style="width:12px">▾</span> Hojas cortadas — Laser de Cama <span id="lam-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px"><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="lamReporteDescargar(false)" title="Descarga el reporte de consumo de lámina del día elegido">⬇ Reporte de consumo · día</button><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="lamReporteDescargar(true)" title="Descarga el reporte de consumo de lámina de la semana que contiene el día elegido">⬇ Reporte de consumo · semana</button><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid rgba(74,158,255,.4);background:rgba(74,158,255,.1);color:var(--blue)" onclick="lamReporteDescargar('comp')" title="Un solo PDF: reporte semanal + el reporte diario de cada día de esa semana">⬇ Compilado · semana + días</button></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px"><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="lamReporteDescargar(false)" title="Descarga el reporte de consumo de lámina del día elegido">⬇ Reporte de consumo · día</button><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid rgba(74,158,255,.4);background:rgba(74,158,255,.1);color:var(--blue)" onclick="lamReporteDescargar('comp')" title="Un solo PDF: reporte semanal + el reporte diario de cada día de esa semana">⬇ Compilado · semana + días</button></div>
         <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Se toma del <b>consumo real</b> que el operador anota en <b>Registrar turno › Programa del día</b> (Laser de Cama): hojas completas por calibre, más lo que se registra abajo en «Registro de láminas — sin programa».</div>
         <div id="lam-total-body"></div>
       </div>
@@ -1320,7 +1320,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
   <div class="content">
-    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div><div class="tab" onclick="repSetMode('lamdia',this)">Lámina · diario</div><div class="tab" onclick="repSetMode('lamsem',this)">Lámina · semanal</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Lámina · semana + días</div></div>
+    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div><div class="tab" onclick="repSetMode('lamdia',this)">Lámina · diario</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Lámina · semana + días</div></div>
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
       <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
@@ -7472,14 +7472,24 @@ function buildLaminaReportHtml(weekly,key){
     const body=D.rows.map(r=>`<tr><td><b>${esc(r.cal)}</b></td>${perDay.map(d=>{ const x=d.rows.find(y=>y.cal===r.cal); return `<td class="n">${x?f2(x.total):'—'}</td>`; }).join('')}<td class="n">${r.prog?f2(r.prog):'—'}</td><td class="n">${r.ev?f2(r.ev):'—'}</td><td class="n"><b>${f2(r.total)}</b></td><td class="n">${r.kg>0?f2(r.kg):'—'}</td></tr>`).join('');
     porCal=`<table><thead><tr><th>Calibre</th>${heads}<th class="n">Programa</th><th class="n">Eventual.</th><th class="n">Total hojas</th><th class="n">Peso (kg)</th></tr></thead><tbody>${body}<tr class="tot"><td>Total</td>${perDay.map(d=>`<td class="n">${d.total?f2(d.total):'—'}</td>`).join('')}<td class="n">${f2(D.prog)}</td><td class="n">${f2(D.ev)}</td><td class="n">${f2(D.total)}</td><td class="n">${f2(D.kg)}</td></tr></tbody></table><div class="muted" style="margin-top:3px">Cada día: hojas registradas por calibre. Programa = consumo del programa de corte · Eventual. = láminas que no estaban en la explosión.</div>`;
   }
-  // 2) Detalle de registros
-  const lines=[];
-  recs.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.updatedAt||'').localeCompare(String(b.updatedAt||''))).forEach(r=>(r.hojasDetalle||[]).forEach(h=>{
-    const q=Number(h&&h.hojas)||0; if(!h||!h.cal||!(q>0)) return;
-    const cfg=getLaminaByCal(h.cal);
-    lines.push({fecha:r.fecha,hora:hh(r.updatedAt),orig:isProg(r)?'Programa del día':'Registro manual',maq:r.maquina||'',op:r.op||'',cal:h.cal,q,ev:h.origen==='eventualidad',kg:q*((cfg&&cfg.peso)||0)});
-  }));
-  const detalle=lines.length?`<table><thead><tr>${weekly?'<th>Día</th>':''}<th>Hora</th><th>Máquina</th><th>Fuente</th><th>Registró</th><th>Calibre</th><th class="n">Hojas</th><th>Tipo</th><th class="n">Peso (kg)</th></tr></thead><tbody>${lines.map(l=>`<tr>${weekly?`<td>${esc(dayLabel(l.fecha))}</td>`:''}<td>${esc(l.hora)}</td><td>${esc(l.maq)}</td><td>${esc(l.orig)}</td><td>${esc(l.op)}</td><td><b>${esc(l.cal)}</b></td><td class="n">${f2(l.q)}</td><td>${l.ev?'<span class="warn">Eventualidad</span>':'Programa'}</td><td class="n">${l.kg>0?f2(l.kg):'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="line muted">Sin registros.</div>';
+  // 2) Recortes de recuperación (mismos datos que «Recortes recuperados» de Aprovechamiento › Lámina)
+  let recort='';
+  try{
+    const map={}, order=[];
+    recs.forEach(r=>(r.recortesDetalle||[]).forEach(x=>{
+      if(!x||!x.cal) return;
+      const I=aprovRecInfo(r,x), k=[x.cal,x.ancho,x.largo,x.fueraProg||'',I.cuenta?1:0].join('|');
+      let o=map[k]; if(!o){ o=map[k]={cal:x.cal,ancho:Number(x.ancho)||0,largo:Number(x.largo)||0,fp:x.fueraProg||'',n:0,pct:I.pct,eqP:I.eqP,cuenta:I.cuenta,ahorro:0}; order.push(o); }
+      o.n++; if(I.cuenta) o.ahorro+=Number(x.ahorro)||0;
+    }));
+    if(order.length){
+      order.sort((a,b)=>String(a.cal).localeCompare(String(b.cal))||b.pct-a.pct);
+      const nTot=order.reduce((a,o)=>a+o.n,0), eqAh=order.filter(o=>o.cuenta).reduce((a,o)=>a+o.n*o.eqP,0), eqEx=order.filter(o=>!o.cuenta).reduce((a,o)=>a+o.n*o.eqP,0), ah=order.reduce((a,o)=>a+o.ahorro,0);
+      recort=`<div class="ctline"><span>Recortes: <b>${nTot}</b></span><span>Recuperado: <b>${f2(Math.round(eqAh*1000)/1000)} láminas</b></span>${eqEx>0?`<span>Explosionado: <b>${f2(Math.round(eqEx*1000)/1000)} láminas</b></span>`:''}<span>Ahorro por recuperación: <b class="pos">${money(ah)}</b></span></div>
+      <table><thead><tr><th>Calibre</th><th>Medidas cm</th><th class="n">Cant.</th><th class="n">% de lámina</th><th class="n">Equiv. (lám.)</th><th>Resultado</th><th class="n">Ahorro ($)</th><th>Destino</th></tr></thead><tbody>${order.map(o=>`<tr><td><b>${esc(o.cal)}</b></td><td>${f2(o.ancho)} × ${f2(o.largo)}</td><td class="n">${o.n}</td><td class="n">${o.pct}%</td><td class="n">${f2(Math.round(o.n*o.eqP*1000)/1000)}</td><td>${o.cuenta?'<span class="pos">Recuperación</span>':'<span class="warn">Explosionado</span>'}</td><td class="n">${o.cuenta?money(o.ahorro):'—'}</td><td>${o.fp?esc('Fuera de prog.: '+o.fp):'En programa'}</td></tr>`).join('')}</tbody></table>
+      <div class="muted" style="margin-top:3px">Recuperación = recorte menor a ${RECORTE_UMBRAL}% de una lámina, que se cuenta como ahorro. Explosionado = recorte de ${RECORTE_UMBRAL}% o más: ya forma parte del material explosionado y no suma ahorro.</div>`;
+    }
+  }catch(e){ console.warn('rep lam recortes',e); }
   // 3) Comparativo contra la explosión (por máquina)
   let expl='';
   try{
@@ -7528,7 +7538,7 @@ ${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
   <div class="kpi"><div class="l">${weekly?'Días con consumo':'Registros'}</div><div class="v">${weekly?diasCon:D.n}</div><div class="s">${weekly?`de ${fechas.length} días del periodo`:'del programa y manuales'}</div></div>
 </div>
 <section><h2>Consumo por calibre <small>${weekly?'lunes a viernes':'hojas completas'}</small></h2>${porCal}</section>
-${D.rows.length?`<section style="page-break-inside:auto"><h2>Detalle de registros</h2>${detalle}</section>`:''}
+${recort?`<section style="page-break-inside:auto"><h2>Recortes de recuperación <small>${weekly?'de la semana':'del día'}</small></h2>${recort}</section>`:''}
 ${expl?`<section style="page-break-inside:auto"><h2>Consumo contra explosión</h2>${expl}</section>`:''}
 ${extra}
 ${sinDet?`<div class="line"><span class="warn">${sinDet} registro${sinDet===1?'':'s'} sin hojas capturadas en el periodo.</span></div>`:''}
