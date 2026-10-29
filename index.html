@@ -1256,6 +1256,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
       <div class="ap-card" id="lam-total-card" style="margin-bottom:12px">
         <div class="ap-card-h" style="cursor:pointer" onclick="toggleLamTotCard()"><span id="lam-total-caret" style="width:12px">▾</span> Hojas cortadas — Laser de Cama <span id="lam-total-fecha" style="margin-left:auto;font-weight:500;color:var(--text3);font-size:11px"></span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 8px"><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="lamReporteDescargar(false)" title="Descarga el reporte de consumo de lámina del día elegido">⬇ Reporte de consumo · día</button><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="lamReporteDescargar(true)" title="Descarga el reporte de consumo de lámina de la semana que contiene el día elegido">⬇ Reporte de consumo · semana</button><button type="button" class="btn" style="font-size:11px;padding:4px 10px;border:1px solid rgba(74,158,255,.4);background:rgba(74,158,255,.1);color:var(--blue)" onclick="lamReporteDescargar('comp')" title="Un solo PDF: reporte semanal + el reporte diario de cada día de esa semana">⬇ Compilado · semana + días</button></div>
         <div style="font-size:11px;color:var(--text3);margin:-2px 0 8px">Se toma del <b>consumo real</b> que el operador anota en <b>Registrar turno › Programa del día</b> (Laser de Cama): hojas completas por calibre, más lo que se registra abajo en «Registro de láminas — sin programa».</div>
         <div id="lam-total-body"></div>
       </div>
@@ -1319,7 +1320,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
   <div class="content">
-    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div></div>
+    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div><div class="tab" onclick="repSetMode('lamdia',this)">Lámina · diario</div><div class="tab" onclick="repSetMode('lamsem',this)">Lámina · semanal</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Lámina · semana + días</div></div>
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
       <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
@@ -6962,6 +6963,7 @@ function downloadReportPdf(html,filename){
         d.body.style.cssText='margin:0;background:#fff';
         const page=d.querySelector('.page')||d.body;
         page.style.cssText+=';width:'+W+'px;max-width:'+W+'px;margin:0;box-shadow:none;box-sizing:border-box';
+        d.querySelectorAll('.pgbreak').forEach(e=>{ e.style.cssText='height:0;margin:0;border:0'; });
         const top0=page.getBoundingClientRect().top, totalH=Math.ceil(page.scrollHeight);
         // Cortes de página solo entre renglones (nunca partiendo una fila ni dejando un título huérfano)
         const cand=[0];
@@ -6970,9 +6972,13 @@ function downloadReportPdf(html,filename){
         const bad=y=>heads.some(h=>y>h[0]+1&&y<h[1]+40);   // no cortar sobre/pegado a un encabezado de tabla
         const secTops=Array.from(page.querySelectorAll('section.rp-m')).map(e=>Math.round(e.getBoundingClientRect().top-top0));
         const MM_W=199.9, MM_H=257.4, pageH=Math.floor(W*MM_H/MM_W);
+        const forced=Array.from(page.querySelectorAll('.pgbreak')).map(e=>Math.round(e.getBoundingClientRect().top-top0));   // inicio forzado de página (compilados)
         const cuts=[0]; let y=0;
         while(y<totalH-2){
-          const lim=y+pageH; if(lim>=totalH){ cuts.push(totalH); break; }
+          const lim=y+pageH; 
+          const fc=forced.find(f=>f>y+5&&f<=lim);
+          if(fc!==undefined){ cuts.push(fc); y=fc; continue; }
+          if(lim>=totalH){ cuts.push(totalH); break; }
           let best=0; cand.forEach(c=>{ if(c>y+40&&c<=lim&&!bad(c)&&c>best) best=c; });
           if(!best) best=lim;
           // si el corte cae a pocos renglones del inicio de una máquina, la tabla completa pasa a la página siguiente
@@ -6998,9 +7004,10 @@ function downloadReportPdf(html,filename){
 function repFileName(){
   const s=repState();
   if(s.mode==='programa') return 'Programa_de_corte_'+progReporteCorteIso(s.fecha)+'.pdf';
+  if(repIsLam(s.mode)) return 'Consumo_lamina_'+(s.mode==='lamcomp'?'compilado_':s.mode==='lamsem'?'semanal_':'diario_')+repKey()+'.pdf';
   return (s.mode==='semanal'?'Reporte_semanal_'+repKey():'Reporte_diario_'+s.fecha)+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
 }
-function repDownload(){ const s=repState(); downloadReportPdf(s.mode==='programa'?buildProgramaReportHtml(s.fecha):buildProdReportHtml(s.mode,repKey(),s.ct),repFileName()); }
+function repDownload(){ downloadReportPdf(repBuildHtml(repState(),false),repFileName()); }
 function openPrintHtml(html){
   let w=null;
   try{ w=window.open('','_blank'); }catch(e){ w=null; }
@@ -7424,6 +7431,111 @@ function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
   }
   return html;
 }
+// ── Reporte individual de consumo de lámina (día y semana) ──
+// Hojas por calibre registradas en Aprovechamiento › Lámina (programa del día + registros manuales),
+// comparativo contra la explosión y, aparte, la lámina extra de retrabajo / fuera de programa (hora×hora).
+function lamReporteDescargar(weekly){
+  const fecha=document.getElementById('lam-fecha')?.value||todayStr(), key=weekly?getWeekRange(fecha).start:fecha;
+  if(weekly==='comp') return downloadReportPdf(buildLaminaCompiladoHtml(key),'Consumo_lamina_compilado_'+key+'.pdf');
+  downloadReportPdf(buildLaminaReportHtml(weekly,key),'Consumo_lamina_'+(weekly?'semanal_':'diario_')+key+'.pdf');
+}
+// Un solo archivo: el reporte semanal de lámina seguido del reporte diario de cada día de esa semana con registros
+function buildLaminaCompiladoHtml(ws){
+  const inner=h=>{ const a=h.indexOf('<div class="page">'), z=h.lastIndexOf('</div></body>'); return (a<0||z<0)?'':h.slice(a+'<div class="page">'.length,z); };
+  const sem=buildLaminaReportHtml(true,ws);
+  const dias=repLamDays(ws).filter(f=>repLamRecs([f]).length);
+  const partes=dias.map(f=>`<div class="pgbreak"></div>${inner(buildLaminaReportHtml(false,f))}`).join('');
+  const css='<style>.pgbreak{height:0;border-top:1px dashed #b8bdc9;margin:22px 0;page-break-before:always}@media print{.pgbreak{border:0;margin:0}}</style>';
+  const head=sem.slice(0,sem.indexOf('<div class="page">')).replace('</head>',css+'</head>').replace(/<title>[^<]*<\/title>/,`<title>Consumo de lámina — semana ${escH(weekLabelShort(ws))} (compilado)</title>`);
+  return head+'<div class="page">'+inner(sem)+partes+'</div></body></html>';
+}
+function repLamRecs(fechas){ const set=new Set(fechas); return aprovVisibleRecords().filter(r=>r&&r.tipo==='lamina'&&set.has(r.fecha)); }
+function repLamDays(ws){ const all=repWeekDays(ws), has=new Set(repLamRecs(all).map(r=>r.fecha)); return all.filter((f,i)=>i<5||has.has(f)); }
+function buildLaminaReportHtml(weekly,key){
+  const esc=escH, f2=fmt2, money=v=>(Number(v)<0?'-':'')+'$'+fmtMoney(Math.abs(Number(v)||0)), cl=v=>v>0.004?'pos':v<-0.004?'neg':'';
+  const quien=currentUser?currentUser.name:'', ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const fechas=weekly?repLamDays(key):[key];
+  const recs=repLamRecs(fechas);
+  const isProg=r=>r.origen==='programa'||String(r.id).indexOf('lp_')===0;
+  const D=lamTotalsData(recs);
+  const hh=t=>{ const d=new Date(t||0); return isNaN(d.getTime())||!t?'—':d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); };
+  // 1) Consumo por calibre
+  let porCal='';
+  if(!D.rows.length){
+    porCal='<div class="line muted">Sin láminas registradas en este periodo.</div>';
+  } else if(!weekly){
+    porCal=`<table><thead><tr><th>Calibre</th><th class="n">Programa</th><th class="n">Eventualidad</th><th class="n">Total hojas</th><th class="n">% del total</th><th class="n">Peso (kg)</th></tr></thead><tbody>${D.rows.map(r=>`<tr><td><b>${esc(r.cal)}</b></td><td class="n">${r.prog?f2(r.prog):'—'}</td><td class="n">${r.ev?f2(r.ev):'—'}</td><td class="n"><b>${f2(r.total)}</b></td><td class="n">${D.total>0?f2(r.total/D.total*100)+'%':'—'}</td><td class="n">${r.kg>0?f2(r.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${f2(D.prog)}</td><td class="n">${f2(D.ev)}</td><td class="n">${f2(D.total)}</td><td class="n">100%</td><td class="n">${f2(D.kg)}</td></tr></tbody></table>`;
+  } else {
+    const perDay=fechas.map(f=>lamTotalsData(recs.filter(r=>r.fecha===f)));
+    const heads=fechas.map(f=>`<th class="n">${esc(dayLabel(f))}</th>`).join('');
+    const body=D.rows.map(r=>`<tr><td><b>${esc(r.cal)}</b></td>${perDay.map(d=>{ const x=d.rows.find(y=>y.cal===r.cal); return `<td class="n">${x?f2(x.total):'—'}</td>`; }).join('')}<td class="n">${r.prog?f2(r.prog):'—'}</td><td class="n">${r.ev?f2(r.ev):'—'}</td><td class="n"><b>${f2(r.total)}</b></td><td class="n">${r.kg>0?f2(r.kg):'—'}</td></tr>`).join('');
+    porCal=`<table><thead><tr><th>Calibre</th>${heads}<th class="n">Programa</th><th class="n">Eventual.</th><th class="n">Total hojas</th><th class="n">Peso (kg)</th></tr></thead><tbody>${body}<tr class="tot"><td>Total</td>${perDay.map(d=>`<td class="n">${d.total?f2(d.total):'—'}</td>`).join('')}<td class="n">${f2(D.prog)}</td><td class="n">${f2(D.ev)}</td><td class="n">${f2(D.total)}</td><td class="n">${f2(D.kg)}</td></tr></tbody></table><div class="muted" style="margin-top:3px">Cada día: hojas registradas por calibre. Programa = consumo del programa de corte · Eventual. = láminas que no estaban en la explosión.</div>`;
+  }
+  // 2) Detalle de registros
+  const lines=[];
+  recs.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.updatedAt||'').localeCompare(String(b.updatedAt||''))).forEach(r=>(r.hojasDetalle||[]).forEach(h=>{
+    const q=Number(h&&h.hojas)||0; if(!h||!h.cal||!(q>0)) return;
+    const cfg=getLaminaByCal(h.cal);
+    lines.push({fecha:r.fecha,hora:hh(r.updatedAt),orig:isProg(r)?'Programa del día':'Registro manual',maq:r.maquina||'',op:r.op||'',cal:h.cal,q,ev:h.origen==='eventualidad',kg:q*((cfg&&cfg.peso)||0)});
+  }));
+  const detalle=lines.length?`<table><thead><tr>${weekly?'<th>Día</th>':''}<th>Hora</th><th>Máquina</th><th>Fuente</th><th>Registró</th><th>Calibre</th><th class="n">Hojas</th><th>Tipo</th><th class="n">Peso (kg)</th></tr></thead><tbody>${lines.map(l=>`<tr>${weekly?`<td>${esc(dayLabel(l.fecha))}</td>`:''}<td>${esc(l.hora)}</td><td>${esc(l.maq)}</td><td>${esc(l.orig)}</td><td>${esc(l.op)}</td><td><b>${esc(l.cal)}</b></td><td class="n">${f2(l.q)}</td><td>${l.ev?'<span class="warn">Eventualidad</span>':'Programa'}</td><td class="n">${l.kg>0?f2(l.kg):'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="line muted">Sin registros.</div>';
+  // 3) Comparativo contra la explosión (por máquina)
+  let expl='';
+  try{
+    let groups;
+    if(weekly) groups=aprovBuildGroups(recs).filter(g=>g.tipo==='lamina');
+    else { const m={}; recs.forEach(r=>{ (m[r.maquina]=m[r.maquina]||{gid:aprovGroupGid(aprovWeekStartOf(key),'lamina',r.maquina),weekStart:aprovWeekStartOf(key),tipo:'lamina',maquina:r.maquina,recs:[]}).recs.push(r); }); groups=Object.values(m); }
+    groups.forEach(g=>{
+      const st=aprovGroupStats(g); if(!st.items.length) return;
+      let mermaTxt='';
+      if(weekly){ mermaTxt=st.merma?` · Merma <b>${f2(st.merma.kg)} kg</b> (${st.pctMerma==null?'—':f2(st.pctMerma)+'%'}) · Aprovechamiento <b>${st.pctAprov==null?'—':f2(st.pctAprov)+'%'}</b>`:' · <span class="warn">Merma semanal sin capturar</span>'; }
+      const hasEv=st.items.some(i=>i.ev>0); let tr=0,te=0,tx=0,td=0,tv=0,anyE=false;
+      const rows=st.items.map(i=>{ tr+=i.real; te+=i.ev; if(i.anyExpl){ anyE=true; tx+=i.expl; td+=i.dif; tv+=i.valor; }
+        return `<tr><td><b>${esc(i.key)}</b>${i.extra?' <span class="muted">(no consumido)</span>':''}</td><td class="n">${f2(i.real)}</td>${hasEv?`<td class="n">${i.ev>0?f2(i.ev):'—'}</td>`:''}<td class="n">${i.anyExpl?f2(i.expl):'—'}</td><td class="n ${i.anyExpl?cl(i.dif):''}">${i.anyExpl?sgn2(i.dif):'—'}</td><td class="n ${i.anyExpl?cl(i.valor):''}">${i.anyExpl?money(i.valor):'—'}</td></tr>`; }).join('');
+      expl+=`<div style="margin-top:8px"><b>${esc(g.maquina)}</b> <span class="muted">${st.n} registro${st.n===1?'':'s'} · ${f2(st.peso)} kg consumidos${mermaTxt}</span></div><table style="margin-top:4px"><thead><tr><th>Calibre</th><th class="n">Láminas registradas</th>${hasEv?'<th class="n">Eventuales</th>':''}<th class="n">Explosionadas</th><th class="n">Diferencia</th><th class="n">Valor ($)</th></tr></thead><tbody>${rows}<tr class="tot"><td>Total</td><td class="n">${f2(tr)}</td>${hasEv?`<td class="n">${f2(te)}</td>`:''}<td class="n">${anyE?f2(tx):'—'}</td><td class="n ${anyE?cl(td):''}">${anyE?sgn2(td):'—'}</td><td class="n ${anyE?cl(tv):''}">${anyE?money(tv):'—'}</td></tr></tbody></table>
+        <div class="ctline" style="margin-top:4px"><span>Recortes recuperados: <b>${money(st.ahorroRec)}</b></span><span>Material no consumido: <b class="${cl(st.valorMat)}">${money(st.valorMat)}</b></span><span>Ahorro teórico: <b class="${cl(st.ahorroTeorico)}">${money(st.ahorroTeorico)}</b></span></div>`
+        +(st.noExpl?`<div class="line"><span class="warn">${st.noExpl} registro${st.noExpl===1?'':'s'} sin explosión capturada: no se puede calcular la diferencia.</span></div>`:'');
+    });
+  }catch(e){ console.warn('rep lam expl',e); }
+  // 4) Lámina adicional de hora×hora (retrabajo y fuera de programa): informativo
+  let extra='';
+  try{
+    const set=new Set(fechas), ex={};
+    const put=(k,f,n,kg)=>{ const o=ex[k]||(ex[k]={cal:k,rt:0,fp:0,kg:0}); o[f]+=n; o.kg+=kg; };
+    rtCollect().filter(e=>e.tipo==='lamina'&&set.has(e.fecha)&&Number(e.consumo)>0).forEach(e=>put(e.calibre||'(sin material)','rt',Number(e.consumo)||0,Number(e.kg)||0));
+    fpCollect().ents.filter(e=>e.tipo==='lamina'&&set.has(e.fecha)&&Number(e.consumo)>0).forEach(e=>put(fpMat(e),'fp',Number(e.consumo)||0,Number(e.kg)||0));
+    const rows=Object.values(ex).sort((a,b)=>String(a.cal).localeCompare(String(b.cal)));
+    if(rows.length){
+      const t=rows.reduce((a,o)=>({rt:a.rt+o.rt,fp:a.fp+o.fp,kg:a.kg+o.kg}),{rt:0,fp:0,kg:0});
+      extra=`<section><h2>Lámina adicional capturada en hora×hora <small>informativo · no se suma a los totales de arriba</small></h2><table><thead><tr><th>Calibre</th><th class="n">Retrabajo (láminas)</th><th class="n">Fuera de programa (láminas)</th><th class="n">Peso (kg)</th></tr></thead><tbody>${rows.map(o=>`<tr><td><b>${esc(o.cal)}</b></td><td class="n">${o.rt?o.rt.toFixed(3):'—'}</td><td class="n">${o.fp?o.fp.toFixed(3):'—'}</td><td class="n">${o.kg>0?f2(o.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${t.rt?t.rt.toFixed(3):'—'}</td><td class="n">${t.fp?t.fp.toFixed(3):'—'}</td><td class="n">${t.kg>0?f2(t.kg):'—'}</td></tr></tbody></table><div class="muted" style="margin-top:3px">Equivalente en láminas de las piezas de retrabajo y fuera de programa capturadas en Registrar turno › hora×hora (Laser de Cama).</div></section>`;
+    }
+  }catch(e){ console.warn('rep lam extra',e); }
+  const titulo=weekly?'Reporte semanal de consumo de lámina':'Reporte diario de consumo de lámina';
+  const periodo=weekly?`Semana del ${weekLabel(key)}${fechas.length>5?' <span style="font-weight:400;color:#667">(incluye fin de semana con registros)</span>':''}`:`${esc(dayLabel(key))} · ${esc(key)}`;
+  const diasCon=new Set(recs.filter(r=>(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).map(r=>r.fecha)).size;
+  const sinDet=recs.filter(r=>!(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).length;
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(weekly?weekLabelShort(key):key)}</title>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<header><div><h1>${titulo}</h1><div class="wk">${periodo}</div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi main"><div class="l">Total de hojas</div><div class="v">${f2(D.total)}</div><div class="s">${f2(D.prog)} de programa · ${f2(D.ev)} eventualidad</div></div>
+  <div class="kpi"><div class="l">Peso (kg)</div><div class="v">${D.kg>0?f2(D.kg):'—'}</div><div class="s">según el peso por hoja de cada calibre</div></div>
+  <div class="kpi"><div class="l">Calibres</div><div class="v">${D.calibres}</div><div class="s">distintos en el periodo</div></div>
+  <div class="kpi"><div class="l">${weekly?'Días con consumo':'Registros'}</div><div class="v">${weekly?diasCon:D.n}</div><div class="s">${weekly?`de ${fechas.length} días del periodo`:'del programa y manuales'}</div></div>
+</div>
+<section><h2>Consumo por calibre <small>${weekly?'lunes a viernes':'hojas completas'}</small></h2>${porCal}</section>
+${D.rows.length?`<section style="page-break-inside:auto"><h2>Detalle de registros</h2>${detalle}</section>`:''}
+${expl?`<section style="page-break-inside:auto"><h2>Consumo contra explosión</h2>${expl}</section>`:''}
+${extra}
+${sinDet?`<div class="line"><span class="warn">${sinDet} registro${sinDet===1?'':'s'} sin hojas capturadas en el periodo.</span></div>`:''}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Lámina registrada en Aprovechamiento › Lámina: consumo real del Programa del día (Laser de Cama) más los registros manuales «sin programa». Peso = hojas × peso por hoja del catálogo de calibres. Diferencia = explosionadas − (registradas − eventuales); ahorro teórico = material no consumido + recortes recuperados. El reporte se calcula con los registros actuales.</footer>
+</div></body></html>`;
+}
 function buildProdReportHtml(mode,key,ctFilter){
   const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
@@ -7512,44 +7624,48 @@ ${sections||'<p class="muted">Sin información para este periodo.</p>'}
 }
 // ── Pantalla Reportes ──
 let repMode='diario';
+function repIsWeek(m){ return m==='semanal'||m==='lamsem'||m==='lamcomp'; }
+function repIsLam(m){ return m==='lamdia'||m==='lamsem'||m==='lamcomp'; }
+// Reporte que corresponde al modo elegido
+function repBuildHtml(s,forScreen){ if(s.mode==='programa') return buildProgramaReportHtml(s.fecha,forScreen?{index:true}:undefined); if(s.mode==='lamcomp') return buildLaminaCompiladoHtml(repKey()); if(repIsLam(s.mode)) return buildLaminaReportHtml(s.mode==='lamsem',repKey()); return buildProdReportHtml(s.mode,repKey(),s.ct); }
 function repState(){ return {mode:repMode,fecha:document.getElementById('rep-fecha')?.value||todayStr(),ct:document.getElementById('rep-ct')?.value||''}; }
 function repSetMode(m,el){
   repMode=m;
   document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
-  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=m==='semanal'?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
-  const ctSel=document.getElementById('rep-ct'); if(ctSel) ctSel.style.display=(m==='programa')?'none':'';
+  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=repIsWeek(m)?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
+  const ctSel=document.getElementById('rep-ct'); if(ctSel) ctSel.style.display=(m==='programa'||repIsLam(m))?'none':'';
   if(m==='programa'){ try{ refreshProgramaDiaFromCloud(); }catch(e){} }
   renderReportes();
 }
 function repShift(n){
   const inp=document.getElementById('rep-fecha'); if(!inp) return;
-  inp.value=isoAddDays(inp.value||todayStr(),repMode==='semanal'?7*n:n); renderReportes();
+  inp.value=isoAddDays(inp.value||todayStr(),repIsWeek(repMode)?7*n:n); renderReportes();
 }
 function repGoFecha(f){ const inp=document.getElementById('rep-fecha'); if(inp&&/^\d{4}-\d{2}-\d{2}$/.test(f||'')){ inp.value=f; renderReportes(); try{ window.scrollTo(0,0); }catch(e){} } }
 function repHoy(){ const inp=document.getElementById('rep-fecha'); if(inp){ inp.value=todayStr(); renderReportes(); } }
-function repKey(){ const s=repState(); return s.mode==='semanal'?getWeekRange(s.fecha).start:s.fecha; }
+function repKey(){ const s=repState(); return repIsWeek(s.mode)?getWeekRange(s.fecha).start:s.fecha; }
 function renderReportes(){
   const fr=document.getElementById('rep-frame'); if(!fr) return;
   const inp=document.getElementById('rep-fecha'); if(inp && !inp.value) inp.value=todayStr();
   const s=repState();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha)) return;
-  let html=''; try{ html=s.mode==='programa'?buildProgramaReportHtml(s.fecha,{index:true}):buildProdReportHtml(s.mode,repKey(),s.ct); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
+  let html=''; try{ html=repBuildHtml(s,true); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
   const shown=html.replace('<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>','');
   // Solo se repinta si cambió el contenido (las sincronizaciones en segundo plano no mueven la pantalla)
   const stamp=shown.replace(/Generado el [^<]*/,'');
   if(fr._stamp!==stamp){ fr._stamp=stamp; fr.srcdoc=shown; }
   const old=document.getElementById('rep-old'); 
   const limite=isoAddDays(todayStr(),-REP_VENTANA_DIAS);
-  const ini=s.mode==='semanal'?repKey():s.fecha;
+  const ini=repIsWeek(s.mode)?repKey():s.fecha;
   if(old){ old.style.display=(ini<limite)?'block':'none'; }
 }
 function repFit(f){ try{ const h=f.contentDocument.documentElement.scrollHeight; if(h>200) f.style.height=(h+10)+'px'; }catch(e){} }
-function repPrint(){ const s=repState(); openPrintHtml(s.mode==='programa'?buildProgramaReportHtml(s.fecha):buildProdReportHtml(s.mode,repKey(),s.ct)); }
+function repPrint(){ openPrintHtml(repBuildHtml(repState(),false)); }
 // Días fuera de lo que la app descarga al iniciar (últimos 45 días): se piden al Sheet bajo demanda
 function repCargarHistorial(){
-  const s=repState(), ini=isoAddDays(s.mode==='semanal'?repKey():s.fecha,-1);
+  const s=repState(), ini=isoAddDays(repIsWeek(s.mode)?repKey():s.fecha,-1);
   const msg=document.getElementById('rep-old-msg'); if(msg) msg.textContent='Cargando del Sheet…';
-  const names=['Cierre_Dia','OEE_Registros','Atrasos','Programa_Dia',...ALL_CTS.map(ctSheet)];
+  const names=['Cierre_Dia','OEE_Registros','Atrasos','Programa_Dia',...(repIsLam(s.mode)?['Aprovechamiento','Merma_Semanal']:[]),...ALL_CTS.map(ctSheet)];
   gasRequest({action:'readAll',sheets:names.join(','),since:ini},(data)=>{
     const R=(data&&data.results)||{};
     const ok=n=>Array.isArray(R[n])?R[n]:[];
@@ -7557,6 +7673,8 @@ function repCargarHistorial(){
     records=mergeRecordsById(records,ok('OEE_Registros')); save('records');
     atrasos=mergeRecordsById(atrasos,ok('Atrasos')); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
     programaDia=mergeProgramaDia(programaDia,ok('Programa_Dia').map(normProgRec)); saveProgramaDiaLS();
+    if(ok('Aprovechamiento').length){ aprovRecords=mergeRecordsById(aprovRecords,ok('Aprovechamiento').map(normalizeAprovRow)); save('aprovRecords'); }
+    if(ok('Merma_Semanal').length){ mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,ok('Merma_Semanal').filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}))); save('mermaSemanalRecs'); }
     ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,d)]; });
     try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
     if(msg) msg.textContent='✓ Historial cargado'; renderReportes();
