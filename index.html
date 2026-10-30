@@ -2866,6 +2866,26 @@ function progProgramadasEfectivas(machine,fecha){
   });
   return any?total:null;
 }
+// Tablero (Dashboard › Laser): programadas = el programa que se está cortando, completo, para ver cuánto falta por máquina.
+// Cuenta las filas cortadas hoy (de cualquier programa) y las que aún no se cortan de los programas «en curso» (el de hoy o uno al que ya se le cortó algo hoy).
+// No cambia lo que se captura en Registrar turno ni los reportes (esos usan progProgramadasEfectivas).
+function progProgramadasTablero(machine,fecha){
+  let total=0, any=false;
+  programaDia.forEach(rec=>{
+    if(!rec||rec.machine!==machine) return;
+    const ci=progCantCol(rec); if(ci<0) return;
+    const cortes=progCortesParse(rec.cortes), rows=(rec.rows||[]).slice(1);
+    const cutIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
+    const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha);
+    rows.forEach((row,r)=>{
+      const q=parseFloat(row[ci]); if(!(q>0)) return;
+      const ci2=cutIso(r);
+      if(ci2===fecha || (!ci2 && enCurso)){ total+=q; any=true; }
+    });
+    if(rec.fecha===fecha) any=true;
+  });
+  return any?total:null;
+}
 function progAutoFillContext(){
   const input=document.getElementById('reg-programadas'); if(!input) return;
   const machine=document.getElementById('reg-machine')?.value, fecha=progRegFecha();
@@ -3455,7 +3475,7 @@ function getCTProgramadasAuto(ct, fecha){
   if(!machinesList) return null; // este CT no tiene programa por archivo — usar el valor manual editable en el Dashboard
   let total=0, anyData=false;
   machinesList.forEach(m=>{
-    const v=progProgramadasEfectivas(m,fecha);
+    const v=progProgramadasTablero(m,fecha);   // tablero: programa completo en curso (ver progProgramadasTablero)
     if(v==null) return;
     anyData=true; total+=v;
   });
@@ -5349,7 +5369,7 @@ function dashHoraTableHtml(ct,short){
     let tot=0, dTot=0, maxV=5;
     cols.forEach(f=>{ const c=dataByMachine[m][f]; if(c){ tot+=c.fab; dTot+=c.dan; if(c.fab>maxV) maxV=c.fab; } });
     // Meta de la máquina: lo programado hoy (programa de corte) o, si no hay programa, su capacidad
-    const prog=progProgramadasEfectivas(m,todayStr());
+    const prog=(ct==='LASER')?progProgramadasTablero(m,todayStr()):progProgramadasEfectivas(m,todayStr());   // Laser: programa completo en curso
     const mach=getMachineByName(m);
     const meta=prog>0?Math.round(prog):(mach&&mach.cap>0?Math.round(mach.cap):0);
     const metaLbl=prog>0?'programadas':'de capacidad';
