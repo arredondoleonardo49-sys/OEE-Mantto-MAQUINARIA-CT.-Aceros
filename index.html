@@ -579,12 +579,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #programa-upload-card.collapsed .form-card-title{margin-bottom:0}
 .prog-cons-td{min-width:150px}
 /* Consumo real y Equiv. tramos quedan fijas a la derecha: se ven siempre, sin desplazar la tabla */
-.prog-tub .pc-cons{position:sticky;right:104px;z-index:2;background:var(--bg2);min-width:190px;max-width:190px;box-shadow:-6px 0 8px -6px rgba(0,0,0,.5)}
+.prog-tub .pc-cons{position:sticky;right:274px;z-index:2;background:var(--bg2);min-width:190px;max-width:190px;box-shadow:-6px 0 8px -6px rgba(0,0,0,.5)}
+.prog-tub .pc-com{position:sticky;right:104px;z-index:2;background:var(--bg2);width:170px;min-width:170px;max-width:170px}
 .prog-tub .pc-eq{position:sticky;right:0;z-index:2;background:var(--bg2);width:104px;min-width:104px;max-width:104px}
-.prog-tub thead tr:first-child th.pc-cons,.prog-tub thead tr:first-child th.pc-eq{background:var(--bg3);z-index:4}
-.prog-tub thead .programa-filter-row th.pc-cons,.prog-tub thead .programa-filter-row th.pc-eq{z-index:4}
-.programa-table tbody tr:hover td.pc-cons,.programa-table tbody tr:hover td.pc-eq{background:var(--bg3)}
-.programa-row-done td.pc-cons,.programa-row-done td.pc-eq{background:linear-gradient(rgba(62,207,142,.06),rgba(62,207,142,.06)),var(--bg2)}
+.prog-tub thead tr:first-child th.pc-cons,.prog-tub thead tr:first-child th.pc-com,.prog-tub thead tr:first-child th.pc-eq{background:var(--bg3);z-index:4}
+.prog-tub thead .programa-filter-row th.pc-cons,.prog-tub thead .programa-filter-row th.pc-com,.prog-tub thead .programa-filter-row th.pc-eq{z-index:4}
+.programa-table tbody tr:hover td.pc-cons,.programa-table tbody tr:hover td.pc-com,.programa-table tbody tr:hover td.pc-eq{background:var(--bg3)}
+.programa-row-done td.pc-cons,.programa-row-done td.pc-com,.programa-row-done td.pc-eq{background:linear-gradient(rgba(62,207,142,.06),rgba(62,207,142,.06)),var(--bg2)}
+.prog-com-in{width:100%;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 7px;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text);text-overflow:ellipsis}
+.prog-com-in:hover{border-color:var(--border);background:var(--bg3)}
+.prog-com-in:focus{outline:none;border-color:var(--blue);background:var(--bg3)}
+.prog-com-in::placeholder{color:var(--text3)}
+.prog-com-in.has{border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.07)}
+/* En pantallas angostas las tres columnas fijas no caben: se desplazan con la tabla */
+@media(max-width:820px){.prog-tub .pc-cons,.prog-tub .pc-com,.prog-tub .pc-eq{position:static;box-shadow:none}.prog-tub .pc-com{min-width:160px}}
 .prog-cons-btn{width:100%;overflow:hidden;text-overflow:ellipsis;text-align:left;font-size:12px;font-family:'IBM Plex Sans',sans-serif;padding:5px 9px;border:1px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap}
 .prog-cons-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--bg3)}
 .prog-cons-btn.has{border-style:solid;border-color:rgba(62,207,142,.45);background:rgba(62,207,142,.08);color:var(--text);font-weight:500}
@@ -2326,6 +2334,7 @@ function progStats(rec){
 function normProgRec(r){
   const o={...r,rows:safeParse(r.rows,[])};
   o.cortes=r.cortes==null?'':String(r.cortes);
+  o.coment=r.coment==null?'':String(r.coment);
   o.completado=(String(r.completado)==='1')?'1':'';
   return o;
 }
@@ -2340,6 +2349,9 @@ function mergeProgRec(a,b){
     const x=ca[k], y=cb[k]; m[k]=!x?y:!y?x:(progTs(y.ts)>=progTs(x.ts)?y:x);
   });
   out.cortes=progCortesStr(m);
+  { const xa=progComParse(a.coment), xb=progComParse(b.coment), mc={};   // comentarios: por fila gana la marca más reciente
+    new Set([...Object.keys(xa),...Object.keys(xb)]).forEach(k=>{ const x=xa[k], y=xb[k]; mc[k]=!x?y:!y?x:(progTs(y[1])>=progTs(x[1])?y:x); });
+    out.coment=Object.keys(mc).length?JSON.stringify(mc):''; }
   const ci=out.cortadoColIdx!=null?out.cortadoColIdx:0;
   Object.keys(m).forEach(k=>{ if(out.rows[+k+1]) out.rows[+k+1][ci]=!!m[k].on; });
   // observaciones: las del registro más reciente
@@ -2359,7 +2371,7 @@ function mergeProgramaDia(local,incoming){
   (incoming||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map.get(r.id); map.set(r.id,cur?mergeProgRec(cur,r):r); });
   return Array.from(map.values());
 }
-function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||''}; }
+function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||'',coment:rec.coment||''}; }
 function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progCloudRow(rec)); }
 // Solo el Operador (con permiso de captura) registra cortes y observaciones.
 function canFinalizarPrograma(){ return !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero'); }
@@ -2795,6 +2807,19 @@ function pcmSaveWith(clear){
 }
 function programaSaveConsumo(){ pcmSaveWith(false); }
 function programaClearConsumo(){ pcmSaveWith(true); }
+// Comentarios por fila (OP) del programa: {fila:[texto, marca]} en rec.coment. Gana la marca más reciente; un texto vacío (borrado) también lleva marca.
+function progComParse(str){ try{ const o=JSON.parse(str||'{}'); return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }catch(e){ return {}; } }
+function progComGet(rec,rIdx){ const e=progComParse(rec&&rec.coment)[rIdx]; return e&&e[0]?String(e[0]):''; }
+function progCanComentar(rec){ return !!currentUser && !progIsCompleted(rec) && (canCutPrograma()||currentUser.role==='lider'||currentUser.role==='ingeniero'); }
+function programaSetComent(fecha,machine,rIdx,value,el){
+  const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]) return;
+  if(!progCanComentar(rec)){ progMsg('No tienes permiso para comentar este programa.','var(--amber)'); renderProgramaDia(true); return; }
+  const t=String(value||'').replace(/\s+/g,' ').trim().slice(0,200), m=progComParse(rec.coment);
+  if(t===progComGet(rec,rIdx)) return;
+  m[rIdx]=[t,Date.now().toString(36)]; rec.coment=JSON.stringify(m); rec.updatedAt=new Date().toISOString();
+  if(el){ el.value=t; el.classList.toggle('has',!!t); el.title=t; if(el.nextElementSibling) el.nextElementSibling.textContent=t; }
+  progSave(rec); progMsg('✓ Comentario guardado');
+}
 function programaSetObs(fecha,machine,rIdx,value){
   if(!canCutPrograma()){ progMsg('Solo el Operador captura observaciones.','var(--amber)'); renderProgramaDia(true); return; }
   const rec=getProgramaRecord(fecha,machine); if(!rec||rec.obsColIdx==null||rec.obsColIdx<0||!rec.rows[rIdx+1]) return;
@@ -2957,7 +2982,7 @@ function processProgramaFile(file){
           id:'prog_'+machine.replace(/\s+/g,'')+'_'+fecha,
           fecha, machine, ct:PROGRAMA_MACHINE_CT[machine], sheetName,
           rows:[header, ...dataRows], obsColIdx, cortadoColIdx:0,
-          cortes:progCortesStr(cortes), completado:'', compTs:'', compBy:'',
+          cortes:progCortesStr(cortes), coment:'', completado:'', compTs:'', compBy:'',
           uploadedBy:currentUser.username, uploadedByName:currentUser.name,
           uploadedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         };
@@ -3040,7 +3065,7 @@ function progDisplayCols(rec,tub,lam){
   ((rec.rows&&rec.rows[0])||[]).forEach((h,i)=>{
     const n=String(h).trim().toLowerCase();
     if(tub && PROG_HIDE_COLS.includes(n)) return;
-    if((tub||lam) && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'eq',i,label:lam?'Recortes (lám.)':'Equiv. tramos'}); return; }
+    if((tub||lam) && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'com',i,label:'Comentarios'}); out.push({k:'eq',i,label:lam?'Recortes (lám.)':'Equiv. tramos'}); return; }
     out.push({k:'d',i,label:h});
   });
   return out;
@@ -3058,7 +3083,7 @@ function renderProgramaTable(rec){
   const tub=progIsTubRec(rec) && obsColIdx>=0;
   const lam=progIsLamRec(rec) && obsColIdx>=0;
   const cols=progDisplayCols(rec,tub,lam);
-  const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
+  const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='com'?'pc-com':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
     <tr class="programa-filter-row">${cols.map((c,j)=>{
       if(c.k==='d' && c.i===cortadoColIdx){
         const cur=programaFilters[j]||'';
@@ -3069,7 +3094,7 @@ function renderProgramaTable(rec){
         </select></th>`;
       }
       const cur=(programaFilters[j]||'').toString().replace(/"/g,'&quot;');
-      return `<th class="${c.k==='cons'?'pc-cons':c.k==='eq'?'pc-eq':''}"><input type="text" class="programa-filter-input" value="${cur}" placeholder="Filtrar…" oninput="setProgramaFilter(${j},this.value)"></th>`;
+      return `<th class="${c.k==='cons'?'pc-cons':c.k==='com'?'pc-com':c.k==='eq'?'pc-eq':''}"><input type="text" class="programa-filter-input" value="${cur}" placeholder="Filtrar…" oninput="setProgramaFilter(${j},this.value)"></th>`;
     }).join('')}</tr>
   </thead>`;
   const tbody=`<tbody>${body.map((row,rIdx)=>{
@@ -3087,6 +3112,10 @@ function renderProgramaTable(rec){
       const txt=lam?progConsTextLam(x):progConsText(x);
       if(canCut) return `<td class="prog-cons-td pc-cons"><button type="button" class="prog-cons-btn ${x.has?'has':''}" title="${x.has?'Editar el consumo real de esta OP'+(lam?': '+esc(txt):''):(lam?'Registrar el consumo real: hojas completas y recortes':'Registrar el consumo real: tramos completos o recortes')}" onclick="programaOpenConsumo('${rec.fecha}','${rec.machine}',${rIdx})">${x.has?esc(txt):'＋ Registrar'}</button>${x.c.note&&!x.has?`<span class="prog-cons-note" title="Nota anterior del archivo">${esc(x.c.note)}</span>`:''}</td>`;
       return `<td class="prog-cons-td pc-cons">${x.has?`<span class="prog-cons-ro">${esc(txt)}</span>`:(x.c.note?`<span class="prog-cons-note">${esc(x.c.note)}</span>`:'')}</td>`;
+    }
+    if(c.k==='com'){
+      const cm=progComGet(rec,rIdx), canCom=progCanComentar(rec);
+      return `<td class="pc-com"><input type="text" class="prog-com-in${cm?' has':''}" maxlength="200" value="${esc(cm)}" placeholder="${canCom?'Comentario…':''}" title="${esc(cm)}" ${canCom?'':'readonly'} onchange="programaSetComent('${rec.fecha}','${rec.machine}',${rIdx},this.value,this)"><span style="display:none">${esc(cm)}</span></td>`;
     }
     if(c.k==='eq' && lam){
       if(!x.has||!x.recs.length) return `<td class="prog-eq-td pc-eq">${x.has?'<span style="color:var(--text3)">–</span>':''}</td>`;
