@@ -534,6 +534,29 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   #page-dashboard:fullscreen #ct-cards,#page-dashboard:fullscreen #dash-hora-card,#page-dashboard:fullscreen #dash-chart-card,#page-dashboard:fullscreen .content>.ct-section{grid-column:1;grid-row:auto}
   #page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:table-cell}
 }
+.pend-hd{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text3);margin:-2px 0 8px}.pend-hd b{font-family:'IBM Plex Mono',monospace;color:var(--text);font-size:13px;margin-left:4px}
+.pend-board{display:flex;flex-direction:column;min-height:0;flex:1;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg)}
+.pend-row{display:flex;flex-direction:column;gap:2px;padding:7px 10px;border-bottom:.5px solid var(--border)}
+.pend-l1{display:flex;align-items:center;gap:8px;min-width:0}
+.pend-l1 .op{font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:600;font-size:12px;white-space:nowrap}
+.pend-l1 .mo{font-size:12px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pend-l1 .n{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);font-size:15px;white-space:nowrap}.pend-l1 .n small{font-size:10px;color:var(--text3);font-weight:400;margin-left:3px}
+.pend-l2{font-size:11px;color:var(--text3);padding-left:44px;overflow-wrap:anywhere}
+.pend-vp{position:relative;overflow:hidden;max-height:400px;flex:1;min-height:0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
+.pend-vp.static{-webkit-mask-image:none;mask-image:none}
+.pend-in.run{animation:pendUp var(--pd,30s) linear infinite;will-change:transform}
+.pend-vp:hover .pend-in.run{animation-play-state:paused}
+.pend-gap{height:22px}
+@keyframes pendUp{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){.pend-in.run{animation:none}.pend-vp{overflow:auto}}
+.pend-m{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;background:rgba(74,158,255,.14);color:var(--blue)}
+.pend-m.m2{background:rgba(62,207,142,.14);color:var(--green)}.pend-m.m3{background:rgba(180,140,255,.16);color:#b48cff}
+.pend-hint{font-size:10px;color:var(--text3);margin-top:5px;text-align:right}
+.pend-ok{padding:1.2rem 0;text-align:center;color:var(--green);font-size:13px}
+#page-dashboard:fullscreen #dash-chart-card.pending-on{display:flex;flex-direction:column;overflow:hidden}
+#page-dashboard:fullscreen #dash-chart-card.pending-on #dash-mat-panel{flex:1;min-height:0}
+#page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
+#page-dashboard:fullscreen #dash-mat-panel.pend .pend-vp{max-height:none}
 .mat-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .mat-tbl th{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .mat-tbl td{padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--text2)}
@@ -1329,12 +1352,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
   <div class="content">
-    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('programa',this)">Programas de corte</div><div class="tab" onclick="repSetMode('lamdia',this)">Lámina · diario</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Lámina · semana + días</div></div>
+    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('hora',this)" title="Piezas procesadas por máquina, hora por hora, de un periodo que tú eliges">Hora por hora</div><div class="tab" onclick="repSetMode('programa',this)">Corte de Tubular</div><div class="tab" onclick="repSetMode('lamdia',this)">Corte de lámina · diario</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Corte de lámina · semana + días</div></div>
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
-      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
+      <div id="rep-single" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap"><button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
       <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
       <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(1)" title="Siguiente">▶</button>
-      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 12px" onclick="repHoy()">Hoy</button>
+      <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 12px" onclick="repHoy()">Hoy</button></div>
+      <div id="rep-range" style="display:none;align-items:flex-end;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Del</label><input type="date" id="rep-desde" onchange="repRangoCambio()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
+        <div style="display:flex;flex-direction:column;gap:3px"><label style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Al</label><input type="date" id="rep-hasta" onchange="repRangoCambio()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
+        <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repRangoPreset('sem')" title="Lunes a viernes de esta semana">Esta semana</button>
+        <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repRangoPreset('semAnt')" title="Lunes a viernes de la semana pasada">Semana pasada</button>
+        <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repRangoPreset('mes')" title="Del día 1 de este mes a hoy">Este mes</button>
+        <button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repRangoPreset('hoy')">Hoy</button>
+      </div>
       <select id="rep-ct" onchange="renderReportes()"><option value="">Todos los centros</option><option>TROQUELES</option><option>LASER</option><option>EST. MUEBLES</option><option>EST. SILLAS</option><option>EST. MAMPARAS</option></select>
       <button class="btn" style="margin-left:auto;font-size:12px;padding:7px 12px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="repPrint()">🖨 Imprimir</button>
       <button class="btn btn-primary" style="font-size:12px;padding:7px 14px" onclick="repDownload()">⬇ Descargar PDF</button>
@@ -1661,7 +1692,7 @@ function loadProgramaDiaLS(){
   }catch(e){ programaDia=[]; }
 }
 // En este equipo se guardan los últimos 60 días de programas y, de cada máquina, el programa vigente (aunque sea más viejo);
-// todo lo demás sigue en el Sheet y se consulta desde Reportes › Programas de corte.
+// todo lo demás sigue en el Sheet y se consulta desde Reportes › Corte de Tubular.
 function saveProgramaDiaLS(){
   try{
     const lim=isoAddDays(todayStr(),-60), keep=new Set();
@@ -3415,11 +3446,11 @@ function buildProgramaReportHtml(fecha,opts){
   const progDias=Array.from(new Set(recs.map(r=>r.fecha))).sort();
   const corteDias=Array.from(new Set(recs.map(r=>progCorteFecha(r.fecha)))).sort();
   const unico=corteDias.length===1;
-  const tituloFull=unico?`Programa de corte ${fmtDMY(corteDias[0])}`:'Programa de corte';
+  const tituloFull=unico?`Corte de Tubular ${fmtDMY(corteDias[0])}`:'Corte de Tubular';
   const subHead=recs.length?(unico
     ?`<div class="rp-date">Día de corte: ${esc(fechaLargaEs(corteDias[0]))}</div><div class="rp-prog">Día de programa: ${esc(fechaLargaEs(progDias[0]))} · ${PROG_DIAS_ADELANTO} días hábiles de anticipación</div>`
     :recs.map(r=>`<div class="rp-prog"><b>${esc(r.machine)}</b> · programa ${esc(fmtDMY(r.fecha))} → corte ${esc(fmtDMY(progCorteFecha(r.fecha)))}</div>`).join('')):`<div class="rp-date">${esc(fechaLargaEs(fecha))}</div>`;
-  const titulo='Programa de corte';
+  const titulo='Corte de Tubular';
   let indexHtml='';
   if(opts.index){
     const byF={}; (programaDia||[]).forEach(r=>{ if(r&&r.fecha&&REPORT_LASER_MACHINES.includes(r.machine)) (byF[r.fecha]=byF[r.fecha]||[]).push(r); });
@@ -3471,7 +3502,7 @@ function exportProgramaDia(){
     if(msg){ msg.textContent='⚠ No hay programa cargado para esta fecha.'; msg.style.color='var(--amber)'; }
     return;
   }
-  downloadReportPdf(buildProgramaReportHtml(fecha),'Programa_de_corte_'+progReporteCorteIso(fecha)+'.pdf');
+  downloadReportPdf(buildProgramaReportHtml(fecha),'Corte_de_tubular_'+progReporteCorteIso(fecha)+'.pdf');
 }
 // Habilita/deshabilita la pestaña "Programa del día" según la máquina seleccionada
 function updateProgramaTabState(machine){
@@ -5197,6 +5228,81 @@ function ctDiaTerminado(ct){
   if([...turnos].some(t=>/^Turno [23]/.test(t))) return false;
   const n=new Date(); return (n.getHours()+n.getMinutes()/60)>=17;
 }
+// Laser · «Qué falta por cortar»: OPs del programa en curso (GW1 / GW2) que aún no se cortan, con su modelo y cantidad
+function dashLaserPend(){
+  const fecha=todayStr();
+  const names=getMachinesByCT('LASER').map(m=>m.name);
+  const set=new Set(names.length?names:PROG_TUB_MACHINES);
+  const out=[]; let ops=0, pzs=0, anyProg=false;
+  Array.from(set).sort().forEach(mn=>{
+    const vig=progActiveRecord(fecha,mn);
+    programaDia.filter(r=>r&&r.machine===mn).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
+      const rows=(rec.rows||[]).slice(1); if(!rows.length) return;
+      const cortes=progCortesParse(rec.cortes), cd=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
+      const isDone=(row,r)=>!!((cortes[r]&&cortes[r].on)||row[cd]===true);
+      const cutIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
+      const pend=rows.filter((row,r)=>!isDone(row,r)).length;
+      // En curso: el de hoy, uno al que ya se le cortó algo hoy (se adelanta) o el vigente que aún tiene filas por cortar
+      const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
+      if(!enCurso) return;
+      anyProg=true;
+      const H=(rec.rows[0]||[]).map(h=>String(h).trim().toLowerCase());
+      const fi=re=>H.findIndex(h=>re.test(h));
+      const cq=progCantCol(rec);
+      let cols=[['OP',fi(/^(op\b|o\.p|orden)/)],['Modelo',fi(/^modelo/)],['Cant.',cq],['Familia',fi(/familia/)],['Parte',fi(/^(parte|no\.? ?parte|descrip)/)],['Tubular',fi(/tubular/)>=0?fi(/tubular/):fi(/^material/)]].filter(c=>c[1]>=0);
+      if(cols.length<3){   // encabezados distintos a los habituales: se muestran las primeras columnas útiles del programa
+        const skip=new Set([cd,rec.obsColIdx]); cols=[];
+        H.forEach((h,i)=>{ if(cols.length<6 && !skip.has(i) && h && !PROG_HIDE_COLS.includes(h)) cols.push([String(rec.rows[0][i]),i]); });
+      }
+      rows.forEach((row,r)=>{
+        if(isDone(row,r)) return;
+        const q=cq>=0?parseFloat(row[cq]):NaN;
+        const cells=cols.map(c=>{ const v=row[c[1]]; return (v==null||v===false||v===true)?'':String(v).trim(); });
+        if(!(q>0) && !cells.some(x=>x)) return;
+        out.push({m:mn,labels:cols.map(c=>c[0]),cells});
+        ops++; if(q>0) pzs+=q;
+      });
+    });
+  });
+  return {rows:out,ops,pzs,anyProg};
+}
+function dashLaserPendHtml(){
+  const d=dashLaserPend();
+  if(!d.anyProg) return '<div class="empty-state" style="padding:1.2rem 0">No hay programa de corte vigente para hoy en Laser.</div>';
+  if(!d.rows.length) return '<div class="pend-ok">✓ Todo el programa en curso ya está cortado.</div>';
+  const mcls=m=>m==='GW1'?'':(m==='GW2'?' m2':' m3');
+  // Cada pendiente va en dos renglones (así cabe sin barra de desplazamiento): OP · modelo · cantidad / familia · parte · tubular
+  const rows=d.rows.map(r=>{
+    const L=r.labels.map(l=>String(l).trim().toLowerCase());
+    const iQ=L.findIndex(l=>/^cant/.test(l)), iO=L.findIndex(l=>/^(op\b|o\.p|orden)/.test(l)), iM=L.findIndex(l=>/^modelo/.test(l));
+    const op=iO>=0?iO:(iM>=0?-1:0);
+    const used=new Set([iQ,op,iM].filter(i=>i>=0));
+    const rest=r.cells.map((v,i)=>({v,i})).filter(x=>!used.has(x.i)&&x.v).map(x=>escH(x.v));
+    return `<div class="pend-row"><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>pzas</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
+  }).join('');
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por cortar<b>${fmtN(d.pzs,0)}</b></span></div>
+    <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
+    <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
+}
+// La lista se mueve sola hacia arriba (en bucle) cuando no cabe completa; velocidad constante pensada para poder leerla
+const PEND_PX_POR_SEG=20;
+function pendStartMarquee(){
+  const vp=document.querySelector('#dash-mat-panel .pend-vp'), inn=document.getElementById('pend-in'); if(!vp||!inn) return;
+  const hint=document.getElementById('pend-hint');
+  inn.classList.remove('run'); inn.style.removeProperty('--pd');
+  inn.querySelectorAll('.pend-set[data-clone]').forEach(n=>n.remove());
+  vp.classList.add('static'); if(hint) hint.style.display='none';
+  const set=inn.querySelector('.pend-set'); if(!set) return;
+  const h=set.offsetHeight, vh=vp.clientHeight;
+  if(!(h>vh+2)) return;                                   // cabe completa: se queda quieta
+  const c=set.cloneNode(true); c.setAttribute('data-clone','1'); c.setAttribute('aria-hidden','true'); inn.appendChild(c);
+  inn.style.setProperty('--pd',(h/PEND_PX_POR_SEG).toFixed(1)+'s');
+  vp.classList.remove('static'); inn.classList.add('run'); if(hint) hint.style.display='';
+}
+let _pendRsz=0;
+function pendRestart(){ clearTimeout(_pendRsz); _pendRsz=setTimeout(()=>{ try{ pendStartMarquee(); }catch(e){} },250); }
+window.addEventListener('resize',pendRestart);
+document.addEventListener('fullscreenchange',pendRestart);
 function renderDashboard(){
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
@@ -5374,16 +5480,22 @@ function renderDashboard(){
   // Centro Laser: en lugar del OEE por máquina, el material tubular consumido por GW1 + GW2 (almacén surte por centro)
   const matPanel=document.getElementById('dash-mat-panel'), chartWrap=document.getElementById('dash-chart-wrap');
   if((ct==='LASER'||ct==='TROQUELES') && matPanel){
-    if(titleEl) titleEl.textContent='Material consumido — '+(ct==='LASER'?'Laser':'Troqueles')+' (hoy)';
+    if(titleEl) titleEl.textContent=ct==='LASER'?'Qué falta por cortar — Laser':'Material consumido — Troqueles (hoy)';
     if(dashChart){ try{ dashChart.destroy(); }catch(e){} dashChart=null; }
     if(chartWrap) chartWrap.style.display='none';
-    matPanel.style.display='block';
-    matPanel.innerHTML=ct==='LASER'
-      ? `<div class="mat-desc">Tubular que registran GW1 y GW2 en Aprovechamiento, sumado por centro de trabajo (así surte almacén). Se actualiza solo.</div>`+tubTotalsHtml(tubTotalsData(laserTubRecords(todayStr())),'Aún no se registra material tubular hoy.')
-      : `<div class="mat-desc">Lámina (hojas por calibre) que se registra en Aprovechamiento para Troqueles, sumada por centro de trabajo (así surte almacén). Se actualiza sola.</div>`+lamTotalsHtml(lamTotalsData(troqLamRecords(todayStr())),'Aún no se registra lámina hoy.');
+    matPanel.style.display='block'; matPanel.classList.toggle('pend',ct==='LASER');
+    { const cc=document.getElementById('dash-chart-card'); if(cc) cc.classList.toggle('pending-on',ct==='LASER'); }
+    if(ct==='LASER'){
+      // Solo se repinta si cambió el contenido: así la lista no se reinicia en cada refresco automático
+      const h=dashLaserPendHtml();
+      if(matPanel._pendHtml!==h){ matPanel.innerHTML=h; matPanel._pendHtml=h; try{ pendStartMarquee(); }catch(e){} }
+    } else {
+      matPanel._pendHtml=null;
+      matPanel.innerHTML=`<div class="mat-desc">Lámina (hojas por calibre) que se registra en Aprovechamiento para Troqueles, sumada por centro de trabajo (así surte almacén). Se actualiza sola.</div>`+lamTotalsHtml(lamTotalsData(troqLamRecords(todayStr())),'Aún no se registra lámina hoy.');
+    }
     return;
   }
-  if(matPanel) matPanel.style.display='none';
+  if(matPanel){ matPanel.style.display='none'; matPanel.classList.remove('pend'); matPanel._pendHtml=null; const cc=document.getElementById('dash-chart-card'); if(cc) cc.classList.remove('pending-on'); }
   if(chartWrap) chartWrap.style.display='';
   if(titleEl) titleEl.textContent='OEE por máquina — '+ct+' (hoy)';
   if(dashChart)dashChart.destroy();
@@ -7252,8 +7364,9 @@ function downloadReportPdf(html,filename){
 }
 function repFileName(){
   const s=repState();
-  if(s.mode==='programa') return 'Programa_de_corte_'+progReporteCorteIso(s.fecha)+'.pdf';
-  if(repIsLam(s.mode)) return 'Consumo_lamina_'+(s.mode==='lamcomp'?'compilado_':s.mode==='lamsem'?'semanal_':'diario_')+repKey()+'.pdf';
+  if(s.mode==='programa') return 'Corte_de_tubular_'+progReporteCorteIso(s.fecha)+'.pdf';
+  if(s.mode==='hora') return 'Hora_por_hora_'+s.desde+(s.hasta!==s.desde?'_a_'+s.hasta:'')+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
+  if(repIsLam(s.mode)) return 'Corte_de_lamina_'+(s.mode==='lamcomp'?'compilado_':s.mode==='lamsem'?'semanal_':'diario_')+repKey()+'.pdf';
   return (s.mode==='semanal'?'Reporte_semanal_'+repKey():'Reporte_diario_'+s.fecha)+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
 }
 function repDownload(){ downloadReportPdf(repBuildHtml(repState(),false),repFileName()); }
@@ -7565,14 +7678,19 @@ function repDay(fecha,ctFilter){
     return {ct,rows,tot:repSum(rows),atrCT:repAtrasosCT(ct,fecha)};
   });
 }
-function repWeekDays(ws){ const d=[]; for(let i=0;i<7;i++) d.push(isoAddDays(ws,i)); return d; }
-// Semana (lun–dom; sáb y dom solo si tuvieron registros)
+// Los reportes son de lunes a viernes (sin sábados ni domingos)
+function repWeekDays(ws){ const d=[]; for(let i=0;i<5;i++) d.push(isoAddDays(ws,i)); return d; }
+function repIsWorkday(f){ const w=isoDow(f); return w>=1&&w<=5; }
+function repWorkSnap(f,dir){ let g=f,n=0; while(!repIsWorkday(g)&&n<3){ g=isoAddDays(g,dir>0?1:-1); n++; } return g; }
+function repWorkShift(f,n){ const st=n>0?1:-1; return repWorkSnap(isoAddDays(repWorkSnap(f,-1),st),st); }
+function repWorkDaysBetween(a,b){ const out=[]; if(!a||!b||a>b) return out; let g=a,n=0; while(g<=b&&n<400){ if(repIsWorkday(g)) out.push(g); g=isoAddDays(g,1); n++; } return out; }
+// Semana (lun–vie)
 function repWeek(ws,ctFilter){
   const days=repWeekDays(ws);
   return repCtList(ctFilter).map(ct=>{
     const ms=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)&&repMachineOk(ct,m.name));
     const perDay=days.map(f=>({fecha:f,rows:ms.map(m=>repMachineDay(m,f)),atrCT:repAtrasosCT(ct,f)}));
-    const activeDays=perDay.filter((d,i)=>i<5||d.rows.some(r=>r.hasData)||d.atrCT.length);
+    const activeDays=perDay;
     const machines=ms.map((m,mi)=>{
       const byDay=activeDays.map(d=>d.rows[mi]);
       const t=repSum(byDay);
@@ -7685,8 +7803,8 @@ function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
 // comparativo contra la explosión y, aparte, la lámina extra de retrabajo / fuera de programa (hora×hora).
 function lamReporteDescargar(weekly){
   const fecha=document.getElementById('lam-fecha')?.value||todayStr(), key=weekly?getWeekRange(fecha).start:fecha;
-  if(weekly==='comp') return downloadReportPdf(buildLaminaCompiladoHtml(key),'Consumo_lamina_compilado_'+key+'.pdf');
-  downloadReportPdf(buildLaminaReportHtml(weekly,key),'Consumo_lamina_'+(weekly?'semanal_':'diario_')+key+'.pdf');
+  if(weekly==='comp') return downloadReportPdf(buildLaminaCompiladoHtml(key),'Corte_de_lamina_compilado_'+key+'.pdf');
+  downloadReportPdf(buildLaminaReportHtml(weekly,key),'Corte_de_lamina_'+(weekly?'semanal_':'diario_')+key+'.pdf');
 }
 // Un solo archivo: el reporte semanal de lámina seguido del reporte diario de cada día de esa semana con registros
 function buildLaminaCompiladoHtml(ws){
@@ -7695,11 +7813,11 @@ function buildLaminaCompiladoHtml(ws){
   const dias=repLamDays(ws).filter(f=>repLamRecs([f]).length);
   const partes=dias.map(f=>`<div class="pgbreak"></div>${inner(buildLaminaReportHtml(false,f))}`).join('');
   const css='<style>.pgbreak{height:0;border-top:1px dashed #b8bdc9;margin:22px 0;page-break-before:always}@media print{.pgbreak{border:0;margin:0}}</style>';
-  const head=sem.slice(0,sem.indexOf('<div class="page">')).replace('</head>',css+'</head>').replace(/<title>[^<]*<\/title>/,`<title>Consumo de lámina — semana ${escH(weekLabelShort(ws))} (compilado)</title>`);
+  const head=sem.slice(0,sem.indexOf('<div class="page">')).replace('</head>',css+'</head>').replace(/<title>[^<]*<\/title>/,`<title>Corte de lámina — semana ${escH(weekLabelShort(ws))} (compilado)</title>`);
   return head+'<div class="page">'+inner(sem)+partes+'</div></body></html>';
 }
 function repLamRecs(fechas){ const set=new Set(fechas); return aprovVisibleRecords().filter(r=>r&&r.tipo==='lamina'&&set.has(r.fecha)); }
-function repLamDays(ws){ const all=repWeekDays(ws), has=new Set(repLamRecs(all).map(r=>r.fecha)); return all.filter((f,i)=>i<5||has.has(f)); }
+function repLamDays(ws){ return repWeekDays(ws); }
 function buildLaminaReportHtml(weekly,key){
   const esc=escH, f2=fmt2, money=v=>(Number(v)<0?'-':'')+'$'+fmtMoney(Math.abs(Number(v)||0)), cl=v=>v>0.004?'pos':v<-0.004?'neg':'';
   const quien=currentUser?currentUser.name:'', ahora=new Date();
@@ -7770,8 +7888,8 @@ function buildLaminaReportHtml(weekly,key){
       extra=`<section><h2>Lámina adicional capturada en hora×hora <small>informativo · no se suma a los totales de arriba</small></h2><table><thead><tr><th>Calibre</th><th class="n">Retrabajo (láminas)</th><th class="n">Fuera de programa (láminas)</th><th class="n">Peso (kg)</th></tr></thead><tbody>${rows.map(o=>`<tr><td><b>${esc(o.cal)}</b></td><td class="n">${o.rt?o.rt.toFixed(3):'—'}</td><td class="n">${o.fp?o.fp.toFixed(3):'—'}</td><td class="n">${o.kg>0?f2(o.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${t.rt?t.rt.toFixed(3):'—'}</td><td class="n">${t.fp?t.fp.toFixed(3):'—'}</td><td class="n">${t.kg>0?f2(t.kg):'—'}</td></tr></tbody></table><div class="muted" style="margin-top:3px">Equivalente en láminas de las piezas de retrabajo y fuera de programa capturadas en Registrar turno › hora×hora (Laser de Cama).</div></section>`;
     }
   }catch(e){ console.warn('rep lam extra',e); }
-  const titulo=weekly?'Reporte semanal de consumo de lámina':'Reporte diario de consumo de lámina';
-  const periodo=weekly?`Semana del ${weekLabel(key)}${fechas.length>5?' <span style="font-weight:400;color:#667">(incluye fin de semana con registros)</span>':''}`:`${esc(dayLabel(key))} · ${esc(key)}`;
+  const titulo=weekly?'Reporte semanal de corte de lámina':'Reporte diario de corte de lámina';
+  const periodo=weekly?`Semana del ${weekLabel(key)}${weekly?' <span style="font-weight:400;color:#667">(lunes a viernes)</span>':''}`:`${esc(dayLabel(key))} · ${esc(key)}`;
   const diasCon=new Set(recs.filter(r=>(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).map(r=>r.fecha)).size;
   const sinDet=recs.filter(r=>!(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).length;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(weekly?weekLabelShort(key):key)}</title>
@@ -7862,7 +7980,7 @@ function buildProdReportHtml(mode,key,ctFilter){
   const atrTot=weekly?data.reduce((s,c)=>s+c.machines.reduce((a,m)=>a+m.diasAtraso,0),0):T.conAtraso;
   const sinMot=(()=>{ let n=0; data.forEach(c=>{ const src=weekly?c.perDay:[{rows:c.rows}]; src.forEach(d=>d.rows.forEach(r=>{ if(r.estado==='atraso'&&!r.atrasos.some(a=>a.motivo)&&!(weekly?d.atrCT:c.atrCT).length) n++; })); }); return n; })();
   const titulo=weekly?'Reporte semanal de producción':'Reporte diario de producción';
-  const periodo=weekly?`Semana del ${weekLabel(key)} <span style="font-weight:400;color:#667">(lunes a viernes${data.some(c=>c.days.length>5)?', incluye fin de semana con registros':''})</span>`:`${esc(dayLabel(key))} · ${esc(key)}`;
+  const periodo=weekly?`Semana del ${weekLabel(key)} <span style="font-weight:400;color:#667">(lunes a viernes)</span>`:`${esc(dayLabel(key))} · ${esc(key)}`;
   const sub=ctFilter?` · ${esc(ctLabel(ctFilter))}`:' · todos los centros de trabajo';
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${titulo} — ${esc(weekly?weekLabelShort(key):key)}</title>
 ${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
@@ -7881,31 +7999,161 @@ ${sections||'<p class="muted">Sin información para este periodo.</p>'}
 <footer>Cumplimiento = piezas producidas ÷ piezas programadas (solo máquinas con programa). Hora×hora: producidas = suma de las franjas de cada turno; programadas = programa del día (GW1, GW2, Laser de Cama) o lo capturado en el turno. Cierre del día: piezas totales y programadas capturadas al terminar el día. El reporte se calcula con los registros actuales. Aprovechamiento: diferencia = explosionadas − (registradas − eventuales); ahorro teórico = material no consumido + recortes recuperados (con la compensación de recortes ≥40%).</footer>
 </div></body></html>`;
 }
+// ── Reporte hora por hora (periodo libre, solo lunes a viernes) ──
+// Piezas procesadas por máquina, franja por franja, a partir de lo capturado en hora×hora.
+function repRangeLabel(a,b){
+  if(a===b){ const x=isoParts(a); return `${dayLabel(a)} de ${MESES_ES[x.m-1]} de ${x.y}`; }
+  const x=isoParts(a), y=isoParts(b);
+  if(x.y===y.y&&x.m===y.m) return `del ${x.d} al ${y.d} de ${MESES_ES[y.m-1]} de ${y.y}`;
+  if(x.y===y.y) return `del ${x.d} de ${MESES_ES[x.m-1]} al ${y.d} de ${MESES_ES[y.m-1]} de ${y.y}`;
+  return `del ${x.d} de ${MESES_ES[x.m-1]} de ${x.y} al ${y.d} de ${MESES_ES[y.m-1]} de ${y.y}`;
+}
+function repHoraData(ct,days){
+  const set=new Set(days);
+  const ms=getMachinesByCT(ct).filter(m=>machineInRoster(m.name)&&repMachineOk(ct,m.name));
+  const rows=[], sinReg=[];
+  ms.forEach(m=>{
+    const recs=repLatestBy(horaRecords.filter(r=>r&&r.ct===ct&&r.machine===m.name&&set.has(r.fecha)),r=>r.fecha+'|'+r.turno);
+    const byDay={};
+    recs.forEach(r=>{
+      const d=byDay[r.fecha]||(byDay[r.fecha]={fr:{},fab:0,dan:0,turnos:0});
+      d.turnos++;
+      safeParse(r.franjas,[]).filter(f=>f&&!f.isBreak).forEach(f=>{
+        const fab=Number(f.fabricadas)||0, dan=Number(f.danadas)||0;
+        if(!fab&&!dan) return;
+        const k=FRANJA_DISPLAY[f.franja]?f.franja:'__x';
+        const c=d.fr[k]||(d.fr[k]={fab:0,dan:0}); c.fab+=fab; c.dan+=dan; d.fab+=fab; d.dan+=dan;
+      });
+    });
+    const dias=Object.keys(byDay).filter(f=>byDay[f].fab||byDay[f].dan);
+    if(!dias.length){ sinReg.push(m.name); return; }
+    rows.push({machine:m.name,byDay,dias});
+  });
+  return {ct,rows,sinReg};
+}
+function buildHoraReportHtml(desde,hasta,ctFilter){
+  const esc=escH, nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0});
+  const quien=currentUser?currentUser.name:'', ahora=new Date();
+  const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const days=repWorkDaysBetween(desde,hasta);
+  const DETALLE_MAX=10;
+  const colLabel=f=>{
+    if(f==='__x') return '⚡ Extra';
+    const mm=(FRANJA_DISPLAY[f]||f).match(/(\d+):(\d+)\s*–\s*(\d+):(\d+)/); if(!mm) return esc(f);
+    const h=(H,M)=>M==='00'?String(+H):H+':'+M; return h(mm[1],mm[2])+'–'+h(mm[3],mm[4]);
+  };
+  const cell=c=>!c||(!c.fab&&!c.dan)?'<td class="day">—</td>':`<td class="day">${nf(c.fab)}${c.dan?` <span class="neg" style="font-size:8.5px">(${nf(c.dan)} dañ.)</span>`:''}</td>`;
+  const addC=(o,c)=>{ if(!c) return; o.fab+=c.fab; o.dan+=c.dan; };
+  const pct=(d,f)=>(f+d)>0?(d/(f+d)*100).toFixed(1)+'%':'—';
+  const data=repCtList(ctFilter).map(ct=>repHoraData(ct,days)).filter(c=>c.rows.length);   // solo centros con registros
+  const conDatos=data;
+  // Tabla máquina × franja para un conjunto de días (suma de los días indicados)
+  const gridTable=(c,fechas,titulo)=>{
+    const rows=c.rows.map(r=>({machine:r.machine,fr:(()=>{ const o={}; fechas.forEach(f=>{ const d=r.byDay[f]; if(!d) return; Object.keys(d.fr).forEach(k=>{ const x=o[k]||(o[k]={fab:0,dan:0}); addC(x,d.fr[k]); }); }); return o; })()})).filter(r=>Object.keys(r.fr).length);
+    if(!rows.length) return '';
+    let cols=FRANJA_ORDER.filter(f=>rows.some(r=>r.fr[f]));
+    if(rows.some(r=>r.fr.__x)) cols=cols.concat('__x');
+    const tot={}; cols.forEach(k=>tot[k]={fab:0,dan:0});
+    const body=rows.map(r=>{ const t={fab:0,dan:0}; cols.forEach(k=>{ addC(t,r.fr[k]); addC(tot[k],r.fr[k]); });
+      return `<tr><td><b>${esc(r.machine)}</b></td>${cols.map(k=>cell(r.fr[k])).join('')}<td class="n"><b>${nf(t.fab)}</b>${t.dan?` <span class="neg" style="font-size:8.5px">(${nf(t.dan)})</span>`:''}</td></tr>`; }).join('');
+    const g={fab:0,dan:0}; cols.forEach(k=>addC(g,tot[k]));
+    const totRow=rows.length>1?`<tr class="tot"><td>Total</td>${cols.map(k=>cell(tot[k])).join('')}<td class="n">${nf(g.fab)}${g.dan?` <span class="neg" style="font-size:8.5px">(${nf(g.dan)})</span>`:''}</td></tr>`:'';
+    return `<div class="line"><b>${titulo}</b></div><table style="table-layout:fixed"><thead><tr><th style="width:16%">Máquina</th>${cols.map(k=>`<th class="n" style="text-align:center">${colLabel(k)}</th>`).join('')}<th class="n" style="width:11%">Total</th></tr></thead><tbody>${body}${totRow}</tbody></table>`;
+  };
+  let G={fab:0,dan:0}, maqCon=0; const diasCon=new Set();
+  const sections=data.map(c=>{
+    const fechasCT=Array.from(new Set([].concat(...c.rows.map(r=>r.dias)))).sort();
+    fechasCT.forEach(f=>diasCon.add(f));
+    const multi=fechasCT.length>1;
+    // Resumen por máquina
+    const T={fab:0,dan:0}, tD={}; fechasCT.forEach(f=>tD[f]={fab:0,dan:0});
+    const resRows=c.rows.map(r=>{
+      const t={fab:0,dan:0}; let hrs=0, turnos=0;
+      r.dias.forEach(f=>{ const d=r.byDay[f]; addC(t,d); addC(tD[f],d); turnos+=d.turnos; hrs+=Object.keys(d.fr).filter(k=>d.fr[k].fab>0).length; });
+      addC(T,t); maqCon++;
+      const dayCells=multi?fechasCT.map(f=>cell(r.byDay[f])).join(''):'';
+      return `<tr><td><b>${esc(r.machine)}</b></td>${dayCells}<td class="n"><b>${nf(t.fab)}</b></td><td class="n ${t.dan?'neg':''}">${nf(t.dan)}</td><td class="n">${pct(t.dan,t.fab)}</td><td class="n">${r.dias.length}</td><td class="n">${hrs?nf(t.fab/hrs):'—'}</td></tr>`;
+    }).join('');
+    G.fab+=T.fab; G.dan+=T.dan;
+    const totRes=c.rows.length>1?`<tr class="tot"><td>Total ${esc(ctLabel(c.ct))}</td>${multi?fechasCT.map(f=>cell(tD[f])).join(''):''}<td class="n">${nf(T.fab)}</td><td class="n ${T.dan?'neg':''}">${nf(T.dan)}</td><td class="n">${pct(T.dan,T.fab)}</td><td class="n">—</td><td class="n">—</td></tr>`:'';
+    const resumen=`<table><thead><tr><th>Máquina</th>${multi?fechasCT.map(f=>`<th class="n" style="text-align:center">${esc(dayLabel(f))}</th>`).join(''):''}<th class="n">Procesadas</th><th class="n">Dañadas</th><th class="n">% daño</th><th class="n">Días</th><th class="n">Prom. / hora</th></tr></thead><tbody>${resRows}${totRes}</tbody></table>`;
+    const acumulado=multi?gridTable(c,fechasCT,'Acumulado del periodo, hora por hora'):'';
+    let detalle='';
+    if(!multi) detalle=gridTable(c,fechasCT,'Hora por hora · '+esc(dayLabel(fechasCT[0])));
+    else if(fechasCT.length<=DETALLE_MAX) detalle=fechasCT.map(f=>gridTable(c,[f],'Hora por hora · '+esc(dayLabel(f)))).join('');
+    else detalle=`<div class="line muted">Detalle día por día omitido (el periodo tiene ${fechasCT.length} días con registro; elige ${DETALLE_MAX} o menos para verlo).</div>`;
+    const sr=c.sinReg.length?`<div class="line muted">Sin registro hora×hora en el periodo: ${esc(c.sinReg.join(', '))}.</div>`:'';
+    return `<section style="page-break-inside:auto"><h2><span class="tag ct">${esc(ctLabel(c.ct).toUpperCase())}</span> <small>${c.rows.length} máquina${c.rows.length===1?'':'s'} con registro · ${fechasCT.length} día${fechasCT.length===1?'':'s'}</small></h2>
+      ${resumen}${acumulado}${detalle}${sr}</section>`;
+  }).join('');
+  const sub=ctFilter?` · ${esc(ctLabel(ctFilter))}`:' · todos los centros de trabajo';
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte hora por hora — ${esc(desde)}${desde!==hasta?' a '+esc(hasta):''}</title>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<header><div><h1>Reporte hora por hora de producción</h1><div class="wk">${esc(repRangeLabel(desde,hasta))} <span style="font-weight:400;color:#667">(lunes a viernes)</span>${sub}</div></div>
+<div class="meta">OEE Planta${quien?' · '+esc(quien):''}<br>Generado el ${esc(generado)}</div></header>
+<div class="kpis">
+  <div class="kpi main"><div class="l">Piezas procesadas</div><div class="v">${nf(G.fab)}</div><div class="s">suma de las franjas capturadas</div></div>
+  <div class="kpi"><div class="l">Piezas dañadas</div><div class="v ${G.dan?'neg':''}">${nf(G.dan)}</div><div class="s">${pct(G.dan,G.fab)} de lo procesado</div></div>
+  <div class="kpi"><div class="l">Máquinas con registro</div><div class="v">${maqCon}</div><div class="s">${conDatos.length} centro${conDatos.length===1?'':'s'} de trabajo</div></div>
+  <div class="kpi"><div class="l">Días con registro</div><div class="v">${diasCon.size}</div><div class="s">de ${days.length} día${days.length===1?'':'s'} hábil${days.length===1?'':'es'} del periodo</div></div>
+</div>
+${sections||'<p class="muted">Sin información hora×hora para este periodo.</p>'}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Piezas procesadas = piezas fabricadas capturadas en cada franja horaria (hora×hora); entre paréntesis, las dañadas de esa franja. Prom. / hora = procesadas ÷ franjas con producción. Solo días hábiles (lunes a viernes). Las franjas fuera del horario estándar se agrupan en «Extra». Incluye las máquinas de los reportes de producción.</footer>
+</div></body></html>`;
+}
 // ── Pantalla Reportes ──
 let repMode='diario';
 function repIsWeek(m){ return m==='semanal'||m==='lamsem'||m==='lamcomp'; }
 function repIsLam(m){ return m==='lamdia'||m==='lamsem'||m==='lamcomp'; }
 // Reporte que corresponde al modo elegido
-function repBuildHtml(s,forScreen){ if(s.mode==='programa') return buildProgramaReportHtml(s.fecha,forScreen?{index:true}:undefined); if(s.mode==='lamcomp') return buildLaminaCompiladoHtml(repKey()); if(repIsLam(s.mode)) return buildLaminaReportHtml(s.mode==='lamsem',repKey()); return buildProdReportHtml(s.mode,repKey(),s.ct); }
-function repState(){ return {mode:repMode,fecha:document.getElementById('rep-fecha')?.value||todayStr(),ct:document.getElementById('rep-ct')?.value||''}; }
+function repBuildHtml(s,forScreen){ if(s.mode==='hora') return buildHoraReportHtml(s.desde,s.hasta,s.ct); if(s.mode==='programa') return buildProgramaReportHtml(s.fecha,forScreen?{index:true}:undefined); if(s.mode==='lamcomp') return buildLaminaCompiladoHtml(repKey()); if(repIsLam(s.mode)) return buildLaminaReportHtml(s.mode==='lamsem',repKey()); return buildProdReportHtml(s.mode,repKey(),s.ct); }
+function repState(){
+  const g=id=>document.getElementById(id)?.value||'';
+  let d=g('rep-desde')||todayStr(), h=g('rep-hasta')||d; if(d>h){ const t=d; d=h; h=t; }
+  return {mode:repMode,fecha:g('rep-fecha')||todayStr(),ct:g('rep-ct'),desde:d,hasta:h};
+}
 function repSetMode(m,el){
   repMode=m;
   document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
   const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=repIsWeek(m)?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
   const ctSel=document.getElementById('rep-ct'); if(ctSel) ctSel.style.display=(m==='programa'||repIsLam(m))?'none':'';
+  const sg=document.getElementById('rep-single'), rg=document.getElementById('rep-range');
+  if(sg) sg.style.display=m==='hora'?'none':'flex'; if(rg) rg.style.display=m==='hora'?'flex':'none';
+  if(m==='hora'){ const d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta'); if(d&&!d.value) repRangoPreset('sem',true); }
   if(m==='programa'){ try{ refreshProgramaDiaFromCloud(); }catch(e){} }
   renderReportes();
 }
 function repShift(n){
   const inp=document.getElementById('rep-fecha'); if(!inp) return;
-  inp.value=isoAddDays(inp.value||todayStr(),repIsWeek(repMode)?7*n:n); renderReportes();
+  inp.value=repIsWeek(repMode)?isoAddDays(inp.value||todayStr(),7*n):repWorkShift(inp.value||todayStr(),n); renderReportes();
 }
 function repGoFecha(f){ const inp=document.getElementById('rep-fecha'); if(inp&&/^\d{4}-\d{2}-\d{2}$/.test(f||'')){ inp.value=f; renderReportes(); try{ window.scrollTo(0,0); }catch(e){} } }
-function repHoy(){ const inp=document.getElementById('rep-fecha'); if(inp){ inp.value=todayStr(); renderReportes(); } }
+function repHoy(){ const inp=document.getElementById('rep-fecha'); if(inp){ inp.value=repWorkSnap(todayStr(),-1); renderReportes(); } }
+// Periodo libre (reporte hora por hora)
+function repRangoCambio(){
+  const d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta');
+  if(d&&h&&d.value&&h.value&&d.value>h.value){ const t=d.value; d.value=h.value; h.value=t; }
+  renderReportes();
+}
+function repRangoPreset(k,silent){
+  const d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta'); if(!d||!h) return;
+  const hoy=todayStr(), sem=getWeekRange(hoy).start; let a,b;
+  if(k==='semAnt'){ a=isoAddDays(sem,-7); b=isoAddDays(sem,-3); }
+  else if(k==='mes'){ a=hoy.slice(0,8)+'01'; b=repWorkSnap(hoy,-1); }
+  else if(k==='hoy'){ a=b=repWorkSnap(hoy,-1); }
+  else { a=sem; b=isoAddDays(sem,4); }
+  d.value=a; h.value=b; if(!silent) renderReportes();
+}
 function repKey(){ const s=repState(); return repIsWeek(s.mode)?getWeekRange(s.fecha).start:s.fecha; }
 function renderReportes(){
   const fr=document.getElementById('rep-frame'); if(!fr) return;
   const inp=document.getElementById('rep-fecha'); if(inp && !inp.value) inp.value=todayStr();
+  // Sin sábados ni domingos: si se elige un fin de semana en un reporte diario, se pasa al viernes
+  if(inp && !repIsWeek(repMode) && /^\d{4}-\d{2}-\d{2}$/.test(inp.value) && !repIsWorkday(inp.value)) inp.value=repWorkSnap(inp.value,-1);
+  if(repMode==='hora'){ const d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta'); if(d&&!d.value) repRangoPreset('sem',true); }
   const s=repState();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(s.fecha)) return;
   let html=''; try{ html=repBuildHtml(s,true); }catch(e){ console.warn('reporte',e); html='<p style="font-family:sans-serif;padding:20px">No se pudo generar el reporte: '+escH(e.message)+'</p>'; }
@@ -7915,14 +8163,14 @@ function renderReportes(){
   if(fr._stamp!==stamp){ fr._stamp=stamp; fr.srcdoc=shown; }
   const old=document.getElementById('rep-old'); 
   const limite=isoAddDays(todayStr(),-REP_VENTANA_DIAS);
-  const ini=repIsWeek(s.mode)?repKey():s.fecha;
+  const ini=s.mode==='hora'?s.desde:(repIsWeek(s.mode)?repKey():s.fecha);
   if(old){ old.style.display=(ini<limite)?'block':'none'; }
 }
 function repFit(f){ try{ const h=f.contentDocument.documentElement.scrollHeight; if(h>200) f.style.height=(h+10)+'px'; }catch(e){} }
 function repPrint(){ openPrintHtml(repBuildHtml(repState(),false)); }
 // Días fuera de lo que la app descarga al iniciar (últimos 45 días): se piden al Sheet bajo demanda
 function repCargarHistorial(){
-  const s=repState(), ini=isoAddDays(repIsWeek(s.mode)?repKey():s.fecha,-1);
+  const s=repState(), ini=isoAddDays(s.mode==='hora'?s.desde:(repIsWeek(s.mode)?repKey():s.fecha),-1);
   const msg=document.getElementById('rep-old-msg'); if(msg) msg.textContent='Cargando del Sheet…';
   const names=['Cierre_Dia','OEE_Registros','Atrasos','Programa_Dia',...(repIsLam(s.mode)?['Aprovechamiento','Merma_Semanal']:[]),...ALL_CTS.map(ctSheet)];
   gasRequest({action:'readAll',sheets:names.join(','),since:ini},(data)=>{
