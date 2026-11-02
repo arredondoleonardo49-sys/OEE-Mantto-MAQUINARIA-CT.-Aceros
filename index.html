@@ -468,86 +468,48 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .mat-kpi-v{font-size:18px;font-weight:700}
 .mat-desc{font-size:11px;color:var(--text3);margin-bottom:8px}
 @media(max-width:1000px){.dash-split{grid-template-columns:1fr}}
-/* ── Dashboard en formato tablero: izquierda = máquinas · derecha = estado / pendientes / KPIs ── */
-.dash-strip{display:none;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--text2)}
-.dash-strip b{color:var(--text);font-weight:600}.dash-strip .sep{color:var(--text3)}
-.dash-strip .clk{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--text)}
-.dash-strip .upd{font-size:11.5px;color:var(--text3)}
-.dash-strip .live{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(62,207,142,.18)}
-.dash-tv{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start}
-.dash-left,.dash-right{display:flex;flex-direction:column;gap:12px;min-width:0}
-.dash-tv .dash-left>.chart-card,.dash-tv .dash-right>.chart-card,.dash-tv .dash-right>#ct-cards{margin:0!important}
-.dash-tv .hh-grid{grid-template-columns:1fr}
-.dash-foot{font-size:10.5px;color:var(--text3);text-align:center;padding:8px 0 0}
-@media(min-width:1101px){.dash-tv.split{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)}}
-@media(max-width:1100px){.dash-tv{grid-template-columns:1fr}.dash-tv .hh-grid{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}}
-.dash-tv .dash-split{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
-.dash-tv .dia-tbl td:first-child{min-width:110px}
-/* Banner de estado del CT */
-.dash-banner{display:flex;align-items:center;gap:14px;border-radius:12px;padding:11px 16px;border:1px solid var(--bc,var(--border));background:var(--bb,var(--bg2));color:var(--bf,var(--text))}
-.dash-banner.ok{--bc:rgba(62,207,142,.5);--bb:rgba(62,207,142,.13);--bf:var(--green)}
-.dash-banner.warn{--bc:rgba(245,166,35,.5);--bb:rgba(245,166,35,.12);--bf:var(--amber)}
-.dash-banner.bad{--bc:rgba(240,96,96,.5);--bb:rgba(240,96,96,.12);--bf:var(--red)}
-.dash-banner.mut{--bc:var(--border);--bb:var(--bg2);--bf:var(--text)}
-.dash-bn-ic{font-size:36px;line-height:1;font-weight:700;flex:none}
-.dash-bn-t{font-size:26px;font-weight:700;line-height:1.1}
-.dash-bn-s{font-size:12.5px;color:var(--text2);margin-top:4px}.dash-bn-s b{font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:600}
-/* Qué falta por cortar (Laser) */
-.pend-hd{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text3);margin:-2px 0 8px}.pend-hd b{font-family:'IBM Plex Mono',monospace;color:var(--text);font-size:13px;margin-left:4px}
-.pend-wrap{overflow:auto;border:1px solid var(--border);border-radius:8px}
-.pend-tbl{width:100%;border-collapse:collapse;font-size:12px}
-.pend-tbl th{position:sticky;top:0;background:var(--bg3);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 9px;border-bottom:1px solid var(--border);white-space:nowrap}
-.pend-tbl td{padding:6px 9px;border-bottom:.5px solid var(--border);color:var(--text2)}
-.pend-tbl tr:last-child td{border-bottom:0}
-.pend-tbl td.n{text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);white-space:nowrap}
-.pend-tbl td.op{font-family:'IBM Plex Mono',monospace;color:var(--text);font-weight:600;white-space:nowrap}
-.pend-m{display:inline-block;font-size:10.5px;font-weight:700;border-radius:5px;padding:1px 7px;background:rgba(74,158,255,.14);color:var(--blue)}
-.pend-m.m2{background:rgba(62,207,142,.14);color:var(--green)}.pend-m.m3{background:rgba(180,140,255,.16);color:#b48cff}
-.pend-wrap{max-height:520px}
-#page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
-#page-dashboard:fullscreen #dash-mat-panel.pend .pend-wrap{flex:1;min-height:0;max-height:none}
-.pend-ok{padding:1.2rem 0;text-align:center;color:var(--green);font-size:13px}
-/* KPIs del CT: tarjetas compactas en rejilla */
-.dash-tv #ct-cards .ct-card{background:none;border:0;padding:0;overflow:visible;transform:none!important;box-shadow:none!important;display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px;height:auto}
-.dash-tv #ct-cards .ct-card::before{display:none}
-.dash-tv #ct-cards .ct-card-header{grid-column:1/-1;margin:0}
-.dash-tv #ct-cards .ct-card-body,.dash-tv #ct-cards .ct-highlight-row,.dash-tv #ct-cards .ct-card-stats{display:contents}
-.dash-tv #ct-cards .ct-highlight-box,.dash-tv #ct-cards .ct-card-hero,.dash-tv #ct-cards .ct-card-stat{background:var(--bg2);border:1px solid var(--border);border-radius:10px;min-width:0;margin:0}
-.dash-tv #ct-cards .ct-card-hero{padding:.45rem .65rem;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
-.dash-tv #ct-cards .ct-card-stat{padding:.4rem .6rem;gap:7px;align-self:stretch}
-.dash-tv #ct-cards .ct-card-stat-icon{display:none}
-.dash-tv #ct-cards .ct-card-stat-label,.dash-tv #ct-cards .ct-highlight-label,.dash-tv #ct-cards .ct-card-label{font-size:9px;letter-spacing:.3px}
-.dash-tv #ct-cards .ct-card-label{margin-bottom:.3rem}
-.dash-tv #ct-cards .ct-card-oee{font-size:26px!important}
-/* Pantalla completa */
+/* ── Pantalla completa del Dashboard: todo visible sin desplazar ── */
 #page-dashboard:fullscreen{background:var(--bg);overflow:auto;zoom:var(--fsz,1);height:calc(100vh / var(--fsz,1));width:calc(100vw / var(--fsz,1));display:flex;flex-direction:column}
-#page-dashboard:fullscreen .topbar{padding:.45rem 1rem .4rem}
-#page-dashboard:fullscreen .topbar .page-title,#page-dashboard:fullscreen .topbar .page-sub{display:none}
-#page-dashboard:fullscreen .dash-strip{display:flex}
-#page-dashboard:fullscreen .content{display:flex;flex-direction:column;padding:10px 14px 4px;flex:1;min-height:0;overflow:auto}
-#page-dashboard:fullscreen .dash-tv{flex:1;min-height:0;align-items:stretch}
-#page-dashboard:fullscreen .dash-left,#page-dashboard:fullscreen .dash-right{min-height:0}
-#page-dashboard:fullscreen #dash-hora-card{flex:1;min-height:0;display:flex;flex-direction:column}
+#page-dashboard:fullscreen .topbar{padding:.5rem 1rem .4rem}
+#page-dashboard:fullscreen .content{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch;padding:10px 14px;flex:1;min-height:0;overflow:auto}
+#page-dashboard:fullscreen #ct-cards{grid-template-rows:1fr}
+#page-dashboard:fullscreen .ct-card{display:flex;flex-direction:column;height:100%}
+#page-dashboard:fullscreen .ct-card-body{flex:1;align-content:center}
+#page-dashboard:fullscreen #dash-hora-card,#page-dashboard:fullscreen .content>.ct-section{display:flex;flex-direction:column;min-height:0}
 #page-dashboard:fullscreen #dash-hora-panel{flex:1;min-height:0;display:flex;flex-direction:column}
-#page-dashboard:fullscreen #dash-hora-panel>.dash-split,#page-dashboard:fullscreen #dash-hora-panel>.programa-table-wrap,#page-dashboard:fullscreen #dash-hora-panel>.hh-grid{flex:1;min-height:0}
+#page-dashboard:fullscreen #dash-hora-panel>.dash-split,#page-dashboard:fullscreen #dash-hora-panel>.programa-table-wrap{flex:1;min-height:0}
 #page-dashboard:fullscreen .dash-col{min-height:0}
-#page-dashboard:fullscreen .dash-right>#dash-chart-card{flex:1 1 0;min-height:110px;overflow:auto;display:flex;flex-direction:column}
-#page-dashboard:fullscreen .dash-right>#ct-cards{flex:0 0 auto}
-#page-dashboard:fullscreen .dash-right>.ct-section{flex:0 1 auto;min-height:0;max-height:24%;display:flex;flex-direction:column;margin:0}
-#page-dashboard:fullscreen .dash-right>.ct-section .ct-header{display:none}
-#page-dashboard:fullscreen .dash-right>.ct-section>div:not(.ct-header){flex:1;min-height:0;display:flex;flex-direction:column}
-#page-dashboard:fullscreen .dash-right>.ct-section .card{flex:1;min-height:0;display:flex;flex-direction:column;margin:0}
-#page-dashboard:fullscreen .dash-right>.ct-section .tbl-wrap{flex:1;min-height:0;overflow:auto}
-#page-dashboard:fullscreen .dash-right>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .dash-right>.ct-section .tbl td:first-child{display:none}
-#page-dashboard:fullscreen .dash-right>.ct-section .tbl{font-size:10.5px}
-#page-dashboard:fullscreen .dash-right>.ct-section .tbl th{font-size:9px;letter-spacing:0}
-#page-dashboard:fullscreen .dash-right>.ct-section .tbl th,#page-dashboard:fullscreen .dash-right>.ct-section .tbl td{padding:3px 5px}
+#page-dashboard:fullscreen .programa-table-wrap{min-height:0}
+#page-dashboard:fullscreen .programa-table{height:100%}
+#page-dashboard:fullscreen .content>.ct-section>div:not(.ct-header){flex:1;min-height:0;display:flex;flex-direction:column}
+#page-dashboard:fullscreen .content>.ct-section .card{flex:1;min-height:0;display:flex;flex-direction:column;margin:0}
+#page-dashboard:fullscreen .content>.ct-section .tbl-wrap{flex:1;min-height:0;overflow:auto}
+#page-dashboard:fullscreen .content>.ct-section .tbl{height:100%}
+#page-dashboard:fullscreen .dash-hh-wrap td{font-size:15px;padding-top:2px;padding-bottom:2px}
+#page-dashboard:fullscreen .dash-hh-wrap td:first-child{font-size:13px}
+#page-dashboard:fullscreen .dash-hh-wrap th{font-size:13px}
+#page-dashboard:fullscreen #ct-cards{grid-column:1;grid-row:1;margin:0!important}
+#page-dashboard:fullscreen #dash-hora-card{grid-column:1;grid-row:2 / 4;margin:0!important}
+#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1 / 3;margin:0!important;min-height:0;overflow:auto}
+#page-dashboard:fullscreen .content>.ct-section{grid-column:2;grid-row:3;margin:0;min-width:0}
+#page-dashboard:fullscreen .content>.ct-section .ct-header{display:none}
+#page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:none}
+#page-dashboard:fullscreen .content>.ct-section .tbl{font-size:10.5px}
+#page-dashboard:fullscreen .content>.ct-section .tbl th{font-size:9px;letter-spacing:0}
 #page-dashboard:fullscreen .oee-bar{width:34px!important}
 #page-dashboard:fullscreen .dia-tbl{font-size:11px}#page-dashboard:fullscreen .dia-tbl td,#page-dashboard:fullscreen .dia-tbl th{padding:4px 4px}
-#page-dashboard:fullscreen .ct-card-header{margin-bottom:0}
-#page-dashboard:fullscreen .ct-highlight-box{padding:.4rem .6rem}
+#page-dashboard:fullscreen .content>.ct-section .tbl th,#page-dashboard:fullscreen .content>.ct-section .tbl td{padding:4px 5px}
+#page-dashboard:fullscreen .ct-card{padding:.7rem .9rem}
+#page-dashboard:fullscreen .ct-card-header{margin-bottom:.5rem}
+#page-dashboard:fullscreen .ct-card-body{gap:.8rem}
+#page-dashboard:fullscreen .ct-highlight-row{gap:8px;margin-bottom:8px}
+#page-dashboard:fullscreen .ct-highlight-box{padding:.5rem .7rem}
 #page-dashboard:fullscreen .ct-highlight-val,#page-dashboard:fullscreen .ct-meta-input{font-size:20px}
-#page-dashboard:fullscreen .ct-card-stat-val{font-size:15px}
+#page-dashboard:fullscreen .ct-card-oee{font-size:34px!important}
+#page-dashboard:fullscreen .ct-card-stats{gap:8px}
+#page-dashboard:fullscreen .ct-card-stat{padding:.5rem .8rem}
+#page-dashboard:fullscreen .ct-card-stat-icon{width:30px;height:30px}
+#page-dashboard:fullscreen .ct-card-stat-val{font-size:16px}
 #page-dashboard:fullscreen .chart-card{padding:.7rem .9rem}
 #page-dashboard:fullscreen .chart-title{margin-bottom:.5rem}
 #page-dashboard:fullscreen .dash-chips{margin-bottom:.5rem}
@@ -560,16 +522,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #page-dashboard:fullscreen .hh-pn{display:flex;flex-direction:column;min-height:0}
 #page-dashboard:fullscreen .hh-sc{flex:1;min-height:0}
 #page-dashboard:fullscreen .hh-in{height:100%}
-#page-dashboard:fullscreen .hh-bars{flex:1;height:auto;min-height:44px}
+#page-dashboard:fullscreen .hh-bars{flex:1;height:auto;min-height:60px}
 #page-dashboard:fullscreen .hh-n td{font-size:14px}
 #page-dashboard:fullscreen .programa-table td,#page-dashboard:fullscreen .programa-table th{padding:4px 8px}
 #page-dashboard:fullscreen .mat-kpi{padding:5px 9px;min-width:90px}
 #page-dashboard:fullscreen .mat-kpi-v{font-size:15px}
 #page-dashboard:fullscreen .mat-tbl td,#page-dashboard:fullscreen .mat-tbl th{padding:4px 8px}
 #page-dashboard:fullscreen #dash-chart-wrap{height:300px!important}
-#page-dashboard:fullscreen .dash-foot{padding:5px 0 2px}
 @media(max-width:1100px){
-  #page-dashboard:fullscreen .dash-right>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .dash-right>.ct-section .tbl td:first-child{display:table-cell}
+  #page-dashboard:fullscreen .content{grid-template-columns:1fr}
+  #page-dashboard:fullscreen #ct-cards,#page-dashboard:fullscreen #dash-hora-card,#page-dashboard:fullscreen #dash-chart-card,#page-dashboard:fullscreen .content>.ct-section{grid-column:1;grid-row:auto}
+  #page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:table-cell}
 }
 .mat-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .mat-tbl th{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
@@ -766,17 +729,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .hh-bd b{font-family:'IBM Plex Mono',monospace;font-size:17px}.hh-bd span{font-size:9px;opacity:.85;margin-top:2px;text-align:center}
 .hh-bd.ok{background:rgba(62,207,142,.16);color:var(--green)}.hh-bd.warn{background:rgba(245,166,35,.15);color:var(--amber)}
 .hh-bd.mut{background:var(--bg3);color:var(--text2)}.hh-bd.mut b{font-size:13px;color:var(--text)}
-.hh-prog{position:relative;height:8px;background:var(--border);border-radius:4px;margin-bottom:3px}.hh-pf{height:100%;border-radius:4px;opacity:.9}
-.hh-mk{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:#e8eaf2;border-radius:2px;box-shadow:0 0 0 1px var(--bg)}
-.hh-exp{font-size:10.5px;color:var(--text3);margin-bottom:7px}.hh-exp b{color:var(--text2);font-family:'IBM Plex Mono',monospace;font-weight:600}
-.hh-op{font-size:10.5px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:99px;padding:1px 8px}
+.hh-prog{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px}.hh-prog div{height:100%;border-radius:3px;opacity:.85}
 .hh-como{margin-top:7px;border:1px solid var(--border);border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;gap:2px}
 .hh-como b{font-size:12px;color:var(--text)}.hh-como span{font-size:10px;color:var(--text3)}
-
-/* Tarjetas de máquina (hora × hora) más grandes: conteo, indicador de adelanto y marcador de ritmo */
-.hh-big b{font-size:34px}
-.hh-bd{padding:3px 12px;min-width:92px}.hh-bd b{font-size:22px}.hh-bd span{font-size:9.5px;max-width:150px}
-.hh-bd.mut{padding:4px 10px;min-width:70px}
 
 /* Tarjeta del CT compacta (≈ la mitad de alto) para dar espacio a las gráficas hora × hora */
 #ct-cards .ct-card{padding:.55rem .8rem}
@@ -798,6 +753,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #ct-cards .ct-card-stat-icon{width:26px;height:26px}#ct-cards .ct-card-stat-icon svg{width:14px;height:14px}
 #ct-cards .ct-card-stat-val{font-size:15px}
 #ct-cards .ct-card-stat-label{font-size:9.5px}
+#page-dashboard:fullscreen #ct-cards .ct-card{height:auto}
+#page-dashboard:fullscreen #ct-cards{align-self:start}
 </style>
 </head>
 <body>
@@ -906,7 +863,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 <div id="page-dashboard" class="page active">
   <div class="topbar">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-page-sub">OEE del día en curso</div><div class="dash-strip" id="dash-strip"></div></div>
+      <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-page-sub">OEE del día en curso</div></div>
       <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
         <div style="display:flex;gap:6px">
           <button class="dash-ct-btn dash-group-btn active" onclick="setDashGroup('TROQUELES',this)">Troqueles</button>
@@ -922,24 +879,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
   </div>
   <div class="content">
-    <div class="dash-tv">
-    <div class="dash-left">
+    <!-- Tarjeta del CT seleccionado (datos de hoy) -->
+    <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:1.25rem" id="ct-cards"></div>
     <!-- Panel hora x hora en tiempo real -->
     <div class="chart-card" id="dash-hora-card" style="margin-bottom:1.25rem">
       <div class="chart-title" id="dash-hora-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Producción hora × hora — hoy</div>
       <div id="dash-hora-panel"></div>
     </div>
-    </div>
-    <div class="dash-right">
-    <div id="dash-banner" class="dash-banner"></div>
     <!-- Gráfica OEE por máquina del CT -->
     <div class="chart-card" id="dash-chart-card">
       <div class="chart-title" id="dash-chart-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg><span id="dash-chart-title-text">OEE por máquina</span></div>
       <div style="position:relative;width:100%;height:260px" id="dash-chart-wrap"><canvas id="dashChart"></canvas></div>
       <div id="dash-mat-panel" style="display:none;padding:2px 0 4px"></div>
     </div>
-    <!-- Tarjeta del CT seleccionado (datos de hoy) -->
-    <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:1.25rem" id="ct-cards"></div>
     <!-- Detalle por máquina colapsable -->
     <div class="ct-section">
       <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-troqueles',this)" data-collapsed="true"><span class="ct-badge-icon troqueles"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="5" rx="1"/><path d="M12 9v3"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></span><span class="ct-badge troqueles">TROQUELES</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
@@ -961,9 +913,6 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="ct-header ct-collapsible" onclick="toggleCT('ct-body-mamparas',this)" data-collapsed="true"><span class="ct-badge-icon mamparas"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="4" width="5" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg></span><span class="ct-badge mamparas">EST. MAMPARAS</span><div class="ct-line"></div><span class="ct-chevron">▾</span></div>
       <div id="ct-body-mamparas" style="display:none"><div class="card"><div class="tbl-wrap"><table class="tbl" id="tbl-mamparas"><thead><tr><th>Foto</th><th>Máquina</th><th>Prog.</th><th>Prod.</th><th>Cumpl.</th><th>Disp.</th><th>Rend.</th><th>Cal.</th><th>OEE</th><th>Estado</th><th>Paros</th><th>Costo paro</th></tr></thead><tbody></tbody></table></div></div></div>
     </div>
-    </div>
-    </div>
-    <div id="dash-foot" class="dash-foot">El ritmo esperado se calcula con el avance del turno (meta × tiempo transcurrido). Los datos se actualizan solos.</div>
   </div>
 </div>
 <!-- REGISTRO -->
@@ -1164,6 +1113,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <!-- TAB: PROGRAMA DEL DÍA -->
     <div id="reg-tab-programa" class="tab-content">
       <div class="tab-row programa-subtabs" id="programa-subtabs">
+        <div class="tab" id="prog-sub-ant" onclick="setProgSub('ant')">Programa anterior <span id="prog-sub-ant-f" class="programa-subf"></span></div>
         <div class="tab active" id="prog-sub-hoy" onclick="setProgSub('hoy')">Programa del día <span id="prog-sub-hoy-f" class="programa-subf"></span></div>
         <div class="tab" id="prog-sub-sig" onclick="setProgSub('sig')">Programa siguiente <span id="prog-sub-sig-f" class="programa-subf"></span></div>
         <span id="prog-sig-date-wrap" style="display:none;margin-left:auto;align-items:center;gap:6px;font-size:11px;color:var(--text3)">Fecha del programa <input type="date" id="prog-sig-fecha" onchange="setProgSigFecha(this.value)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></span>
@@ -2262,7 +2212,7 @@ function progActiveRecord(fecha,machine){
   return best;
 }
 // En «Programa siguiente» solo cuenta el programa de esa fecha; en «Programa del día», el vigente.
-function progViewRecord(fecha,machine){ return progSub==='sig'?getProgramaRecord(fecha,machine):progActiveRecord(fecha,machine); }
+function progViewRecord(fecha,machine){ return (progSub==='sig'||progSub==='ant')?getProgramaRecord(fecha,machine):progActiveRecord(fecha,machine); }
 function getProgramaRecord(fecha,machine){
   return programaDia.find(r=>r.fecha===fecha && r.machine===machine) || null;
 }
@@ -2348,13 +2298,15 @@ function extractSheetTable(ws){
 // a la franja del hora por hora en que se cortó, y queda en el Sheet con su bitácora (fecha, turno, franja).
 // Líder e Ingeniería ven y suben programas y consultan el avance, pero no registran cortes ni observaciones.
 const PROG_GRUPO={'GW1':['GW1','GW2'],'GW2':['GW1','GW2'],'Laser de Cama':['Laser de Cama']};
-let progSub='hoy';            // 'hoy' = programa del día · 'sig' = programa siguiente (se adelanta)
+let progSub='hoy';            // 'ant' = programa anterior (día hábil previo) · 'hoy' = programa del día · 'sig' = programa siguiente (se adelanta)
 let progSigOverride='';       // fecha elegida a mano para el programa siguiente
 const progShowDone={};        // programas completados que se están viendo desplegados
 function progRegFecha(){ return document.getElementById('reg-fecha')?.value||todayStr(); }
 function progNextWorkday(iso){ let d=isoAddDays(iso,1); while(isoDow(d)===0||isoDow(d)===6) d=isoAddDays(d,1); return d; }
+function progPrevWorkday(iso){ let d=isoAddDays(iso,-1); while(isoDow(d)===0||isoDow(d)===6) d=isoAddDays(d,-1); return d; }
 function progTargetFecha(){
   const base=progRegFecha();
+  if(progSub==='ant') return progPrevWorkday(base);
   if(progSub!=='sig') return base;
   return (progSigOverride && progSigOverride>base)?progSigOverride:progNextWorkday(base);
 }
@@ -2561,12 +2513,24 @@ function progMoverFecha(machine,from,to){
   return {ok:true,msg:machine+': '+dayLabel(from)+' → '+dayLabel(to)+(dest?' (reemplazó el programa que ya había)':'')+arMsg};
 }
 // Ventana «Mover programa a otra fecha»
+// Fecha en la que se cortó (casi) todo el programa, si es una sola y distinta a la del programa
+function progFechaDeCortes(rec){
+  const cortes=progCortesParse(rec.cortes), cnt={}; let tot=0;
+  Object.keys(cortes).forEach(r=>{ const c=cortes[r]; if(c&&c.on&&c.f){ const d=isoFromYmd(c.f); if(d){ cnt[d]=(cnt[d]||0)+1; tot++; } } });
+  let best='',n=0; Object.keys(cnt).forEach(d=>{ if(cnt[d]>n){ n=cnt[d]; best=d; } });
+  const filas=Math.max(0,(rec.rows||[]).length-1);
+  return (best && best!==rec.fecha && filas && n>=Math.ceil(filas*0.5))?best:'';
+}
 function progMoverDlg(fromFecha,machine){
   if(!canFinalizarPrograma()){ progMsg('Solo un Líder o Ingeniero puede mover un programa de fecha.','var(--amber)'); return; }
   const old=document.getElementById('prog-mover-modal'); if(old) old.remove();
   const ms=progMachinesEnFecha(fromFecha); if(!ms.length) return;
-  const hoy=todayStr();
+  const hoy=todayStr(), prev=progPrevWorkday(hoy), sigd=progNextWorkday(hoy);
+  const recM=getProgramaRecord(fromFecha,machine)||getProgramaRecord(fromFecha,ms[0]);
+  const sug=progFechaDeCortes(recM);
+  const def=sug||(fromFecha!==hoy?hoy:prev);
   const esc=x=>String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const quick=[['Anterior',prev],['Hoy',hoy],['Siguiente',sigd]].filter(q=>q[1]!==fromFecha);
   const m=document.createElement('div'); m.id='prog-mover-modal';
   m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px';
   m.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;max-width:560px;width:100%;padding:18px 20px;max-height:92vh;overflow:auto">
@@ -2575,11 +2539,12 @@ function progMoverDlg(fromFecha,machine){
     <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Programas fechados el <b style="color:var(--text)">${progFechaLarga(fromFecha)}</b></div>
     <div id="pmv-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">${ms.map(n=>{
       const r=getProgramaRecord(fromFecha,n), st=progStats(r);
-      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 10px"><input type="checkbox" class="pmv-m" value="${esc(n)}" ${(n===machine||progSospechosoAdelanto(r))?'checked':''}> <b>${esc(n)}</b> <span style="color:var(--text3);font-size:11px">${st.done}/${st.total} filas cortadas · ${esc(r.sheetName||'')}</span></label>`;
+      return `<label style="display:flex;align-items:center;gap:8px;font-size:13px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:7px 10px"><input type="checkbox" class="pmv-m" value="${esc(n)}" ${(n===machine||progSospechosoAdelanto(r)||(sug&&progFechaDeCortes(r)===sug))?'checked':''}> <b>${esc(n)}</b> <span style="color:var(--text3);font-size:11px">${st.done}/${st.total} filas cortadas · ${esc(r.sheetName||'')}</span></label>`;
     }).join('')}</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:12px;color:var(--text2)">Nueva fecha del programa</span>
-      <input type="date" id="pmv-fecha" value="${hoy}" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)">
-      <button class="btn" style="font-size:11px;padding:4px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)" onclick="document.getElementById('pmv-fecha').value='${hoy}';progMoverDlgRefresh()">Hoy</button></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Mover a:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${quick.map(q=>`<button class="btn pmv-q" data-f="${q[1]}" style="font-size:12px;padding:6px 12px;border:1px solid var(--border);background:var(--bg3);color:var(--text)" onclick="document.getElementById('pmv-fecha').value='${q[1]}';progMoverDlgRefresh()">${q[0]} <span style="color:var(--text3)">· ${dayLabel(q[1])}</span></button>`).join('')}
+      <input type="date" id="pmv-fecha" value="${def}" title="Otra fecha" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text)"></div>
+    ${sug?`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">💡 Sus filas se cortaron el <b style="color:var(--text2)">${progFechaLarga(sug)}</b>: se sugiere esa fecha.</div>`:''}
     <div id="pmv-warn" style="font-size:12px;margin:8px 0;min-height:18px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
       <button class="btn" onclick="document.getElementById('prog-mover-modal').remove()" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text2)">Cancelar</button>
@@ -2594,6 +2559,7 @@ function progMoverDlgSel(){ return [...document.querySelectorAll('#prog-mover-mo
 function progMoverDlgRefresh(){
   const from=window._pmvFrom, to=(document.getElementById('pmv-fecha')||{}).value, w=document.getElementById('pmv-warn'), ok=document.getElementById('pmv-ok'); if(!w) return;
   const sel=progMoverDlgSel(); let html='', bloquea=false;
+  document.querySelectorAll('#prog-mover-modal .pmv-q').forEach(b=>{ const on=b.dataset.f===to; b.style.borderColor=on?'var(--blue)':'var(--border)'; b.style.background=on?'rgba(74,158,255,.15)':'var(--bg3)'; });
   if(!/^\d{4}-\d{2}-\d{2}$/.test(to||'')){ html='<span style="color:var(--amber)">Elige la fecha.</span>'; bloquea=true; }
   else if(to===from){ html='<span style="color:var(--amber)">La nueva fecha es la misma que la actual.</span>'; bloquea=true; }
   else if(!sel.length){ html='<span style="color:var(--amber)">Selecciona al menos una máquina.</span>'; bloquea=true; }
@@ -2629,7 +2595,7 @@ function progMoverDlgGo(from,to,sel){
   const res=sel.map(n=>progMoverFecha(n,from,to));
   saveProgramaDiaLS();
   const d=document.getElementById('prog-mover-modal'); if(d) d.remove();
-  const regF=progRegFecha(); if(to===regF) progSub='hoy'; else if(to>regF) progSub='sig';
+  const regF=progRegFecha(); if(to===regF) progSub='hoy'; else if(to===progPrevWorkday(regF)) progSub='ant'; else if(to>regF) progSub='sig';
   if(progSub==='sig') progSigOverride=to;
   try{ progAutoFillContext(); }catch(e){}
   renderProgramaDia(true);
@@ -3051,7 +3017,7 @@ function programaReabrir(fecha,machine){
 }
 function toggleProgDone(key){ progShowDone[key]=!progShowDone[key]; renderProgramaDia(true); }
 function setProgSub(v){
-  progSub=(v==='sig')?'sig':'hoy'; renderProgramaDia(true);
+  progSub=(v==='sig'||v==='ant')?v:'hoy'; renderProgramaDia(true);
   try{ refreshProgramaDiaFromCloud(); }catch(e){}
 }
 function setProgSigFecha(v){ progSigOverride=/^\d{4}-\d{2}-\d{2}$/.test(v||'')?v:''; renderProgramaDia(true); }
@@ -3160,7 +3126,8 @@ function processProgramaFile(file){
   // Candado: se confirma explícitamente para qué día se guarda el programa (evita subirlo en la pestaña equivocada)
   { const hoy=todayStr(), esSig=(fecha>hoy), ya=PROGRAMA_MACHINES.filter(m=>getProgramaRecord(fecha,m));
     const fn=progFechaEnNombre(file.name);
-    let q='Archivo: '+file.name+'\n\nSe guardará como programa del '+progFechaLarga(fecha)+(esSig?'  →  «PROGRAMA SIGUIENTE» (se corta por adelantado, NO es el de hoy).':(fecha===hoy?'  →  programa de HOY.':'.'));
+    let q='Archivo: '+file.name+'\n\nSe guardará como programa del '+progFechaLarga(fecha)+(esSig?'  →  «PROGRAMA SIGUIENTE» (se corta por adelantado, NO es el de hoy).':(fecha===hoy?'  →  programa de HOY.':(fecha<hoy?'  →  programa ANTERIOR.':'.')));
+    if(fecha<hoy) q+='\n\n⚠ Es un programa de un día ANTERIOR ('+progFechaLarga(fecha)+'), no el de hoy. Si es el de hoy, cancela y súbelo en «Programa del día».';
     if(esSig) q+='\n\nSi este es el programa que se está cortando HOY ('+progFechaLarga(hoy)+'), cancela y súbelo en la pestaña «Programa del día».';
     if(fn && fn!==fecha) q+='\n\n⚠ El nombre del archivo parece indicar el '+progFechaLarga(fn)+', que no coincide con la fecha donde lo estás subiendo.';
     if(ya.length) q+='\n\nYa hay programa de '+ya.join(', ')+' en esa fecha: se actualiza conservando lo ya cortado en las filas que no cambian.';
@@ -3568,8 +3535,9 @@ function renderProgramaDia(force){
   updateProgramaTabState(machine);
 
   // Pestañas «Programa del día» / «Programa siguiente»
-  const bh=document.getElementById('prog-sub-hoy'), bs=document.getElementById('prog-sub-sig');
+  const bh=document.getElementById('prog-sub-hoy'), bs=document.getElementById('prog-sub-sig'), ba=document.getElementById('prog-sub-ant');
   if(bh&&bs){
+    if(ba){ ba.classList.toggle('active',progSub==='ant'); const fa=document.getElementById('prog-sub-ant-f'); if(fa) fa.textContent=dayLabel(progPrevWorkday(regFecha)); }
     bh.classList.toggle('active',progSub==='hoy'); bs.classList.toggle('active',progSub==='sig');
     const fh=document.getElementById('prog-sub-hoy-f'), fs=document.getElementById('prog-sub-sig-f');
     if(fh) fh.textContent=dayLabel(regFecha);
@@ -3579,9 +3547,9 @@ function renderProgramaDia(force){
     if(di && progSub==='sig' && document.activeElement!==di) di.value=fecha;
   }
   const ut=document.getElementById('programa-upload-title');
-  if(ut) ut.textContent=progSub==='sig'?`Programa SIGUIENTE (${dayLabel(fecha)} · ${fecha}). Solo para lo que se produce otro día; lo que se corta HOY va en «Programa del día»`:`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`;
+  if(ut) ut.textContent=progSub==='ant'?`Programa ANTERIOR (${dayLabel(fecha)} · ${fecha}). Para ver o corregir lo de ese día; si el archivo es de hoy, súbelo en «Programa del día»`:progSub==='sig'?`Programa SIGUIENTE (${dayLabel(fecha)} · ${fecha}). Solo para lo que se produce otro día; lo que se corta HOY va en «Programa del día»`:`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`;
   const uh=document.getElementById('programa-upload-head');
-  if(uh) uh.textContent=progSub==='sig'?'Subir programa siguiente (adelantar programa)':'Subir programa del día';
+  if(uh) uh.textContent=progSub==='ant'?'Subir programa anterior (día hábil previo)':progSub==='sig'?'Subir programa siguiente (adelantar programa)':'Subir programa del día';
 
   // Resumen de avance por máquina (todos lo ven) + estado de carga (quien sube)
   const sum=document.getElementById('programa-summary');
@@ -3604,7 +3572,7 @@ function renderProgramaDia(force){
   try{ progAutoFillContext(); }catch(e){}
   const rec=progViewRecord(fecha,machine);
   if(!rec){
-    container.innerHTML=`<div class="empty-state">${progSub==='sig'?`Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.`:`Aún no hay ningún programa cargado de <strong>${machine}</strong>.`}</div>`;
+    container.innerHTML=`<div class="empty-state">${(progSub==='sig'||progSub==='ant')?`Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.`:`Aún no hay ningún programa cargado de <strong>${machine}</strong>.`}</div>`;
     container._progHtml=null; delete container.dataset.progKey;
     return;
   }
@@ -3622,6 +3590,7 @@ function renderProgramaDia(force){
   } else if(!canCut && !completed){
     aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
   }
+  if(progSub==='ant') aviso+=`<div class="programa-aviso" style="color:var(--text2)">🕘 Programa del día anterior (<b>${progFechaLarga(fecha)}</b>). Si algún programa de «hoy» o «siguiente» en realidad era de este día, usa <b>Mover fecha</b> para pasarlo aquí.</div>`;
   // Programa fechado después de hoy pero que ya se está cortando hoy → casi seguro se subió en la pestaña equivocada
   if(progSospechosoAdelanto(rec)){
     const n=progCortadasHoy(rec), tot=Math.max(0,rec.rows.length-1);
@@ -5222,111 +5191,7 @@ function ctDiaTerminado(ct){
   if([...turnos].some(t=>/^Turno [23]/.test(t))) return false;
   const n=new Date(); return (n.getHours()+n.getMinutes()/60)>=17;
 }
-// ── Dashboard en formato tablero: franja superior, banner de estado y pendientes por cortar ──
-let _dashRenderTs=0;
-function dashTurnoNow(ct){
-  const list=(TURNOS_CT[ct]||[]), n=new Date(), now=n.getHours()*60+n.getMinutes();
-  for(const t of list){
-    const mm=String(t).match(/(\d+):(\d+)\s*[–-]\s*(\d+):(\d+)/); if(!mm) continue;
-    const st=(+mm[1])*60+(+mm[2]); let en=(+mm[3])*60+(+mm[4]);
-    if(en<=st){ if(now>=st||now<en) return t; } else if(now>=st&&now<en) return t;
-  }
-  return '';
-}
-function renderDashStrip(){
-  const el=document.getElementById('dash-strip'); if(!el||!el.offsetParent) return;
-  const ct=currentDashCT, now=new Date();
-  const clk=now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-  const secs=_dashRenderTs?Math.max(0,Math.round((Date.now()-_dashRenderTs)/1000)):0;
-  const upd=secs<60?secs+' s':Math.floor(secs/60)+' min';
-  const tn=dashTurnoNow(ct);
-  el.innerHTML=`<span class="live"></span><b>Área de ${escH(ctLabel(ct))}</b>${tn?`<span class="sep">·</span><span>${escH(tn)}</span>`:''}<span class="sep">·</span><span class="clk">${clk}</span><span class="upd">actualizado hace ${upd}</span>`;
-}
-setInterval(renderDashStrip,1000);
-// Banner grande: estado del CT frente al ritmo/plan, con la línea «N piezas en la jornada · faltan M del plan»
-function renderDashBanner(ct,i){
-  const el=document.getElementById('dash-banner'); if(!el||!i) return;
-  const st=dashHhStats||{n:0}, useRitmo=(ct==='LASER'&&st.n>0);
-  let cls='mut', ic='●', title='', sub='';
-  const prod=i.prod, plan=i.prog, faltan=(plan>0&&!i.modoProc)?Math.max(0,Math.round(plan-prod)):0;
-  const tail=i.modoProc
-    ? `<b>${prod}</b> piezas procesadas en la jornada${i.maquila>0?` · <b>${i.maquila}</b> maquiladas`:''}`
-    : `<b>${prod}</b> piezas en la jornada${plan>0?` · faltan <b>${faltan}</b> del plan`:''}`;
-  if(useRitmo){
-    const d=st.dif;
-    if(d>0){ cls='ok'; ic='↑'; title='Vamos adelantados +'+d; }
-    else if(d===0){ cls='ok'; ic='✓'; title='Vamos al corriente'; }
-    else if(-d>Math.max(5,st.esp*0.25)){ cls='bad'; ic='↓'; title='Vamos atrasados −'+(-d); }
-    else { cls='warn'; ic='↓'; title='Vamos por debajo del ritmo −'+(-d); }
-    sub=tail+` · ritmo esperado a esta hora: <b>${st.esp}</b>`;
-  } else if(i.modoProc){
-    const a=i.adelMan||0;
-    if(a>0){ cls='ok'; ic='↑'; title='Vamos adelantados +'+a; }
-    else if(a<0){ cls='bad'; ic='↓'; title='Vamos atrasados −'+(-a); }
-    else { cls='mut'; ic='●'; title='Sin adelanto ni atraso capturado'; }
-    sub=tail;
-  } else if(plan>0){
-    if(i.diff>0){ cls='ok'; ic='↑'; title='Vamos adelantados +'+i.diff; }
-    else if(i.diff===0){ cls='ok'; ic='✓'; title='Plan cumplido'; }
-    else if(i.diaTerminado){ cls='bad'; ic='↓'; title='Atraso −'+(-i.diff); }
-    else { cls='warn'; ic='⏱'; title='Faltan '+(-i.diff)+' por producir'; }
-    sub=tail;
-  } else { title='Sin programa del día'; sub=tail; }
-  el.className='dash-banner '+cls;
-  el.innerHTML=`<div class="dash-bn-ic">${ic}</div><div><div class="dash-bn-t">${title}</div><div class="dash-bn-s">${sub}</div></div>`;
-}
-// OPs del programa en curso de Laser (GW1 / GW2) que aún no se cortan: se ve OP, cantidad, familia, parte y tubular
-function dashLaserPend(){
-  const fecha=todayStr();
-  const names=getMachinesByCT('LASER').map(m=>m.name);
-  const set=new Set(names.length?names:PROG_TUB_MACHINES);
-  const out=[]; let ops=0, pzs=0, anyProg=false, hayCols=null;
-  Array.from(set).sort().forEach(mn=>{
-    programaDia.filter(r=>r&&r.machine===mn).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
-      const rows=(rec.rows||[]).slice(1); if(!rows.length) return;
-      const cortes=progCortesParse(rec.cortes), cd=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
-      const cutIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
-      const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha);
-      if(!enCurso) return;
-      anyProg=true;
-      const H=(rec.rows[0]||[]).map(h=>String(h).trim().toLowerCase());
-      const fi=re=>H.findIndex(h=>re.test(h));
-      const cq=progCantCol(rec);
-      let cols=[['OP',fi(/^(op\b|o\.p|orden)/)],['Cant.',cq],['Familia',fi(/familia/)],['Parte',fi(/^(parte|modelo|no\.? ?parte|descrip)/)],['Tubular',fi(/tubular/)>=0?fi(/tubular/):fi(/^material/)]].filter(c=>c[1]>=0);
-      if(cols.length<3){   // encabezados distintos a los habituales: se muestran las primeras columnas útiles del programa
-        const skip=new Set([cd,rec.obsColIdx]); cols=[];
-        H.forEach((h,i)=>{ if(cols.length<5 && !skip.has(i) && h && !PROG_HIDE_COLS.includes(h)) cols.push([String(rec.rows[0][i]),i]); });
-      }
-      if(!hayCols) hayCols=cols.map(c=>c[0]);
-      rows.forEach((row,r)=>{
-        const done=(cortes[r]&&cortes[r].on)||row[cd]===true; if(done) return;
-        const q=cq>=0?parseFloat(row[cq]):NaN;
-        const cells=cols.map(c=>{ const v=row[c[1]]; return (v==null||v===false||v===true)?'':String(v).trim(); });
-        if(!(q>0) && !cells.some(x=>x)) return;
-        out.push({m:mn,labels:cols.map(c=>c[0]),cells,q:q>0?q:0,cq:cols.findIndex(c=>c[1]===cq)});
-        ops++; if(q>0) pzs+=q;
-      });
-    });
-  });
-  return {rows:out,ops,pzs,anyProg};
-}
-function dashLaserPendHtml(){
-  const d=dashLaserPend();
-  if(!d.anyProg) return '<div class="empty-state" style="padding:1.2rem 0">No hay programa de corte vigente para hoy en Laser.</div>';
-  if(!d.rows.length) return '<div class="pend-ok">✓ Todo el programa en curso ya está cortado.</div>';
-  // Encabezado común: se usa el del primer programa; si varían, cada fila conserva su orden de columnas
-  const labels=d.rows[0].labels;
-  const mcls=m=>m==='GW1'?'':(m==='GW2'?' m2':' m3');
-  const head=`<th>Máq.</th>`+labels.map(l=>`<th${/cant/i.test(l)?' style="text-align:right"':''}>${escH(l)}</th>`).join('');
-  const body=d.rows.map(r=>`<tr><td><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span></td>${r.cells.map((v,j)=>{
-      const l=r.labels[j]||''; const cls=/^op/i.test(l)?'op':(/cant/i.test(l)?'n':'');
-      return `<td class="${cls}">${escH(v)}</td>`; }).join('')}</tr>`).join('');
-  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por cortar<b>${fmtN(d.pzs,0)}</b></span></div>
-    <div class="pend-wrap"><table class="pend-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
-}
 function renderDashboard(){
-  _dashRenderTs=Date.now(); let bannerInfo=null;
-  { const tv=document.querySelector('.dash-tv'); if(tv) tv.classList.toggle('split',currentDashCT!=='LASER'); }   // Troqueles/Estructura: la columna izquierda lleva además el cierre del día
   // Solo datos del día en curso — lastPerMachine() filtrado a hoy
   const last=lastPerMachineToday();
   const ct=currentDashCT;
@@ -5367,7 +5232,6 @@ function renderDashboard(){
     const enCurso=!esAdelanto&&!diaTerminado;   // aún hay jornada: faltan piezas por cortar, no hay atraso
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
-    bannerInfo={prod:modoProc?procDet.total:piezasProducidasCT,prog:piezasProgramadasCT,diff:diffCT,modoProc,adelMan,diaTerminado,maquila:modoProc?procDet.maquila:0};
     const canEditMetas=canRegistrarAtraso;   // líder e ingeniería editan las metas aquí; operador solo las ve
     // No repintar la tarjeta mientras se escribe en uno de sus campos (meta o atraso): el refresco automático borraría lo tecleado
     const _ae=document.activeElement;
@@ -5449,8 +5313,6 @@ function renderDashboard(){
 
   // ── PANEL HORA × HORA EN TIEMPO REAL (registros de hoy) ──
   renderDashHoraPanel(ct);
-  renderDashBanner(ct,bannerInfo);
-  renderDashStrip();
 
   // ── Mostrar solo la sección de tabla del CT seleccionado ──
   ALL_CTS.forEach(c=>{
@@ -5506,16 +5368,16 @@ function renderDashboard(){
   // Centro Laser: en lugar del OEE por máquina, el material tubular consumido por GW1 + GW2 (almacén surte por centro)
   const matPanel=document.getElementById('dash-mat-panel'), chartWrap=document.getElementById('dash-chart-wrap');
   if((ct==='LASER'||ct==='TROQUELES') && matPanel){
-    if(titleEl) titleEl.textContent=ct==='LASER'?'Qué falta por cortar — Laser':'Material consumido — Troqueles (hoy)';
+    if(titleEl) titleEl.textContent='Material consumido — '+(ct==='LASER'?'Laser':'Troqueles')+' (hoy)';
     if(dashChart){ try{ dashChart.destroy(); }catch(e){} dashChart=null; }
     if(chartWrap) chartWrap.style.display='none';
-    matPanel.style.display='block'; matPanel.classList.toggle('pend',ct==='LASER');
+    matPanel.style.display='block';
     matPanel.innerHTML=ct==='LASER'
-      ? dashLaserPendHtml()
+      ? `<div class="mat-desc">Tubular que registran GW1 y GW2 en Aprovechamiento, sumado por centro de trabajo (así surte almacén). Se actualiza solo.</div>`+tubTotalsHtml(tubTotalsData(laserTubRecords(todayStr())),'Aún no se registra material tubular hoy.')
       : `<div class="mat-desc">Lámina (hojas por calibre) que se registra en Aprovechamiento para Troqueles, sumada por centro de trabajo (así surte almacén). Se actualiza sola.</div>`+lamTotalsHtml(lamTotalsData(troqLamRecords(todayStr())),'Aún no se registra lámina hoy.');
     return;
   }
-  if(matPanel){ matPanel.style.display='none'; matPanel.classList.remove('pend'); }
+  if(matPanel) matPanel.style.display='none';
   if(chartWrap) chartWrap.style.display='';
   if(titleEl) titleEl.textContent='OEE por máquina — '+ct+' (hoy)';
   if(dashChart)dashChart.destroy();
@@ -5642,7 +5504,6 @@ function renderDashHoraPanel(ct){
 }
 // Tabla hora × hora de las máquinas del CT que la tienen habilitada (o ya capturaron hoy).
 // Devuelve {names:[máquinas], html}.
-let dashHhStats={tot:0,esp:0,meta:0,n:0,dif:0};   // ritmo del CT (suma de las tarjetas hora×hora con meta), lo usa el banner
 function dashHoraTableHtml(ct,short){
   const today=todayStr();
   const todays=horaRecords.filter(r=>r.ct===ct && r.fecha===today && machineInRoster(r.machine));
@@ -5696,7 +5557,7 @@ function dashHoraTableHtml(ct,short){
   cols.forEach(f=>{ const sp=spanOf(f); if(!sp) return; totSpan+=sp[1]-sp[0]; doneSpan+=Math.max(0,Math.min(nowMin,sp[1])-sp[0]); });
   const frac=totSpan>0?Math.min(1,doneSpan/totSpan):0;
   const pz=n=>n===1?'1 pza':n+' pzas';
-  let grand=0, grandDan=0, extraCol=0, sumTot=0, sumEsp=0, sumMeta=0, nMeta=0;
+  let grand=0, grandDan=0, extraCol=0;
   const panels=cardNames.map((m,mi)=>{
     const col=FIXED[m]||COLORS[(extraCol++)%COLORS.length];
     let tot=0, dTot=0, maxV=5;
@@ -5731,13 +5592,11 @@ function dashHoraTableHtml(ct,short){
     const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
     const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
     grand+=tot; grandDan+=dTot;
-    if(meta>0&&!sinCap){ sumTot+=tot; sumEsp+=esperado; sumMeta+=meta; nMeta++; }
-    const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>${dif>0?'↑ +'+dif:'✓'}</b><span>${dif>0?'pzas de adelanto':'justo al ritmo'}</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
+    const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
-    const opTxt=(rec&&rec.op)?String(rec.op):'';
-    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${opTxt?`<span class="hh-op">${escH(opTxt)}</span>`:''}${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
+    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
       <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
-      ${meta>0?`<div class="hh-prog"><div class="hh-pf" style="width:${pct}%;background:${col}"></div><i class="hh-mk" style="left:${Math.min(100,Math.round(esperado/meta*1000)/10)}%" title="Posición esperada a esta hora"></i></div><div class="hh-exp">a esta hora deberían llevar <b>${esperado}</b> · meta <b>${meta}</b></div>`:''}
+      ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
       <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${como}</div>`;
   }).join('');
@@ -5745,8 +5604,7 @@ function dashHoraTableHtml(ct,short){
   const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
   const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
   const html=`${resumen}${panels?`<div class="hh-grid">${panels}</div>`:''}${vacias}`;
-  dashHhStats={tot:sumTot,esp:sumEsp,meta:sumMeta,n:nMeta,dif:sumTot-sumEsp};
-  return {names:machineNames,html,stats:dashHhStats};
+  return {names:machineNames,html};
 }
 // Franja horaria en curso (clave de FRANJA_DISPLAY) según la hora del dispositivo; '' si ninguna.
 function franjaNowKey(){
