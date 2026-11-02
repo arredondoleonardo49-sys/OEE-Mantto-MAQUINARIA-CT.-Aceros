@@ -2212,7 +2212,13 @@ function progActiveRecord(fecha,machine){
   return best;
 }
 // En «Programa siguiente» solo cuenta el programa de esa fecha; en «Programa del día», el vigente.
-function progViewRecord(fecha,machine){ return (progSub==='sig'||progSub==='ant')?getProgramaRecord(fecha,machine):progActiveRecord(fecha,machine); }
+function progViewRecord(fecha,machine){
+  if(progSub==='sig'||progSub==='ant') return getProgramaRecord(fecha,machine);
+  const r=progActiveRecord(fecha,machine);
+  // Un programa de un día anterior que ya se cortó completo no se arrastra a «Programa del día»: se consulta en «Programa anterior»
+  if(r && String(r.fecha)<String(fecha)){ const st=progStats(r); if(st.total>0 && st.done===st.total) return null; }
+  return r;
+}
 function getProgramaRecord(fecha,machine){
   return programaDia.find(r=>r.fecha===fecha && r.machine===machine) || null;
 }
