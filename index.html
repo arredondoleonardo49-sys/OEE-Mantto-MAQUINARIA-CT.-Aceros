@@ -1630,6 +1630,19 @@ function loadUsers(){
   let scrub=false;
   Object.values(_outbox).forEach(e=>{ if(e.sheet==='Usuarios' && e.record && (e.record.password!==undefined || e.record.pass!==undefined)){ delete e.record.password; delete e.record.pass; scrub=true; } });
   if(scrub) outboxSave();
+  // Una versión anterior podía mezclar las cuentas de Usuarios (con su contraseña) en otras listas guardadas en el
+  // equipo (programas, checklist, atrasos): se quitan esas filas y cualquier contraseña que haya quedado guardada.
+  try{
+    for(let i=localStorage.length-1;i>=0;i--){
+      const k=localStorage.key(i); if(!k||k.indexOf('oee_')!==0||k===SK_USERS) continue;
+      const v=localStorage.getItem(k); if(!v||!/"(password|pass)"\s*:/.test(v)) continue;
+      let d; try{ d=JSON.parse(v); }catch(e){ continue; }
+      if(!Array.isArray(d)) continue;
+      const tieneClave=r=>r&&typeof r==='object'&&(r.password!==undefined||r.pass!==undefined);
+      const limpio=d.filter(r=>!(tieneClave(r)&&r.username)).map(r=>{ if(!tieneClave(r)) return r; const o={...r}; delete o.password; delete o.pass; return o; });
+      localStorage.setItem(k,JSON.stringify(limpio));
+    }
+  }catch(e){}
 }
 // Tolera hojas de cálculo con estructura distinta a la que espera la app:
 // roles en inglés (operator/leader), centros y permisos como texto, etc.
@@ -1681,16 +1694,18 @@ function saveChecklistRecordsLS(){ localStorage.setItem(SK_CHECKLIST_RECORDS, JS
 // ── PROGRAMA DEL DÍA (persistencia local) ──
 function loadProgramaDiaLS(){
   try{
-    programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).map(r=>normProgRec(r));
+    programaDia=(JSON.parse(localStorage.getItem(SK_PROGRAMA))||[]).filter(progRecValido).map(r=>normProgRec(r));
   }catch(e){ programaDia=[]; }
 }
+// Un programa siempre trae máquina y fecha; lo que no (filas ajenas que llegaron por error) no se guarda ni se muestra.
+function progRecValido(r){ return !!(r && r.id && r.machine && /^\d{4}-\d{2}-\d{2}$/.test(String(r.fecha||''))); }
 // En este equipo se guardan los últimos 60 días de programas y, de cada máquina, el programa vigente (aunque sea más viejo);
 // todo lo demás sigue en el Sheet y se consulta desde Reportes › Corte de Tubular.
 function saveProgramaDiaLS(){
   try{
     const lim=isoAddDays(todayStr(),-60), keep=new Set();
     PROGRAMA_MACHINES.forEach(m=>{ const a=progActiveRecord('9999-12-31',m); if(a) keep.add(a.id); });
-    localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia.filter(r=>keep.has(r.id)||String(r.fecha)>=lim)));
+    localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia.filter(r=>progRecValido(r)&&(keep.has(r.id)||String(r.fecha)>=lim))));
   }catch(e){ console.warn('No se pudo guardar el programa en este equipo',e); }
 }
 
@@ -2415,8 +2430,8 @@ function mergeProgRec(a,b){
   return out;
 }
 function mergeProgramaDia(local,incoming){
-  const map=new Map((local||[]).map(r=>[r.id,r]));
-  (incoming||[]).forEach(r=>{ if(!r||!r.id) return; const cur=map.get(r.id); map.set(r.id,cur?mergeProgRec(cur,r):r); });
+  const map=new Map((local||[]).filter(progRecValido).map(r=>[r.id,r]));
+  (incoming||[]).forEach(r=>{ if(!progRecValido(r)) return; const cur=map.get(r.id); map.set(r.id,cur?mergeProgRec(cur,r):r); });
   return Array.from(map.values());
 }
 function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||'',coment:rec.coment||''}; }
@@ -3208,13 +3223,13 @@ function processProgramaFile(file){
         const dataRows=body.map(row=>[false, ...row]);
         const obsColIdx=obsRaw>=0 ? obsRaw+1 : -1;
         const old=getProgramaRecord(fecha,machine);
-        let cortes={};
-        // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado)
+        let cortes={}, coment={};
+        // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado ni los comentarios)
         if(old && old.rows && old.rows.length>1){
           // Una fila "sigue igual" si coinciden sus datos clave (sin el No., que se recorre si se inserta una fila)
           const KEYCOLS=['modelo','op','cant.','familia','parte','tubular','nombre del dibujo'];
           const keyOf=(hrow,row)=>{ const hl=(hrow||[]).map(x=>String(x).trim().toLowerCase()); return JSON.stringify(KEYCOLS.map(k=>{ const i=hl.indexOf(k); return i>=0?String(row[i]==null?'':row[i]).trim():''; })); };
-          const pool={}; const oc=progCortesParse(old.cortes), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
+          const pool={}; const oc=progCortesParse(old.cortes), om=progComParse(old.coment), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
           old.rows.slice(1).forEach((row,r)=>{ const k=keyOf(old.rows[0],row); (pool[k]=pool[k]||[]).push(r); });
           dataRows.forEach((row,r)=>{
             const k=keyOf(header,row), list=pool[k]; if(!list||!list.length) return;
@@ -3222,6 +3237,7 @@ function processProgramaFile(file){
             row[0]=oldRow[oci]===true;
             if(obsColIdx>=0 && old.obsColIdx>=0) row[obsColIdx]=oldRow[old.obsColIdx];
             if(oc[or]) cortes[r]=oc[or];
+            if(om[or]) coment[r]=om[or];
           });
           Object.keys(pool).forEach(k=>pool[k].forEach(or=>{ if(old.rows[or+1][oci]===true) lost++; }));
           kept+=Object.values(cortes).filter(c=>c.on).length;
@@ -3231,7 +3247,7 @@ function processProgramaFile(file){
           id:'prog_'+machine.replace(/\s+/g,'')+'_'+fecha,
           fecha, machine, ct:PROGRAMA_MACHINE_CT[machine], sheetName,
           rows:[header, ...dataRows], obsColIdx, cortadoColIdx:0,
-          cortes:progCortesStr(cortes), coment:'', completado:'', compTs:'', compBy:'',
+          cortes:progCortesStr(cortes), coment:Object.keys(coment).length?JSON.stringify(coment):'', completado:'', compTs:'', compBy:'',
           uploadedBy:currentUser.username, uploadedByName:currentUser.name,
           uploadedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         };
