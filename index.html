@@ -252,7 +252,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .form-full{grid-column:1/-1}
 .form-group{display:flex;flex-direction:column;gap:5px}
 .form-group label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.6px;text-transform:uppercase}
-.form-group select,.form-group input[type=text],.form-group input[type=date],.form-group input[type=number]{font-size:13px;font-family:'IBM Plex Sans',sans-serif;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;transition:border-color .15s}
+.form-group select,.form-group input[type=text],.form-group input[type=password],.form-group input[type=date],.form-group input[type=number]{font-size:13px;font-family:'IBM Plex Sans',sans-serif;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;transition:border-color .15s}
 .form-group input[type=number]{font-family:'IBM Plex Mono',monospace}
 .form-group select:focus,.form-group input:focus{outline:none;border-color:var(--blue)}
 .form-group select option{background:var(--bg2)}
@@ -1448,7 +1448,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="form-grid-4">
           <div class="form-group"><label>Nombre completo</label><input type="text" id="new-user-name" placeholder="Ej: Juan Pérez"></div>
           <div class="form-group"><label>Usuario</label><input type="text" id="new-user-username" placeholder="jperez"></div>
-          <div class="form-group"><label>Contraseña</label><input type="text" id="new-user-password" placeholder="••••••••"></div>
+          <div class="form-group"><label>Contraseña</label><input type="password" id="new-user-password" placeholder="••••••••" autocomplete="new-password"></div>
           <div class="form-group"><label>Nivel</label><select id="new-user-role"><option value="operador">Operador</option><option value="lider">Líder</option><option value="ingeniero">Ingeniero</option></select></div>
         </div>
         <div class="form-group" style="margin-top:.75rem">
@@ -1608,27 +1608,30 @@ function repMachineOk(ct,name){ return ct!=='LASER'||REPORT_LASER_MACHINES.inclu
 const PROGRAMA_MACHINE_CT={'GW1':'LASER','GW2':'LASER','Laser de Cama':'TROQUELES'};
 const ROLE_LABEL={operador:'Operador',lider:'Líder',ingeniero:'Ingeniero'};
 const SK_USERS='oee_users_v1', SK_CURRENT_USER='oee_current_user_v1', SK_CHECKLIST_RECORDS='oee_checklist_records_v1';
+// Token de sesión que entrega el Apps Script al iniciar sesión: acompaña cada petición (sin él, el
+// servidor no lee ni escribe nada). LEGACY_TOKEN = se entró con un Apps Script anterior al login seguro.
+const SK_AUTH='oee_auth_v1', LEGACY_TOKEN='legacy';
+let authToken=null, _loginAt=0;
+try{ authToken=localStorage.getItem(SK_AUTH)||null; }catch(e){ authToken=null; }
+function setAuthToken(t){ authToken=t||null; try{ if(t) localStorage.setItem(SK_AUTH,t); else localStorage.removeItem(SK_AUTH); }catch(e){} }
+function clearSession(){ setAuthToken(null); localStorage.removeItem(SK_CURRENT_USER); }
 
 // ── Persistencia local ──
 function loadUsers(){
   try{ users=JSON.parse(localStorage.getItem(SK_USERS))||[]; }catch(e){ users=[]; }
-  if(!users.length){
-    users=[
-      {id:'u_admin', name:'Administrador', username:'admin', password:'admin123', role:'ingeniero', active:true}
-    ];
-    // IMPORTANTE: esto es solo un valor de respaldo local mientras llega la
-    // sincronización real — NUNCA debe subirse a la nube desde aquí. Antes
-    // esto llamaba a saveUsers() (que sí sube a la nube) y eso borraba TODA
-    // la hoja de Usuarios cada vez que se abría la app en un dispositivo o
-    // navegador nuevo (sin caché local), reemplazándola con solo esta
-    // cuenta de respaldo.
+  // Las contraseñas ya no se guardan en este equipo (las versiones anteriores sí): se borran de la
+  // lista de cuentas y de los envíos pendientes. El servidor conserva la que ya tenía cada cuenta.
+  if(users.some(u=>u && (u.password!==undefined || u.pass!==undefined))){
+    users.forEach(u=>{ delete u.password; delete u.pass; });
     localStorage.setItem(SK_USERS, JSON.stringify(users));
   }
+  let scrub=false;
+  Object.values(_outbox).forEach(e=>{ if(e.sheet==='Usuarios' && e.record && (e.record.password!==undefined || e.record.pass!==undefined)){ delete e.record.password; delete e.record.pass; scrub=true; } });
+  if(scrub) outboxSave();
 }
-function saveUsers(){ localStorage.setItem(SK_USERS, JSON.stringify(users)); cloudWriteAll('Usuarios', users); }
 // Tolera hojas de cálculo con estructura distinta a la que espera la app:
-// columna "pass" en vez de "password", roles en inglés (operator/leader),
-// contraseñas guardadas como número en vez de texto, etc.
+// roles en inglés (operator/leader), centros y permisos como texto, etc.
+// Nunca conserva la contraseña: esa solo la conoce el servidor.
 function normalizeUserRow(u){
   const roleMap={
     operator:'operador', operador:'operador', op:'operador',
@@ -1637,7 +1640,6 @@ function normalizeUserRow(u){
   };
   const rawRole=(u.role||'').toString().trim().toLowerCase();
   const role=roleMap[rawRole]||'operador';
-  const rawPassword=(u.password!==undefined && u.password!=='') ? u.password : u.pass;
   // cts: puede venir como arreglo (uso local) o como JSON en texto (nube).
   // Compatibilidad con el campo viejo "ct" (un solo CT) de antes de esta
   // actualización.
@@ -1661,7 +1663,6 @@ function normalizeUserRow(u){
     id:(u.id||('u'+Date.now()+Math.random().toString(36).slice(2))).toString(),
     name:(u.name||u.username||'Usuario').toString(),
     username:(u.username||'').toString().trim(),
-    password:(rawPassword!==undefined && rawPassword!==null) ? rawPassword.toString() : '',
     role,
     cts,
     permissions,
@@ -1669,16 +1670,6 @@ function normalizeUserRow(u){
     active: !(u.active===false||u.active==='false'||u.active==='FALSE'),
     updatedAt: u.updatedAt||undefined
   };
-}
-// Garantiza que SIEMPRE exista una cuenta con rol Ingeniero disponible,
-// aunque la hoja de Usuarios en la nube no tenga ninguna (evita quedarse
-// sin acceso si la hoja fue creada/editada fuera de la app).
-function ensureFallbackAdmin(list){
-  const hasAdminUsername=list.some(u=>u.username.toLowerCase()==='admin');
-  if(!hasAdminUsername){
-    list=[{id:'u_admin', name:'Administrador', username:'admin', password:'admin123', role:'ingeniero', active:true}, ...list];
-  }
-  return list;
 }
 function loadChecklistRecordsLS(){
   try{ checklistRecords=JSON.parse(localStorage.getItem(SK_CHECKLIST_RECORDS))||[]; }catch(e){ checklistRecords=[]; }
@@ -1710,73 +1701,74 @@ function initAuth(){
   loadChecklistRecordsLS();
   loadProgramaDiaLS();
   const stored=getStoredCurrentUser();
-  if(stored){
-    // Sesión local ya validada antes — entra rápido, sin esperar a la nube.
-    // (Los cambios de rol/baja se refrescan en la sincronización normal tras el login.)
-    const fresh=users.find(u=>u.id===stored.id && u.active!==false);
-    if(fresh){
-      currentUser={id:fresh.id,name:fresh.name,username:fresh.username,role:fresh.role,cts:fresh.cts||[],permissions:fresh.permissions,captura:fresh.captura||[]};
+  if(stored && authToken){
+    // Sesión de este equipo con su token — entra rápido, sin esperar a la nube.
+    // (Si el servidor ya no acepta el token, la primera petición lo detecta y pide entrar de nuevo.)
+    const fresh=users.find(u=>u.id===stored.id);
+    if(!fresh || fresh.active!==false){
+      const src=fresh||stored;
+      currentUser={id:src.id,name:src.name,username:src.username,role:src.role,cts:src.cts||[],permissions:src.permissions,captura:src.captura||[]};
       onLoginSuccess(false);   // recarga de la página: sigue donde estaba
       return;
     }
-    localStorage.removeItem(SK_CURRENT_USER);
   }
-  // Sin sesión local: intenta traer el padrón de usuarios más reciente de la
-  // nube antes de mostrar el login, para que cuentas creadas/editadas desde
-  // otro dispositivo funcionen aquí también. Con timeout de seguridad.
-  let resolved=false;
-  const showLogin=()=>{
-    if(resolved) return; resolved=true;
-    document.getElementById('login-screen').style.display='flex';
-    document.getElementById('loading-overlay').style.display='none';
-    createImageCarousel('login-bg-carousel', LOGIN_CAROUSEL_IMAGES, 7000);
-  };
-  const safetyTimer=setTimeout(showLogin, 4000);
-  gasRequest({action:'read', sheet:'Usuarios'},
-    (data)=>{
-      clearTimeout(safetyTimer);
-      try{
-        const rows=data.rows||[];
-        if(rows.length){
-          users=ensureFallbackAdmin(mergeRecordsById(users, rows.map(normalizeUserRow)));
-          localStorage.setItem(SK_USERS,JSON.stringify(users));
-        }
-      }catch(e){}
-      showLogin();
-    },
-    ()=>{ clearTimeout(safetyTimer); showLogin(); }
-  );
+  // Sin sesión, sesión de una versión anterior (sin token) o cuenta dada de baja: se pide entrar.
+  clearSession();
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('loading-overlay').style.display='none';
+  createImageCarousel('login-bg-carousel', LOGIN_CAROUSEL_IMAGES, 7000);
+  let msg=''; try{ msg=sessionStorage.getItem('oee_login_msg')||''; sessionStorage.removeItem('oee_login_msg'); }catch(e){}
+  if(!msg && stored) msg='Por seguridad, vuelve a iniciar sesión.';
+  if(msg){ const err=document.getElementById('login-error'); err.textContent=msg; err.style.color='var(--amber)'; }
 }
+// La contraseña se verifica en el servidor; aquí nunca se conoce la de nadie más.
 function doLogin(){
   const u=(document.getElementById('login-username').value||'').trim();
   const p=document.getElementById('login-password').value||'';
   const err=document.getElementById('login-error');
-  const user=users.find(x=>x.username.toLowerCase()===u.toLowerCase() && x.password===p && x.active!==false);
-  if(user){ err.textContent=''; completeLogin(user); return; }
-  // No coincidió con lo que ya teníamos en memoria. Antes de rechazar el
-  // acceso, intentamos UNA vez más contra el padrón más reciente de la
-  // nube — por si esta cuenta se creó/editó hace poco y la precarga
-  // inicial (antes de mostrar esta pantalla) no alcanzó a traerla a
-  // tiempo (Apps Script puede tardar hasta 30+ segundos justo después de
-  // una implementación nueva).
+  if(!u||!p){ err.textContent='Escribe tu usuario y tu contraseña.'; err.style.color='var(--amber)'; return; }
   err.textContent='Verificando…'; err.style.color='var(--text3)';
+  let answered=false;
+  const slow=setTimeout(()=>{ if(!answered){ err.textContent='El servidor está tardando en responder… (puede pasar justo después de actualizar el Apps Script)'; } },8000);
+  const fail=(m)=>{ answered=true; clearTimeout(slow); err.textContent=m; err.style.color='var(--red)'; };
+  gasRequest({action:'login', username:u, password:p},
+    (data)=>{
+      answered=true; clearTimeout(slow);
+      if(!data || !data.token || !data.user){ fail('Respuesta inesperada del servidor. Intenta de nuevo.'); return; }
+      const user=normalizeUserRow(data.user);
+      users=mergeRecordsById(users,[user]);
+      localStorage.setItem(SK_USERS,JSON.stringify(users));
+      err.textContent=''; document.getElementById('login-password').value='';
+      completeLogin(user, data.token);
+    },
+    (e)=>{
+      const m=String(e||'');
+      // Un Apps Script anterior no conoce "login" (responde que falta "sheet" o que la acción no existe)
+      if(/no reconocida: login|Falta el parámetro "sheet"/i.test(m)){ answered=true; clearTimeout(slow); legacyLogin(u,p); return; }
+      fail(m==='Network error'?'Sin conexión con el servidor. Revisa el internet e intenta de nuevo.':m);
+    });
+}
+// Mientras el Apps Script no se actualice a la versión con login seguro, se entra como antes (comparando
+// contra la hoja Usuarios). En cuanto se actualice, estas sesiones dejan de valer y se pide entrar de nuevo.
+function legacyLogin(u,p){
+  const err=document.getElementById('login-error');
   gasRequest({action:'read', sheet:'Usuarios'},
     (data)=>{
-      try{
-        const rows=data.rows||[];
-        if(rows.length){
-          users=ensureFallbackAdmin(mergeRecordsById(users, rows.map(normalizeUserRow)));
-          localStorage.setItem(SK_USERS,JSON.stringify(users));
-        }
-      }catch(e){}
-      const retryUser=users.find(x=>x.username.toLowerCase()===u.toLowerCase() && x.password===p && x.active!==false);
-      if(retryUser){ err.textContent=''; completeLogin(retryUser); }
-      else { err.textContent='Usuario o contraseña incorrectos.'; err.style.color='var(--red)'; }
+      const rows=(data&&data.rows)||[];
+      const row=rows.find(r=>String(r.username||'').trim().toLowerCase()===u.toLowerCase());
+      const pw=row?String((row.password!==undefined&&row.password!=='')?row.password:(row.pass===undefined?'':row.pass)):'';
+      const user=row?normalizeUserRow(row):null;
+      if(!user || pw==='' || pw!==p || user.active===false){ err.textContent='Usuario o contraseña incorrectos.'; err.style.color='var(--red)'; return; }
+      users=mergeRecordsById(users, rows.map(normalizeUserRow));
+      localStorage.setItem(SK_USERS,JSON.stringify(users));
+      err.textContent=''; document.getElementById('login-password').value='';
+      completeLogin(user, LEGACY_TOKEN);
     },
-    ()=>{ err.textContent='Usuario o contraseña incorrectos.'; err.style.color='var(--red)'; }
-  );
+    ()=>{ err.textContent='Sin conexión con el servidor. Revisa el internet e intenta de nuevo.'; err.style.color='var(--red)'; });
 }
-function completeLogin(user){
+function completeLogin(user, token){
+  setAuthToken(token);
+  _loginAt=Date.now();
   currentUser={id:user.id,name:user.name,username:user.username,role:user.role,cts:user.cts||[],permissions:user.permissions,captura:user.captura||[]};
   localStorage.setItem(SK_CURRENT_USER, JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display='none';
@@ -1787,7 +1779,21 @@ function logout(){
   if(hasUnsavedManual() && !confirm('Tienes datos capturados SIN GUARDAR en Registrar turno.\n\nSe conservan como borrador en este equipo, pero NO están registrados todavía.\n\n¿Salir de todos modos?')) return;
   _skipUnloadWarn=true;
   try{ flushEverythingNow(); }catch(e){}   // lo que se estaba capturando se guarda antes de salir
-  localStorage.removeItem(SK_CURRENT_USER);
+  clearSession();
+  location.reload();
+}
+// El servidor ya no acepta la sesión (venció, cambió la contraseña o se desactivó la cuenta). Lo
+// capturado sigue en este equipo (borradores y cola de envío) y se sube al volver a entrar.
+let _sessionExpiring=false;
+function sessionExpired(msg){
+  if(_sessionExpiring || !currentUser) return;
+  // Recién se entró y el servidor ya la rechaza: se avisa en vez de recargar en bucle.
+  if(Date.now()-_loginAt<60000){ showCloudStatus('⚠ '+msg,'err'); return; }
+  _sessionExpiring=true;
+  _skipUnloadWarn=true;
+  try{ flushEverythingNow(); }catch(e){}
+  try{ sessionStorage.setItem('oee_login_msg', msg||'Tu sesión terminó. Vuelve a iniciar sesión.'); }catch(e){}
+  clearSession();
   location.reload();
 }
 function onLoginSuccess(fresh){
@@ -3750,7 +3756,7 @@ function renderUsersConfig(){
         </select>
         <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo y la máquina predeterminada" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
         <button onclick="toggleUserPermEditor('${u.id}')" title="Click para elegir qué menús, submenús y pestañas puede ver esta cuenta" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer">Accesos ✎</button>
-        <input type="text" value="${u.password}" onchange="changeUserPassword('${u.id}',this.value)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
+        <input type="password" value="" placeholder="Nueva contraseña" autocomplete="new-password" title="La contraseña actual no se puede ver: escribe una nueva y presiona Enter para cambiarla" onchange="changeUserPassword('${u.id}',this)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
         <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
         <div style="display:flex;gap:4px;justify-content:flex-end">
           <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="${u.active!==false?'Desactivar':'Activar'}" onclick="toggleUserActive('${u.id}')">${u.active!==false?'⏸':'▶'}</button>
@@ -3819,6 +3825,7 @@ function saveUserPerms(id){
   changeUserPerms(id, perms, captura);
 }
 function changeUserPerms(id, perms, captura){
+  if(usersEditBlocked()) return;
   const u=users.find(x=>x.id===id); if(!u) return;
   u.permissions=perms; u.updatedAt=new Date().toISOString();
   if(Array.isArray(captura)) u.captura=(u.role==='operador')?[]:captura;
@@ -3839,6 +3846,7 @@ function saveUserCts(id){
   changeUserCts(id, checked);
 }
 function changeUserCts(id, cts){
+  if(usersEditBlocked()) return;
   const u=users.find(x=>x.id===id); if(!u) return;
   u.cts=cts; delete u.ct; u.updatedAt=new Date().toISOString();
   localStorage.setItem(SK_USERS, JSON.stringify(users));
@@ -3849,6 +3857,7 @@ function changeUserCts(id, cts){
   if(currentUser && currentUser.id===id){ currentUser.cts=cts; applyUserCtLock(); }
 }
 function deleteUser(id, name){
+  if(usersEditBlocked()) return;
   if(currentUser && currentUser.id===id){ alert('No puedes eliminar la cuenta con la que tienes la sesión iniciada.'); return; }
   if(!confirm(`¿Eliminar la cuenta de "${name}"? Esta acción no se puede deshacer.`)) return;
   users=users.filter(u=>u.id!==id);
@@ -3856,10 +3865,14 @@ function deleteUser(id, name){
   cloudDeleteRow('Usuarios', id);
   renderUsersConfig();
 }
-// Antes de escribir en Usuarios, siempre trae primero la versión más
-// reciente de la nube y la fusiona con lo que hay en memoria. Esto evita
-// que un guardado con datos locales incompletos borre cuentas que ya
-// existían en la nube pero que este navegador aún no había sincronizado.
+// Con un Apps Script anterior al login seguro, guardar una cuenta sin contraseña la dejaría vacía en el
+// Sheet (esta app ya no conoce las contraseñas): mientras tanto no se editan cuentas.
+function usersEditBlocked(){
+  if(authToken && authToken!==LEGACY_TOKEN) return false;
+  alert('Para crear o editar cuentas primero hay que actualizar el Apps Script (Codigo_GoogleSheet.gs) a la versión con login seguro y volver a iniciar sesión.');
+  renderUsersConfig();
+  return true;
+}
 function addUser(){
   const name=document.getElementById('new-user-name').value.trim();
   const username=document.getElementById('new-user-username').value.trim();
@@ -3869,23 +3882,29 @@ function addUser(){
   const permissions=defaultPermissions(role);
   const msg=document.getElementById('add-user-msg');
   if(!name||!username||!password){ msg.textContent='Completa todos los campos.'; msg.style.color='var(--amber)'; return; }
+  if(password.length<4){ msg.textContent='La contraseña debe tener al menos 4 caracteres.'; msg.style.color='var(--amber)'; return; }
   if(users.some(u=>u.username.toLowerCase()===username.toLowerCase())){ msg.textContent='Ese nombre de usuario ya existe.'; msg.style.color='var(--amber)'; return; }
-  const newUser={id:'u'+Date.now(), name, username, password, role, cts, permissions, captura:[], active:true, updatedAt:new Date().toISOString()};
-  users.push(newUser);
-  localStorage.setItem(SK_USERS, JSON.stringify(users));
-  // Se agrega/actualiza SOLO esta cuenta en la nube — nunca se reescribe la
-  // hoja completa, así jamás se puede borrar otra cuenta por accidente al
-  // agregar o editar esta.
-  cloudUpsertRow('Usuarios', {...newUser, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions), captura:JSON.stringify([])});
-  document.getElementById('new-user-name').value='';
-  document.getElementById('new-user-username').value='';
-  document.getElementById('new-user-password').value='';
-  document.querySelectorAll('.new-user-ctchk').forEach(el=>el.checked=false);
-  msg.textContent='✓ Usuario agregado'; msg.style.color='var(--green)';
-  setTimeout(()=>msg.textContent='',3000);
-  renderUsersConfig();
+  if(usersEditBlocked()) return;
+  const newUser={id:'u'+Date.now(), name, username, role, cts, permissions, captura:[], active:true, updatedAt:new Date().toISOString()};
+  msg.textContent='Guardando…'; msg.style.color='var(--text3)';
+  // Se agrega SOLO esta cuenta (nunca se reescribe la hoja completa). La contraseña viaja una sola vez
+  // al servidor, que la guarda cifrada; por eso no pasa por la cola de envío de este equipo.
+  gasRequest({action:'upsert', sheet:'Usuarios', data:JSON.stringify({...newUser, password, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions), captura:JSON.stringify([])})},
+    ()=>{
+      users.push(newUser);
+      localStorage.setItem(SK_USERS, JSON.stringify(users));
+      document.getElementById('new-user-name').value='';
+      document.getElementById('new-user-username').value='';
+      document.getElementById('new-user-password').value='';
+      document.querySelectorAll('.new-user-ctchk').forEach(el=>el.checked=false);
+      msg.textContent='✓ Usuario agregado'; msg.style.color='var(--green)';
+      setTimeout(()=>msg.textContent='',3000);
+      renderUsersConfig();
+    },
+    (err)=>{ msg.textContent='No se pudo guardar: '+(err==='Network error'?'sin conexión con el servidor.':err); msg.style.color='var(--red)'; });
 }
 function changeUserRole(id,role){
+  if(usersEditBlocked()) return;
   const u=users.find(x=>x.id===id); if(!u) return;
   u.role=role; u.updatedAt=new Date().toISOString();
   if(role==='operador') u.captura=[];   // el Operador captura siempre; no necesita permisos extra
@@ -3894,15 +3913,19 @@ function changeUserRole(id,role){
   if(currentUser && currentUser.id===id){ currentUser.role=role; currentUser.captura=u.captura||[]; }
   renderUsersConfig();
 }
-function changeUserPassword(id,pw){
-  if(!pw.trim()) return;
-  const u=users.find(x=>x.id===id); if(!u) return;
-  u.password=pw.trim(); u.updatedAt=new Date().toISOString();
-  localStorage.setItem(SK_USERS, JSON.stringify(users));
-  cloudUpsertRow('Usuarios', u);
-  renderUsersConfig();
+// La contraseña nueva va directo al servidor (se guarda cifrada); aquí no se conserva.
+function changeUserPassword(id,inp){
+  const pw=(inp.value||'').trim();
+  if(!pw) return;
+  if(usersEditBlocked()) return;
+  if(pw.length<4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
+  inp.disabled=true;
+  gasRequest({action:'setPassword', id, password:pw},
+    ()=>{ inp.value=''; inp.disabled=false; inp.placeholder='✓ Contraseña cambiada'; showCloudStatus('✓ Contraseña actualizada','ok'); },
+    (err)=>{ inp.disabled=false; alert('No se pudo cambiar la contraseña: '+(err==='Network error'?'sin conexión con el servidor.':err)); });
 }
 function toggleUserActive(id){
+  if(usersEditBlocked()) return;
   const u=users.find(x=>x.id===id); if(!u) return;
   u.active = u.active===false ? true : false;
   u.updatedAt=new Date().toISOString();
@@ -4094,14 +4117,23 @@ function gasRequest(params,onSuccess,onError){
   // GW2 casi al mismo tiempo) — Date.now() solo no alcanza para eso, por
   // eso se le agrega un contador incremental.
   const cbName='cb_'+Date.now()+'_'+(_gasReqCounter++);
-  const url=getGasUrl()+'?'+Object.entries({...params,callback:cbName}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  // Cada petición lleva el token de la sesión (salvo ping y login): sin él, el servidor no lee ni escribe nada.
+  const p=(authToken && params.action!=='ping' && params.action!=='login')?{...params,t:authToken}:params;
+  const url=getGasUrl()+'?'+Object.entries({...p,callback:cbName}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
   // Si la página se está cerrando, recargando u ocultando, una etiqueta <script> se CANCELA a medio
   // enviar y la escritura se perdía en la nube. fetch con keepalive sí termina de enviarse. No hay
   // respuesta que esperar: el registro sigue en la cola de envío y se confirma al volver a abrir.
   if((_unloading || document.visibilityState==='hidden') && GAS_WRITE_ACTIONS.indexOf(params.action)!==-1){
     try{ fetch(url,{mode:'no-cors',keepalive:true,credentials:'omit'}).catch(()=>{}); return; }catch(e){ /* sigue con el método normal */ }
   }
-  window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);if(data&&data.error){if(onError)onError(data.error);}else{if(onSuccess)onSuccess(data);}};
+  window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);
+    if(data&&data.tok) setAuthToken(data.tok);   // el servidor renueva el token mientras se use
+    if(data&&data.error){
+      // Sesión rechazada: se pide entrar de nuevo. Para la cola de envío cuenta como "sin red": lo
+      // pendiente se conserva y se sube después del nuevo inicio de sesión.
+      if(data.auth==='sesion'){ sessionExpired(data.error); if(onError)onError('Network error'); return; }
+      if(onError)onError(data.error);
+    }else{if(onSuccess)onSuccess(data);}};
   const script=document.createElement('script');script.src=url;
   script.onerror=()=>{delete window[cbName];if(onError)onError('Network error');};
   document.head.appendChild(script);
@@ -4253,7 +4285,7 @@ let pingFailCount=0;          // fallos consecutivos del ping (para no ser sensi
 // Script todavía no se actualizó — se avisa de forma visible en vez de
 // fallar en silencio (por ejemplo, acciones nuevas como "delete" no
 // funcionarían aunque el resto de la app se vea "conectada").
-const EXPECTED_GAS_VERSION='2026-08-26a';
+const EXPECTED_GAS_VERSION='2026-11-03a';
 let backendOutdated=false;
 function pingCloud(){
   gasRequest({action:'ping'},
@@ -4985,7 +5017,7 @@ function loadFromCloud(){
       }
     })),
     {name:'Usuarios', assign:(d)=>{
-      if(d && d.length){ users=ensureFallbackAdmin(mergeRecordsById(users, d.map(normalizeUserRow))); localStorage.setItem(SK_USERS,JSON.stringify(users)); }
+      if(d && d.length){ users=mergeRecordsById(users, d.map(normalizeUserRow)); localStorage.setItem(SK_USERS,JSON.stringify(users)); }
     }},
     {name:'Checklist_Arranque', assign:(d)=>{
       if(d && d.length){
