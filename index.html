@@ -5227,6 +5227,7 @@ function getCTHoraGrandTotal(ct){
 }
 // Piezas procesadas del día a nivel CT: hora×hora de las máquinas que lo capturan + Cierre del día (piezas totales) de las demás.
 // Prensa 60 y Prensa 90 trabajan como maquila: sus piezas no entran en la producción diaria del CT, se muestran aparte.
+// Solo esta tarjeta las separa: «Piezas totales hoy» y los reportes sí las incluyen (decisión de Leonardo, 2026-11-03).
 const MAQUILA_MAQUINAS=['Prensa 60','Prensa 90'];
 function esMaquila(machine){ return MAQUILA_MAQUINAS.includes(machine); }
 function getCTProcesadasDetalle(ct){
