@@ -1448,7 +1448,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <div class="form-grid-4">
           <div class="form-group"><label>Nombre completo</label><input type="text" id="new-user-name" placeholder="Ej: Juan Pérez"></div>
           <div class="form-group"><label>Usuario</label><input type="text" id="new-user-username" placeholder="jperez"></div>
-          <div class="form-group"><label>Contraseña</label><input type="password" id="new-user-password" placeholder="••••••••" autocomplete="new-password"></div>
+          <div class="form-group"><label>Contraseña</label><div style="display:flex;gap:4px;align-items:center"><input type="password" id="new-user-password" placeholder="••••••••" autocomplete="new-password" style="flex:1;min-width:0"><button type="button" onmousedown="event.preventDefault()" onclick="togglePwVisible('new-user-password',this)" title="Ver lo que escribes" style="flex:none;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <div class="form-group"><label>Nivel</label><select id="new-user-role"><option value="operador">Operador</option><option value="lider">Líder</option><option value="ingeniero">Ingeniero</option></select></div>
         </div>
         <div class="form-group" style="margin-top:.75rem">
@@ -3752,6 +3752,15 @@ function ctCheckboxesHtml(groupClass, selectedCts){
       ${ctLabel(ct)}
     </label>`).join('');
 }
+// Contraseña que se acaba de asignar a cada cuenta: solo en memoria, para poder anotarla y entregarla.
+// La actual de cada quien no se puede ver (el Sheet la guarda cifrada).
+const _pwNueva={};
+function togglePwVisible(inputId,btn){
+  const i=document.getElementById(inputId); if(!i) return;
+  const ver=i.type==='password';
+  i.type=ver?'text':'password';
+  if(btn){ btn.style.color=ver?'var(--blue)':'var(--text2)'; btn.title=ver?'Ocultar':'Ver lo que escribes'; }
+}
 function renderUsersConfig(){
   const wrap=document.getElementById('users-list');
   if(!wrap) return;
@@ -3767,7 +3776,7 @@ function renderUsersConfig(){
     const userPerms=u.permissions||defaultPermissions(u.role);
     return `
     <div style="padding:.6rem 0;border-bottom:0.5px solid var(--border)">
-      <div style="display:grid;grid-template-columns:1fr 110px 1fr 100px 100px 90px 85px;gap:8px;align-items:center">
+      <div style="display:grid;grid-template-columns:1fr 110px 1fr 100px 150px 60px 85px;gap:8px;align-items:center">
         <div><div style="font-size:13px;font-weight:600;color:var(--text)">${u.name}</div><div style="font-size:11px;color:var(--text3)">@${u.username}${rawDefaultMachine(u.id)?' <span title="Máquina predeterminada" style="color:#f5a623">· ★ '+rawDefaultMachine(u.id).machine+'</span>':''}${(u.role!=='operador'&&(u.captura||[]).length)?' <span title="Esta cuenta tiene permiso de captura" style="color:var(--amber)">· ⚠ captura habilitada</span>':''}</div></div>
         <select onchange="changeUserRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)">
           <option value="operador" ${u.role==='operador'?'selected':''}>Operador</option>
@@ -3776,13 +3785,17 @@ function renderUsersConfig(){
         </select>
         <button onclick="toggleUserCtEditor('${u.id}')" title="Click para editar los Centros de Trabajo y la máquina predeterminada" style="font-size:11px;text-align:left;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ctSummary} ✎</button>
         <button onclick="toggleUserPermEditor('${u.id}')" title="Click para elegir qué menús, submenús y pestañas puede ver esta cuenta" style="font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer">Accesos ✎</button>
-        <input type="password" value="" placeholder="Nueva contraseña" autocomplete="new-password" title="La contraseña actual no se puede ver: escribe una nueva y presiona Enter para cambiarla" onchange="changeUserPassword('${u.id}',this)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%">
+        <div style="display:flex;gap:4px;align-items:center;min-width:0">
+          <input type="password" id="pw-in-${u.id}" value="" placeholder="Nueva contraseña" autocomplete="new-password" title="La contraseña actual no se puede ver: escribe una nueva y presiona Enter para cambiarla" onchange="changeUserPassword('${u.id}',this)" style="font-size:12px;font-family:'IBM Plex Mono',monospace;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;min-width:0">
+          <button type="button" onmousedown="event.preventDefault()" onclick="togglePwVisible('pw-in-${u.id}',this)" title="Ver lo que escribes" style="flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text2);cursor:pointer">${ic('eye',13)}</button>
+        </div>
         <span style="font-size:11px;color:${u.active!==false?'var(--green)':'var(--text3)'};text-align:center">${u.active!==false?'Activo':'Inactivo'}</span>
         <div style="display:flex;gap:4px;justify-content:flex-end">
           <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="${u.active!==false?'Desactivar':'Activar'}" onclick="toggleUserActive('${u.id}')">${u.active!==false?'⏸':'▶'}</button>
           <button class="btn-del" style="width:28px;height:28px;font-size:13px" title="Eliminar cuenta" onclick="deleteUser('${u.id}','${u.name.replace(/'/g,"\\'")}')">🗑</button>
         </div>
       </div>
+      ${_pwNueva[u.id]?`<div style="font-size:11px;color:var(--green);margin-top:5px">✓ Contraseña nueva: <b style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text)">${escH(_pwNueva[u.id])}</b> <span style="color:var(--text3)">— anótala y dásela en persona; al recargar la página ya no se vuelve a ver.</span> <a href="#" onclick="delete _pwNueva['${u.id}'];renderUsersConfig();return false" style="color:var(--text3)">Ocultar</a></div>`:''}
       <div id="ct-editor-${u.id}" style="display:none;padding:.6rem 0 0;flex-wrap:wrap;gap:14px">
         <div style="display:flex;flex-wrap:wrap;gap:14px;padding:.4rem .5rem;background:var(--bg3);border-radius:var(--radius)">
           ${ctCheckboxesHtml('edit-ctchk-'+u.id, userCts)}
@@ -3911,11 +3924,13 @@ function addUser(){
   // al servidor, que la guarda cifrada; por eso no pasa por la cola de envío de este equipo.
   gasRequest({action:'upsert', sheet:'Usuarios', data:JSON.stringify({...newUser, password, cts:JSON.stringify(cts), permissions:JSON.stringify(permissions), captura:JSON.stringify([])})},
     ()=>{
+      _pwNueva[newUser.id]=password;
       users.push(newUser);
       localStorage.setItem(SK_USERS, JSON.stringify(users));
       document.getElementById('new-user-name').value='';
       document.getElementById('new-user-username').value='';
       document.getElementById('new-user-password').value='';
+      document.getElementById('new-user-password').type='password';
       document.querySelectorAll('.new-user-ctchk').forEach(el=>el.checked=false);
       msg.textContent='✓ Usuario agregado'; msg.style.color='var(--green)';
       setTimeout(()=>msg.textContent='',3000);
@@ -3941,7 +3956,7 @@ function changeUserPassword(id,inp){
   if(pw.length<4){ alert('La contraseña debe tener al menos 4 caracteres.'); return; }
   inp.disabled=true;
   gasRequest({action:'setPassword', id, password:pw},
-    ()=>{ inp.value=''; inp.disabled=false; inp.placeholder='✓ Contraseña cambiada'; showCloudStatus('✓ Contraseña actualizada','ok'); },
+    ()=>{ _pwNueva[id]=pw; inp.value=''; inp.disabled=false; showCloudStatus('✓ Contraseña actualizada','ok'); renderUsersConfig(); },
     (err)=>{ inp.disabled=false; alert('No se pudo cambiar la contraseña: '+(err==='Network error'?'sin conexión con el servidor.':err)); });
 }
 function toggleUserActive(id){
@@ -4021,7 +4036,8 @@ const ICONS={
   gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   barChart:'<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
   clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'
 };
 function ic(name,size){size=size||14;const d=ICONS[name]||'';return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;}
 // Parseo/formato a prueba de datos raros: las celdas vacías del Sheet
