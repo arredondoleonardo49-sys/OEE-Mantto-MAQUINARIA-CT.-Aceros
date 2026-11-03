@@ -2701,7 +2701,7 @@ function r3(n){ return Math.round((Number(n)||0)*1000)/1000; }
 function f3(n){ return String(r3(n)); }
 function tubNormName(s){
   return String(s==null?'':s).toLowerCase().replace(/[×]/g,'x').replace(/["”“″′']/g,' ')
-    .replace(/\b(tubular|tubo|in|pulg)\b/g,' ').replace(/\d+(?:[.,]\d+)?\s*m(?:ts?|etros)?\b/g,' ')
+    .replace(/\b(tubular|tubo|ptr|in|pulg)\b/g,' ').replace(/\d+(?:[.,]\d+)?\s*m(?:ts?|etros)?\b/g,' ')
     .replace(/cal\.?\s*/g,'cal').replace(/[^a-z0-9\/.]/g,'')
     .replace(/^([0-9\/.]+)x([0-9\/.]+)(cal.*)$/,(m,a,b,c)=>[a,b].sort().join('x')+c);   // el perfil 1 x 1/2 es el mismo que 1/2 x 1
 }
@@ -4051,7 +4051,18 @@ function ensureSeedMachines(){
 }
 
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
-function tubCanon(n){ let k=n, g=0; while(k!=null && !tubulares.some(t=>t.tipo===k) && matAlias[k] && g++<6) k=matAlias[k]; return (k==null||k==='')?n:k; }
+// Nombre vigente de un tubular: el del catálogo, el de su alias o, si viene escrito distinto («2 X 2 Cal 14», «2 X 2 Cal. 14»,
+// «PTR 2" X 2" Cal. 14»), el del catálogo que se llame igual sin puntos, comillas ni «PTR/Tubular». Si no está en el catálogo,
+// todas las formas de escribirlo se juntan bajo la primera que aparece, para que no salga repetido.
+const _tubRep={};
+function tubCanon(n){
+  let k=n, g=0; while(k!=null && !tubulares.some(t=>t.tipo===k) && matAlias[k] && g++<6) k=matAlias[k];
+  if(k==null||k==='') return n;
+  if(tubulares.some(t=>t.tipo===k)) return k;
+  const m=tubMatchCatalog(k); if(m) return m.tipo;
+  const nn=tubNormName(k); if(!nn) return k;
+  return _tubRep[nn]||(_tubRep[nn]=k);
+}
 function getTubularByTipo(t){return tubulares.find(x=>x.tipo===t) || tubulares.find(x=>x.tipo===tubCanon(t));}
 // ── CLOUD JSONP ──
 let _gasReqCounter=0;
@@ -6341,8 +6352,10 @@ function aprovMakeTubDay(fecha,raw){
   });
   const tx=aprovRecords.find(r=>String(r.id)==='tx_'+fecha);
   let expl;
-  if(tx) expl=(tx.explosionDetalle||[]).map(e=>({...e}));
-  else { const m={},ord=[]; raw.forEach(r=>(r.explosionDetalle||[]).forEach(e=>{ const k=aprovExplKey(e); if(!k) return; if(!m[k]){ m[k]={tipo:k,hojas:0}; ord.push(m[k]); } m[k].hojas+=Number(e.hojas)||0; })); expl=ord; }
+  // La explosión se junta por tubular vigente: si se capturó con dos formas del mismo nombre, se suma en un solo renglón.
+  const m={},ord=[];
+  (tx?[tx]:raw).forEach(r=>(r.explosionDetalle||[]).forEach(e=>{ const k=aprovExplKey(e); if(!k) return; if(!m[k]){ m[k]={tipo:k,hojas:0}; ord.push(m[k]); } m[k].hojas+=Number(e.hojas)||0; }));
+  expl=ord;
   if(tx){ const t=new Date(tx.updatedAt||0).getTime(); if(t>last) last=t; }
   return {id:'td_'+fecha,tipo:'tubular',ct:'LASER',maquina:maqs.join(' + ')||'GW1 + GW2',maqs,fecha,turno:'Día',op:'Programa del día',origen:'dia',
     pesoTotal:r3(peso),ahorro:r3(ahorro),merma:mAny?(flag?Number(flag.merma):r3(mSum)):null,pctMerma:null,aprovechado:null,mermaSemanal:!!flag,
@@ -6396,7 +6409,7 @@ function aprovItems(r){
   out.forEach(it=>{ it.ev=it.ev||0; it.realProg=Math.round((it.real-it.ev)*1000)/1000; });
   return out;
 }
-function aprovExplKey(e){ return e.cal||e.tipo; }
+function aprovExplKey(e){ return e.cal||(e.tipo?tubCanon(e.tipo):e.tipo); }
 // Diferencia = explosionado − registrado (positivo = se consumió menos de
 // lo planeado = ahorro). Ahorro teórico = valor de esa diferencia + ahorro
 // por recuperación de recortes.
