@@ -1815,6 +1815,8 @@ function sessionExpired(msg){
 }
 function onLoginSuccess(fresh){
   _prevHoraContext=resolveInitialRegContext(!!fresh);
+  // Con una sesión nueva, lo que la nube rechazó antes se reintenta de inmediato (sin esperar los 10 min).
+  if(fresh && Object.values(_outbox).some(e=>(e.srvErr||0)>0)){ Object.values(_outbox).forEach(e=>{ e.srvErr=0; e.lastTry=0; }); outboxSave(); }
   setTimeout(outboxRetry,2500);      // reintenta lo que no alcanzó a llegar a la nube la vez anterior
   setTimeout(updateUnsavedDot,0);    // ¿quedó algún borrador sin guardar de la vez anterior?
   applyRolePermissions();
@@ -4092,6 +4094,13 @@ let _unloading=false;
 const SK_OUTBOX='oee_outbox_v1';
 let _outbox={};
 try{ _outbox=JSON.parse(localStorage.getItem(SK_OUTBOX))||{}; }catch(e){ _outbox={}; }
+// Una pantalla abierta con la versión anterior contaba como «rechazo» el aviso del Apps Script de iniciar sesión:
+// esos registros no tienen nada mal, solo les faltaba la sesión, y se reintentan como cualquier otro.
+try{
+  let fix=false;
+  Object.values(_outbox).forEach(e=>{ if(e && (e.srvErr||0)>0 && /sesi[oó]n/i.test(e.lastErr||'')){ e.srvErr=0; e.lastTry=0; fix=true; } });
+  if(fix) localStorage.setItem(SK_OUTBOX,JSON.stringify(_outbox));
+}catch(e){}
 let _outboxBusy=false;
 function outboxSave(){ try{ localStorage.setItem(SK_OUTBOX,JSON.stringify(_outbox)); }catch(e){ /* sin espacio: no bloquea el guardado normal */ } try{ updateCloudBadge(); }catch(e){} }
 function outboxCount(){ return Object.keys(_outbox).length; }
@@ -4350,7 +4359,7 @@ function updateCloudBadge(){
   }
   const pend=(typeof outboxCount==='function')?outboxCount():0, fail=(typeof outboxFailedCount==='function')?outboxFailedCount():0;
   if(fail>0){
-    el.innerHTML=`<span style="color:var(--red)" title="La nube rechazó ${fail} registro${fail===1?'':'s'}. Siguen guardados en este equipo y se reintentan cada 10 min. Revisa que el Apps Script (Codigo_GoogleSheet.gs) esté actualizado.">⚠ ${fail} sin subir al Sheet</span>`;
+    el.innerHTML=`<span style="color:var(--red)" title="La nube rechazó ${fail} registro${fail===1?'':'s'}. Siguen guardados en este equipo y se reintentan cada 10 min. Toca aquí para ver cuáles son, el motivo y reintentar ya.">⚠ ${fail} sin subir al Sheet</span>`;
     return;
   }
   if(lastSyncHadErrors){
