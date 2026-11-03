@@ -1535,21 +1535,23 @@ const DIBUJO_LABEL = {
   'Laser de Cama': 'Creación de nidos (lámina)'
 };
 const COSTO_HORA_CT={}; ALL_CTS.forEach(ct=>{ COSTO_HORA_CT[ct]=CT_CONFIG[ct].costoHora; });
+// Plantilla de un equipo nuevo antes de su primera sincronización: copia de Maquinas_Config
+// (mismos id) al 2026-11-03. Lo que esté en la nube siempre manda sobre estos valores.
 const DEFAULT_MACHINES=[
   {id:'m1',name:'Prensa Fluidrica',ct:'TROQUELES',cap:850,photo:'assets/maquina-prensa-fluidrica.jpg'},
   {id:'m2',name:'Prensa 60',ct:'TROQUELES',cap:7200,photo:'assets/maquina-prensa-60.jpg'},
   {id:'m3',name:'Prensa 90',ct:'TROQUELES',cap:3400,photo:'assets/maquina-prensa-90.jpg'},
-  {id:'m4',name:'Newton 1',ct:'TROQUELES',cap:3029,photo:'assets/maquina-newton-1.jpg'},
-  {id:'m5',name:'Newton 2',ct:'TROQUELES',cap:1801,photo:'assets/maquina-newton-2.jpg'},
+  {id:'m4',name:'Newton 1',ct:'TROQUELES',cap:3029,modo:'dia',photo:'assets/maquina-newton-1.jpg'},
+  {id:'m5',name:'Newton 2',ct:'TROQUELES',cap:1801,modo:'dia',photo:'assets/maquina-newton-2.jpg'},
   {id:'m6',name:'Laser de Cama',ct:'TROQUELES',cap:1180,photo:'assets/maquina-laser-de-cama.jpg'},
-  {id:'m7',name:'Bimex',ct:'LASER',cap:232,photo:'assets/maquina-bimex.jpg'},
-  {id:'m8',name:'GW1',ct:'LASER',cap:215,photo:'assets/maquina-gw1.jpg'},
-  {id:'m9',name:'GW2',ct:'LASER',cap:350,photo:'assets/maquina-gw2.jpg'},
+  {id:'m1790950926920',name:'DOBLADORA G-WEIKE 13032',ct:'TROQUELES',cap:700,modo:'dia',photo:''},
+  {id:'m8',name:'GW1',ct:'LASER',cap:281,photo:'assets/maquina-gw1.jpg'},
+  {id:'m9',name:'GW2',ct:'LASER',cap:380,photo:'assets/maquina-gw2.jpg'},
   {id:'m10',name:'Área General',ct:'EST. MUEBLES',cap:768,photo:''},
   {id:'m15',name:'Punteadora',ct:'EST. MUEBLES',cap:313,photo:'assets/maquina-punteadora.jpg'},
-  // Capacidades provisionales — ajustarlas en Configuración → Máquinas
-  {id:'m16',name:'Dobladora G-Weike',ct:'TROQUELES',cap:1000,photo:''},
-  {id:'m17',name:'Soldadora Láser',ct:'EST. MUEBLES',cap:500,photo:''}
+  {id:'m1791328458061',name:'Soldadora Laser',ct:'EST. MUEBLES',cap:100,photo:''},
+  {id:'m1791328533901',name:'Área General Sillas',ct:'EST. SILLAS',cap:120,photo:''},
+  {id:'m1791328560534',name:'Area General Mamparas',ct:'EST. MAMPARAS',cap:313,photo:''}
 ];
 const DEFAULT_LAMINAS=[
   {cal:'Cal. 11',sku:'',esp:0.304,peso:88.8,costo:1640.14},
@@ -4043,8 +4045,9 @@ function rebuildHoraList(){
 // todavía no las tiene (si alguien las elimina, la lápida evita que vuelvan).
 function ensureSeedMachines(){
   const has=re=>machines.some(m=>re.test(normName(m.name)));
-  if(!has(/dobladora|weike|gwk/)) machines.push({id:'m16',name:'Dobladora G-Weike',ct:'TROQUELES',cap:1000,photo:''});
-  if(!has(/soldadora.*laser/)) machines.push({id:'m17',name:'Soldadora Láser',ct:'EST. MUEBLES',cap:500,photo:''});
+  const seed=id=>{ const d=DEFAULT_MACHINES.find(x=>x.id===id); if(d) machines.push({...d}); };
+  if(!has(/dobladora|weike|gwk/)) seed('m1790950926920');
+  if(!has(/soldadora.*laser/)) seed('m1791328458061');
 }
 
 function getLaminaByCal(cal){return laminas.find(l=>l.cal===cal);}
@@ -4929,6 +4932,9 @@ function upsertSequential(sheet,rows,done){
 function rosterMigration(){
   if(!currentUser || currentUser.role!=='ingeniero') return;
   if(localStorage.getItem('oee_roster_migrated_v1')) return;
+  // Sin la plantilla de la nube no hay contra qué comparar: se reintenta en la siguiente sincronización
+  // (si no, una máquina de la plantilla que este equipo aún no tiene se ofrecería para eliminarla).
+  if(!rosterRemoteIds.size) return;
   try{
     const rows=[];
     const missing=DEFAULT_MACHINES.filter(d=>!machines.some(m=>m.id===d.id) && !machineTombs.includes(d.id));
