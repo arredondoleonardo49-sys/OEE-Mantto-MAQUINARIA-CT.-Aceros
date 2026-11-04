@@ -557,6 +557,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pend-row.atr .pend-l1 .n{color:#f06060}
 .pend-atr-tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;background:rgba(240,96,96,.16);color:#f06060;white-space:nowrap}
 .pend-hd .pend-hd-atr{color:#f06060}.pend-hd .pend-hd-atr b{color:#f06060}
+.pend-hd .pend-hd-hoy{color:var(--amber)}.pend-hd .pend-hd-hoy b{color:var(--amber)}
 #page-dashboard:fullscreen #dash-chart-card.pending-on{display:flex;flex-direction:column;overflow:hidden}
 #page-dashboard:fullscreen #dash-chart-card.pending-on #dash-mat-panel{flex:1;min-height:0}
 #page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
@@ -5400,7 +5401,9 @@ function dashLaserPendHtml(){
     const dia=r.atr?`${+r.fecha.slice(8,10)}/${+r.fecha.slice(5,7)}`:'';
     return `<div class="pend-row${r.atr?' atr':''}"${r.atr?` title="OP del programa del ${escH(fmtDMY(r.fecha))} que no se cortó: sus piezas cuentan como atraso"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${r.atr?`<span class="pend-atr-tag">Atraso · ${dia}</span>`:''}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>${r.atr?'pzas atraso':'pzas'}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
   }).join('');
-  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por cortar<b>${fmtN(d.pzs,0)}</b></span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
+  // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) va aparte
+  const opsHoy=d.ops-d.opsAtr, pzsHoy=Math.max(0,d.pzs-d.pzsAtr);
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span class="pend-hd-hoy" title="Piezas de las OPs del programa de hoy que aún no se cortan">Faltan por cortar hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse (también en el indicador «Atraso»)">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
     <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
     <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
 }
@@ -5465,6 +5468,20 @@ function renderDashboard(){
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
     const canEditMetas=canRegistrarAtraso;   // líder e ingeniería editan las metas aquí; operador solo las ve
+    // Tercer indicador. Laser: el atraso son las piezas de OPs de días anteriores que siguen sin cortar (lo que falta
+    // por cortar de hoy se ve en «Qué falta por cortar»). Los demás centros: producidas vs. programadas, como siempre.
+    const pendL=(ct==='LASER')?dashLaserPend():null;
+    let hl;
+    if(pendL){
+      if(pendL.pzsAtr>0) hl={lbl:'Atraso',icon:'alertTriangle',val:'-'+fmtN(pendL.pzsAtr,0),col:'#f06060',sub:`pzas de ${pendL.opsAtr} OP${pendL.opsAtr===1?'':'s'} de días anteriores`,btn:true};
+      else if(diffCT>0) hl={lbl:'Adelanto',icon:'target',val:'+'+diffCT,col:'#3ecf8e',sub:'vs. piezas programadas',btn:false};
+      else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:'sin OPs pendientes de días anteriores',btn:false};
+    } else {
+      hl={lbl:esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso'),icon:esAdelanto?'target':(enCurso?'clock':'alertTriangle'),
+        val:esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT),col:esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060'),
+        sub:modoProc?(canEditMetas?'editable · + adelanto / − atraso':'captura manual del día'):(enCurso?'pzas por cortar · jornada en curso':'vs. piezas programadas'),
+        btn:!esAdelanto&&diaTerminado};
+    }
     // No repintar la tarjeta mientras se escribe en uno de sus campos (meta o atraso): el refresco automático borraría lo tecleado
     const _ae=document.activeElement;
     if(!(_ae && _ae.tagName==='INPUT' && ctCardsEl.contains(_ae)))
@@ -5498,12 +5515,12 @@ function renderDashboard(){
               <div class="ct-highlight-sub">pzas / turno</div>
             </div>
             <div class="ct-highlight-box">
-              <div class="ct-highlight-label">${ic(esAdelanto?'target':(enCurso?'clock':'alertTriangle'),12)}${esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso')}</div>
+              <div class="ct-highlight-label">${ic(hl.icon,12)}${hl.lbl}</div>
               ${modoProc&&canEditMetas
-                ?`<input type="number" step="1" class="ct-meta-input ct-adel-input" id="ct-adel-input" value="${adelMan==null?'':adelMan}" placeholder="0" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}" title="Captura el adelanto (+) o el atraso (−) del día en piezas" onchange="updateAdelantoManual('${ct}',this.value)">`
-                :`<div class="ct-highlight-val" style="color:${esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060')}">${esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT)}</div>`}
-              <div class="ct-highlight-sub">${modoProc?(canEditMetas?'editable · + adelanto / − atraso':'captura manual del día'):(enCurso?'pzas por cortar · jornada en curso':'vs. piezas programadas')}</div>
-              ${!esAdelanto && diaTerminado && canRegistrarAtraso ? `
+                ?`<input type="number" step="1" class="ct-meta-input ct-adel-input" id="ct-adel-input" value="${adelMan==null?'':adelMan}" placeholder="0" style="color:${hl.col}" title="Captura el adelanto (+) o el atraso (−) del día en piezas" onchange="updateAdelantoManual('${ct}',this.value)">`
+                :`<div class="ct-highlight-val" style="color:${hl.col}">${hl.val}</div>`}
+              <div class="ct-highlight-sub">${hl.sub}</div>
+              ${hl.btn && canRegistrarAtraso ? `
                 <button class="btn-registrar-atraso" onclick="toggleAtrasoForm()">+ Registrar atraso</button>
                 <div class="atraso-form" id="atraso-form" style="display:none">
                   <input type="number" id="atraso-piezas" placeholder="Piezas faltantes" min="0">
