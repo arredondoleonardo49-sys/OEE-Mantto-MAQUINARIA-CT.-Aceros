@@ -61,7 +61,7 @@
  * 3. Implementar → Administrar implementaciones → ✎ → Versión: "Nueva versión"
  *    → Implementar (la URL no cambia).
  * 4. Confirma: abre  TU_URL?action=ping&callback=x  → debe mostrar
- *    "build":"2026-11-03a-login-seguro".  Si no aparece, la implementación sigue
+ *    "build":"2026-11-04a-medidas-piezas".  Si no aparece, la implementación sigue
  *    sirviendo el código anterior: repite el paso 3.
  * 5. Cierra y vuelve a abrir el Sheet: aparece el menú "OEE Planta".
  */
@@ -70,7 +70,7 @@
 // (no cambiarlo salvo que cambie el protocolo; si no, la app avisa "backend desactualizado").
 const SCRIPT_VERSION = '2026-11-03a';
 // Identifica ESTE código (sirve para confirmar con ?action=ping que ya se actualizó).
-const BUILD = '2026-11-03a-login-seguro';
+const BUILD = '2026-11-04a-medidas-piezas';
 
 const LECTURA_MAX_FILAS = 3000;   // tope de filas (las más recientes) por lectura
 const ESPERA_BLOQUEO_MS = 20000;  // cuánto espera una escritura si hay otra en curso
@@ -99,7 +99,8 @@ const HOJAS = (function () {
     Programa_Dia:       { clave: ['id'], maxDias: 120, archivarDias: 120 }, // el programa vigente se conserva hasta que se suba otro (la app pide solo lo reciente en cada consulta)
     Aprovechamiento:    { clave: ['id'] },
     Merma_Semanal:      { clave: ['id'], texto: ['weekStart'] },
-    Atrasos:            { clave: ['id'], archivarDias: 180 }
+    Atrasos:            { clave: ['id'], archivarDias: 180 },
+    Piezas_Medidas:     { clave: ['id'], texto: ['id', 'modelo', 'parte'] }   // largo de cada pieza (Modelo + Parte) para el consumo de tubular de GW1/GW2
   };
   ['Troqueles', 'Laser', 'Muebles', 'Sillas', 'Mamparas'].forEach(function (ct) {
     h['Produccion_' + ct] = { clave: ['id'], archivarDias: 120, vacios: 'hora' };   // hora por hora por centro de trabajo
