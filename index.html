@@ -570,6 +570,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .mat-tbl tr.sum td{border-top:1px solid var(--border);border-bottom:none;font-weight:700;color:var(--text)}
 .programa-subtabs{margin-bottom:.75rem;align-items:center}
 .programa-subf{font-size:10px;font-weight:500;color:var(--text3);margin-left:4px}
+.prog-week-tabs{display:flex;gap:2px;flex-wrap:wrap;min-width:0}
+.prog-week-tabs .tab{padding:8px 12px;display:flex;align-items:center;gap:3px;white-space:nowrap}
+.prog-wk-nav{background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);width:26px;height:26px;cursor:pointer;font-size:15px;line-height:1;flex:none}
+.prog-wk-nav:hover{color:var(--text);border-color:var(--text3)}
+.prog-dot{font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:700;border-radius:8px;padding:0 5px;margin-left:4px;line-height:15px}
+.prog-dot.ok{background:rgba(62,207,142,.15);color:var(--green)}.prog-dot.pend{background:rgba(245,166,35,.16);color:var(--amber)}.prog-dot.atr{background:rgba(240,96,96,.16);color:#f06060}
 .programa-aviso{font-size:12px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;margin-bottom:8px;line-height:1.5}
 .programa-done-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;border-radius:var(--radius);background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.25);font-size:12px;color:var(--text2)}
 .programa-done-bar>span{flex:1;min-width:220px}
@@ -1145,10 +1151,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <!-- TAB: PROGRAMA DEL DÍA -->
     <div id="reg-tab-programa" class="tab-content">
       <div class="tab-row programa-subtabs" id="programa-subtabs">
-        <div class="tab" id="prog-sub-ant" onclick="setProgSub('ant')">Programa anterior <span id="prog-sub-ant-f" class="programa-subf"></span></div>
-        <div class="tab active" id="prog-sub-hoy" onclick="setProgSub('hoy')">Programa del día <span id="prog-sub-hoy-f" class="programa-subf"></span></div>
-        <div class="tab" id="prog-sub-sig" onclick="setProgSub('sig')">Programa siguiente <span id="prog-sub-sig-f" class="programa-subf"></span></div>
-        <span id="prog-sig-date-wrap" style="display:none;margin-left:auto;align-items:center;gap:6px;font-size:11px;color:var(--text3)">Fecha del programa <input type="date" id="prog-sig-fecha" onchange="setProgSigFecha(this.value)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></span>
+        <button type="button" class="prog-wk-nav" onclick="progSemana(-1)" title="Semana anterior">‹</button>
+        <div id="prog-week-tabs" class="prog-week-tabs"></div>
+        <button type="button" class="prog-wk-nav" onclick="progSemana(1)" title="Semana siguiente">›</button>
+        <span id="prog-sig-date-wrap" style="display:flex;margin-left:auto;align-items:center;gap:6px;font-size:11px;color:var(--text3)">Ir a fecha <input type="date" id="prog-sig-fecha" onchange="progSetDia(this.value)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></span>
       </div>
       <div class="programa-status-row" id="programa-summary" style="margin:0 0 .75rem"></div>
       <div class="form-card" id="programa-upload-card" style="display:none">
@@ -2276,11 +2282,11 @@ function progActiveRecord(fecha,machine){
   });
   return best;
 }
-// En «Programa siguiente» solo cuenta el programa de esa fecha; en «Programa del día», el vigente.
+// En un día anterior o posterior solo cuenta el programa de esa fecha; en el día de hoy, el vigente.
 function progViewRecord(fecha,machine){
   if(progSub==='sig'||progSub==='ant') return getProgramaRecord(fecha,machine);
   const r=progActiveRecord(fecha,machine);
-  // Un programa de un día anterior que ya se cortó completo no se arrastra a «Programa del día»: se consulta en «Programa anterior»
+  // Un programa de un día anterior que ya se cortó completo no se arrastra al día de hoy: se consulta en la pestaña de su día
   if(r && String(r.fecha)<String(fecha)){ const st=progStats(r); if(st.total>0 && st.done===st.total) return null; }
   return r;
 }
@@ -2369,18 +2375,25 @@ function extractSheetTable(ws){
 // a la franja del hora por hora en que se cortó, y queda en el Sheet con su bitácora (fecha, turno, franja).
 // Líder e Ingeniería ven y suben programas y consultan el avance, pero no registran cortes ni observaciones.
 const PROG_GRUPO={'GW1':['GW1','GW2'],'GW2':['GW1','GW2'],'Laser de Cama':['Laser de Cama']};
-let progSub='hoy';            // 'ant' = programa anterior (día hábil previo) · 'hoy' = programa del día · 'sig' = programa siguiente (se adelanta)
-let progSigOverride='';       // fecha elegida a mano para el programa siguiente
+// Pestañas de la semana (lunes a viernes): se ve y se sube el programa de cualquier día.
+let progSelFecha='';          // día elegido; '' = el día de Registro
+let progSub='hoy';            // se deriva del día elegido: 'ant' (antes del día de Registro) · 'hoy' · 'sig' (después: se adelanta)
 const progShowDone={};        // programas completados que se están viendo desplegados
 function progRegFecha(){ return document.getElementById('reg-fecha')?.value||todayStr(); }
 function progNextWorkday(iso){ let d=isoAddDays(iso,1); while(isoDow(d)===0||isoDow(d)===6) d=isoAddDays(d,1); return d; }
 function progPrevWorkday(iso){ let d=isoAddDays(iso,-1); while(isoDow(d)===0||isoDow(d)===6) d=isoAddDays(d,-1); return d; }
 function progTargetFecha(){
-  const base=progRegFecha();
-  if(progSub==='ant') return progPrevWorkday(base);
-  if(progSub!=='sig') return base;
-  return (progSigOverride && progSigOverride>base)?progSigOverride:progNextWorkday(base);
+  const base=progRegFecha(), f=/^\d{4}-\d{2}-\d{2}$/.test(progSelFecha)?progSelFecha:base;
+  progSub=f===base?'hoy':(f<base?'ant':'sig');
+  return f;
 }
+function progLunes(iso){ const w=isoDow(iso); return isoAddDays(iso,w===0?-6:1-w); }
+function progSetDia(iso){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||'')) return;
+  progSelFecha=(iso===progRegFecha())?'':iso; renderProgramaDia(true);
+  try{ refreshProgramaDiaFromCloud(); }catch(e){}
+}
+function progSemana(n){ progSetDia(isoAddDays(progTargetFecha(),7*n)); }
 function ymd(iso){ return String(iso||'').replace(/-/g,''); }
 function isoFromYmd(v){ v=String(v||''); return /^\d{8}$/.test(v)?v.slice(0,4)+'-'+v.slice(4,6)+'-'+v.slice(6,8):''; }
 // Bitácora de cortes: "fila,1|0,piezas,AAAAMMDD,turno,franja,marca;…" (compacta: viaja en la URL del Sheet)
@@ -2512,7 +2525,7 @@ function progMsg(t,color){
 }
 // Marca / desmarca una fila como cortada
 // ── Programa en la pestaña equivocada: candados y corrección ───────────────────────────────────────
-// Un programa que ya se está cortando HOY pero quedó fechado en un día posterior («Programa siguiente») se detecta y se puede mover a su fecha real.
+// Un programa que ya se está cortando HOY pero quedó fechado en un día posterior se detecta y se puede mover a su fecha real.
 const progAdelantoOk={};      // «sí, este es el programa siguiente»: se pregunta una vez por programa y por día, en este equipo
 function progFechaLarga(iso){ return dayLabel(iso)+'/'+String(iso||'').slice(0,4); }
 // Filas del programa cortadas HOY (por la bitácora de cortes)
@@ -2531,7 +2544,7 @@ function progSospechosoAdelanto(rec){
 function progConfirmarAdelanto(rec){
   if(!rec||String(rec.fecha)<=todayStr()) return true;
   const k=rec.id+'|'+todayStr(); if(progAdelantoOk[k]) return true;
-  const ok=confirm('⚠ Este programa es del '+progFechaLarga(rec.fecha)+' («Programa siguiente»), pero estás registrando cortes HOY ('+progFechaLarga(todayStr())+').\n\n'+
+  const ok=confirm('⚠ Este programa es del '+progFechaLarga(rec.fecha)+' (un día posterior), pero estás registrando cortes HOY ('+progFechaLarga(todayStr())+').\n\n'+
     'Acepta solo si de verdad estás ADELANTANDO el programa de ese día.\n\n'+
     'Si es el programa que se produce hoy, cancela: se subió en la pestaña equivocada. Avisa a un Líder o Ingeniero para que lo mueva a hoy (botón «Mover programa»), y así el consumo de material cae en el día correcto.');
   if(ok) progAdelantoOk[k]=true;
@@ -2672,8 +2685,7 @@ function progMoverDlgGo(from,to,sel){
   const res=sel.map(n=>progMoverFecha(n,from,to));
   saveProgramaDiaLS();
   const d=document.getElementById('prog-mover-modal'); if(d) d.remove();
-  const regF=progRegFecha(); if(to===regF) progSub='hoy'; else if(to===progPrevWorkday(regF)) progSub='ant'; else if(to>regF) progSub='sig';
-  if(progSub==='sig') progSigOverride=to;
+  progSelFecha=(to===progRegFecha())?'':to;   // se queda viendo el día al que se movió
   try{ progAutoFillContext(); }catch(e){}
   renderProgramaDia(true);
   try{ renderDashboard(); }catch(e){}
@@ -3093,11 +3105,6 @@ function programaReabrir(fecha,machine){
   progMsg('Programa reabierto'); renderProgramaDia(true);
 }
 function toggleProgDone(key){ progShowDone[key]=!progShowDone[key]; renderProgramaDia(true); }
-function setProgSub(v){
-  progSub=(v==='sig'||v==='ant')?v:'hoy'; renderProgramaDia(true);
-  try{ refreshProgramaDiaFromCloud(); }catch(e){}
-}
-function setProgSigFecha(v){ progSigOverride=/^\d{4}-\d{2}-\d{2}$/.test(v||'')?v:''; renderProgramaDia(true); }
 // Piezas programadas efectivas de una máquina en un día: lo que se cortó por adelantado cuenta el día en que se cortó
 // (como programado y producido), y ya no vuelve a contar el día al que pertenecía el programa.
 function progProgramadasEfectivas(machine,fecha){
@@ -3612,22 +3619,22 @@ function renderProgramaDia(force){
   const fecha=progTargetFecha();
   updateProgramaTabState(machine);
 
-  // Pestañas «Programa del día» / «Programa siguiente»
-  const bh=document.getElementById('prog-sub-hoy'), bs=document.getElementById('prog-sub-sig'), ba=document.getElementById('prog-sub-ant');
-  if(bh&&bs){
-    if(ba){ ba.classList.toggle('active',progSub==='ant'); const fa=document.getElementById('prog-sub-ant-f'); if(fa) fa.textContent=dayLabel(progPrevWorkday(regFecha)); }
-    bh.classList.toggle('active',progSub==='hoy'); bs.classList.toggle('active',progSub==='sig');
-    const fh=document.getElementById('prog-sub-hoy-f'), fs=document.getElementById('prog-sub-sig-f');
-    if(fh) fh.textContent=dayLabel(regFecha);
-    if(fs) fs.textContent=dayLabel(progSub==='sig'?fecha:((progSigOverride&&progSigOverride>regFecha)?progSigOverride:progNextWorkday(regFecha)));
-    const dw=document.getElementById('prog-sig-date-wrap'), di=document.getElementById('prog-sig-fecha');
-    if(dw) dw.style.display=progSub==='sig'?'flex':'none';
-    if(di && progSub==='sig' && document.activeElement!==di) di.value=fecha;
+  // Pestañas de la semana: cada día muestra cuántas OPs le faltan por cortar a la máquina elegida (rojo = día que ya pasó)
+  const wt=document.getElementById('prog-week-tabs');
+  if(wt){
+    const lun=progLunes(fecha), hoyR=todayStr(), DN=['Lunes','Martes','Miércoles','Jueves','Viernes'];
+    wt.innerHTML=DN.map((n,k)=>{
+      const d=isoAddDays(lun,k), r=PROGRAMA_MACHINES.includes(machine)?getProgramaRecord(d,machine):null;
+      let est='';
+      if(r){ const st=progStats(r), pend=st.total-st.done; est=(progIsCompleted(r)||pend<=0)?'<span class="prog-dot ok" title="Todo cortado">✓</span>':`<span class="prog-dot ${d<hoyR?'atr':'pend'}" title="${pend} OP${pend===1?'':'s'} sin cortar">${pend}</span>`; }
+      return `<div class="tab${d===fecha?' active':''}" onclick="progSetDia('${d}')" title="${progFechaLarga(d)}">${n} <span class="programa-subf">${+d.slice(8,10)}/${+d.slice(5,7)}${d===hoyR?' · hoy':''}</span>${est}</div>`;
+    }).join('');
+    const di=document.getElementById('prog-sig-fecha'); if(di && document.activeElement!==di) di.value=fecha;
   }
   const ut=document.getElementById('programa-upload-title');
-  if(ut) ut.textContent=progSub==='ant'?`Programa ANTERIOR (${dayLabel(fecha)} · ${fecha}). Para ver o corregir lo de ese día; si el archivo es de hoy, súbelo en «Programa del día»`:progSub==='sig'?`Programa SIGUIENTE (${dayLabel(fecha)} · ${fecha}). Solo para lo que se produce otro día; lo que se corta HOY va en «Programa del día»`:`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`;
+  if(ut) ut.textContent=progSub==='hoy'?`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`:`Programa del ${progFechaLarga(fecha)}. ${progSub==='ant'?'Para ver o corregir lo de ese día':'Se sube por adelantado: lo que se corta HOY va en la pestaña de hoy'}`;
   const uh=document.getElementById('programa-upload-head');
-  if(uh) uh.textContent=progSub==='ant'?'Subir programa anterior (día hábil previo)':progSub==='sig'?'Subir programa siguiente (adelantar programa)':'Subir programa del día';
+  if(uh) uh.textContent=progSub==='hoy'?'Subir programa del día':`Subir programa del ${progFechaLarga(fecha)}`;
 
   // Resumen de avance por máquina (todos lo ven) + estado de carga (quien sube)
   const sum=document.getElementById('programa-summary');
@@ -3668,7 +3675,7 @@ function renderProgramaDia(force){
   } else if(!canCut && !completed){
     aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
   }
-  if(progSub==='ant') aviso+=`<div class="programa-aviso" style="color:var(--text2)">🕘 Programa del día anterior (<b>${progFechaLarga(fecha)}</b>). Si algún programa de «hoy» o «siguiente» en realidad era de este día, usa <b>Mover fecha</b> para pasarlo aquí.</div>`;
+  if(progSub==='ant') aviso+=`<div class="programa-aviso" style="color:var(--text2)">🕘 Programa de un día anterior (<b>${progFechaLarga(fecha)}</b>). Lo que quede sin cortar se puede cortar hoy desde aquí. Si un programa de otro día en realidad era de este, usa <b>Mover fecha</b> para pasarlo aquí.</div>`;
   // Programa fechado después de hoy pero que ya se está cortando hoy → casi seguro se subió en la pestaña equivocada
   if(progSospechosoAdelanto(rec)){
     const n=progCortadasHoy(rec), tot=Math.max(0,rec.rows.length-1);
