@@ -553,6 +553,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pend-m.m2{background:rgba(62,207,142,.14);color:var(--green)}.pend-m.m3{background:rgba(180,140,255,.16);color:#b48cff}
 .pend-hint{font-size:10px;color:var(--text3);margin-top:5px;text-align:right}
 .pend-ok{padding:1.2rem 0;text-align:center;color:var(--green);font-size:13px}
+.pend-row.atr{background:rgba(240,96,96,.08);box-shadow:inset 3px 0 0 #f06060}
+.pend-row.atr .pend-l1 .n{color:#f06060}
+.pend-atr-tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;background:rgba(240,96,96,.16);color:#f06060;white-space:nowrap}
+.pend-hd .pend-hd-atr{color:#f06060}.pend-hd .pend-hd-atr b{color:#f06060}
 #page-dashboard:fullscreen #dash-chart-card.pending-on{display:flex;flex-direction:column;overflow:hidden}
 #page-dashboard:fullscreen #dash-chart-card.pending-on #dash-mat-panel{flex:1;min-height:0}
 #page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
@@ -644,6 +648,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pcm-bar{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
 .pcm-sec{font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:6px 12px;font-family:'IBM Plex Sans',sans-serif}
 .programa-cortado-check{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+.prog-hc{font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.1;color:var(--green);margin-top:1px;white-space:nowrap}
 .programa-row-done td{background:rgba(62,207,142,.06);color:var(--text3)}
 .programa-row-done td:first-child{background:rgba(62,207,142,.1)}
 .programa-table tbody tr:hover td{background:var(--bg3)}
@@ -730,7 +735,11 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .hh-sc{overflow-x:auto}
 .hh-in{display:flex;flex-direction:column}
 .hh-bars{display:grid;align-items:end;height:110px;border-bottom:1px solid var(--border)}
-.hh-c{height:100%;display:flex;align-items:flex-end;justify-content:center}
+.hh-c{height:100%;display:flex;align-items:flex-end;justify-content:center;position:relative}
+.hh-meta{position:absolute;left:0;right:0;height:0;border-top:2px dashed var(--amber);opacity:.85;pointer-events:none}
+.hh-n td.ok{color:var(--green)}.hh-n td.bajo,.hh-n td.z.bajo{color:var(--amber);font-weight:600}
+.hh-leg{font-size:10px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.hh-leg-l{display:inline-block;width:16px;border-top:2px dashed var(--amber)}.hh-leg .ok{color:var(--green)}.hh-leg .bajo{color:var(--amber)}
 .hh-c.now{background:rgba(245,166,35,.07);border-left:1px dashed rgba(245,166,35,.5);border-right:1px dashed rgba(245,166,35,.5)}
 .hh-bar{width:62%;border-radius:3px 3px 0 0;opacity:.55}
 .hh-t{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -1012,7 +1021,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <div class="form-card" id="reg-produccion-card">
         <div class="form-card-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>Datos de producción</div>
         <div class="form-grid-3">
-          <div class="form-group"><label>Piezas programadas</label><input type="number" id="reg-programadas" min="0" value="0" oninput="delete this.dataset.autofilled;calcOEE()" style="font-size:19px;font-weight:700;color:#4a9eff"><div class="input-hint">Meta del turno</div></div>
+          <div class="form-group"><label>Piezas programadas</label><input type="number" id="reg-programadas" min="0" value="0" oninput="delete this.dataset.autofilled;calcOEE();try{horaRitmoRefresh()}catch(e){}" style="font-size:19px;font-weight:700;color:#4a9eff"><div class="input-hint">Meta del turno</div></div>
           <div class="form-group"><label>Piezas producidas</label><input type="number" id="reg-piezas" min="0" value="0" oninput="calcOEE()" style="font-size:19px;font-weight:700;color:#3ecf8e"><div class="input-hint">Buenas + rechazadas</div></div>
           <div class="form-group"><label>Piezas rechazadas</label><input type="number" id="reg-rechazadas" min="0" value="0" oninput="calcOEE()" style="font-size:19px;font-weight:700;color:#f06060"><div class="input-hint">Scrap + retrabajo</div></div>
         </div>
@@ -2387,6 +2396,12 @@ function progCortesStr(m){
   return Object.keys(m).map(Number).sort((a,b)=>a-b).map(r=>{ const c=m[r]; return [r,c.on?1:0,c.q,c.f,c.t,c.i,c.ts].join(','); }).join(';');
 }
 function progTs(x){ return parseInt(String(x||'0'),36)||0; }
+// Hora en que el Operador marcó la OP como cortada («9:18»); si fue otro día que el del programa, con la fecha («3/11 9:18»).
+function progHoraCorte(c,progFecha){
+  const t=c&&c.on?progTs(c.ts):0; if(!(t>1.6e12)) return '';
+  const d=new Date(t), iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  return (iso!==progFecha?d.getDate()+'/'+(d.getMonth()+1)+' ':'')+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+}
 function progCantCol(rec){ const h=(rec&&rec.rows&&rec.rows[0])||[]; return h.findIndex(x=>String(x).trim().toLowerCase()==='cant.'); }
 function progQty(rec,r){ const ci=progCantCol(rec); if(ci<0) return 0; const v=parseFloat(((rec.rows||[])[r+1]||[])[ci]); return (isNaN(v)||v<0)?0:v; }
 function progIsCompleted(rec){ return !!rec && String(rec.completado)==='1'; }
@@ -3127,11 +3142,11 @@ function progAutoFillContext(){
   if(!PROGRAMA_MACHINES.includes(machine)) return;
   const v=progProgramadasEfectivas(machine,fecha);
   if(v==null){
-    if(input.dataset.autofilled==='true'){ input.value=''; delete input.dataset.autofilled; calcOEE(); }
+    if(input.dataset.autofilled==='true'){ input.value=''; delete input.dataset.autofilled; calcOEE(); try{ horaRitmoRefresh(); }catch(e){} }
     return;
   }
   if(document.activeElement===input) return;
-  input.value=v; input.dataset.autofilled='true'; calcOEE();
+  input.value=v; input.dataset.autofilled='true'; calcOEE(); try{ horaRitmoRefresh(); }catch(e){}
 }
 // Sección de carga: comprimir/expandir (se recuerda en este navegador) y arrastrar el archivo.
 function progUploadCollapsed(){ try{ return localStorage.getItem('oee_prog_upload_collapsed')==='1'; }catch(e){ return false; } }
@@ -3370,10 +3385,10 @@ function renderProgramaTable(rec){
     return `<tr class="${isDone?'programa-row-done':''}">${cols.map(c=>{
     const cIdx=c.i;
     if(c.k==='d' && cIdx===cortadoColIdx){
-      const cc=cortes[rIdx]; let tip='';
-      if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; tip=`Cortado el ${isoFromYmd(cc.f)} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}`; }
+      const cc=cortes[rIdx]; let tip='', hora='';
+      if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; hora=progHoraCorte(cc,rec.fecha); tip=`Cortado el ${isoFromYmd(cc.f)}${hora?' a las '+hora.split(' ').pop():''} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}`; }
       else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
-      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)"></td>`;
+      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)">${hora?`<div class="prog-hc" title="${esc(tip)}">${esc(hora)}</div>`:''}</td>`;
     }
     if(c.k==='cons'){
       const txt=lam?progConsTextLam(x):progConsText(x);
@@ -5319,12 +5334,16 @@ function ctDiaTerminado(ct){
   if([...turnos].some(t=>/^Turno [23]/.test(t))) return false;
   const n=new Date(); return (n.getHours()+n.getMinutes()/60)>=17;
 }
-// Laser · «Qué falta por cortar»: OPs del programa en curso (GW1 / GW2) que aún no se cortan, con su modelo y cantidad
+// Laser · «Qué falta por cortar»: OPs del programa en curso (GW1 / GW2) que aún no se cortan, con su modelo y cantidad.
+// Las OPs de programas de días anteriores (no completados, de los últimos PEND_ATRASO_DIAS días hábiles) siguen en la lista,
+// en otro color, y sus piezas cuentan como atraso.
+const PEND_ATRASO_DIAS=5;
 function dashLaserPend(){
   const fecha=todayStr();
   const names=getMachinesByCT('LASER').map(m=>m.name);
   const set=new Set(names.length?names:PROG_TUB_MACHINES);
-  const out=[]; let ops=0, pzs=0, anyProg=false;
+  let desde=fecha; for(let k=0;k<PEND_ATRASO_DIAS;){ desde=isoAddDays(desde,-1); const w=isoDow(desde); if(w!==0&&w!==6) k++; }
+  const out=[]; let ops=0, pzs=0, anyProg=false, opsAtr=0, pzsAtr=0;
   Array.from(set).sort().forEach(mn=>{
     const vig=progActiveRecord(fecha,mn);
     programaDia.filter(r=>r&&r.machine===mn).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
@@ -5335,7 +5354,8 @@ function dashLaserPend(){
       const pend=rows.filter((row,r)=>!isDone(row,r)).length;
       // En curso: el de hoy, uno al que ya se le cortó algo hoy (se adelanta) o el vigente que aún tiene filas por cortar
       const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
-      if(!enCurso) return;
+      const atr=String(rec.fecha)<fecha;   // programa de un día anterior: lo que siga sin cortar es atraso
+      if(!enCurso && !(atr && pend>0 && String(rec.fecha)>=desde && !progIsCompleted(rec))) return;
       anyProg=true;
       const H=(rec.rows[0]||[]).map(h=>String(h).trim().toLowerCase());
       const fi=re=>H.findIndex(h=>re.test(h));
@@ -5350,12 +5370,13 @@ function dashLaserPend(){
         const q=cq>=0?parseFloat(row[cq]):NaN;
         const cells=cols.map(c=>{ const v=row[c[1]]; return (v==null||v===false||v===true)?'':String(v).trim(); });
         if(!(q>0) && !cells.some(x=>x)) return;
-        out.push({m:mn,labels:cols.map(c=>c[0]),cells});
+        out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr,fecha:rec.fecha});
         ops++; if(q>0) pzs+=q;
+        if(atr){ opsAtr++; if(q>0) pzsAtr+=q; }
       });
     });
   });
-  return {rows:out,ops,pzs,anyProg};
+  return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr};
 }
 function dashLaserPendHtml(){
   const d=dashLaserPend();
@@ -5369,9 +5390,10 @@ function dashLaserPendHtml(){
     const op=iO>=0?iO:(iM>=0?-1:0);
     const used=new Set([iQ,op,iM].filter(i=>i>=0));
     const rest=r.cells.map((v,i)=>({v,i})).filter(x=>!used.has(x.i)&&x.v).map(x=>escH(x.v));
-    return `<div class="pend-row"><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>pzas</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
+    const dia=r.atr?`${+r.fecha.slice(8,10)}/${+r.fecha.slice(5,7)}`:'';
+    return `<div class="pend-row${r.atr?' atr':''}"${r.atr?` title="OP del programa del ${escH(fmtDMY(r.fecha))} que no se cortó: sus piezas cuentan como atraso"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${r.atr?`<span class="pend-atr-tag">Atraso · ${dia}</span>`:''}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>${r.atr?'pzas atraso':'pzas'}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
   }).join('');
-  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por cortar<b>${fmtN(d.pzs,0)}</b></span></div>
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por cortar<b>${fmtN(d.pzs,0)}</b></span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
     <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
     <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
 }
@@ -5779,6 +5801,18 @@ function dashHoraTableHtml(ct,short){
     const esperado=meta>0?Math.round(meta*frac):0;
     const dif=tot-esperado;
     const rec=lastByMachine[m];
+    // Ritmo requerido de la máquina (su turno): línea punteada en las barras y cada hora en verde (cumplió) o ámbar (debajo)
+    const turnoM=(rec&&LASER_FRANJAS[rec.turno])?rec.turno:(MAQUINAS_TURNO_UNICO.includes(m)?'Turno único (8:00–17:00)':'Turno 1 (8:00–17:00)');
+    const frT=new Set((LASER_FRANJAS[turnoM]||[]).filter(f=>!f.includes('Comida')));
+    const R=ritmoRequerido(meta,turnoM);
+    const metaF=f=>{ if(!(R>0)||!frT.has(f)) return 0; const mn=franjaMinutos(f); return mn?R*mn/60:0; };
+    cols.forEach(f=>{ const t=metaF(f); if(t>maxV) maxV=t; });
+    // Horas que ya pasaron del turno (por reloj, o hasta la última hora capturada si se capturó por adelantado)
+    const rg=progFranjaRanges(turnoM).filter(x=>x&&!x.brk), fr0=LASER_FRANJAS[turnoM]||[];
+    const nowT=(rg.length&&nowMin<rg[0].s-120)?nowMin+1440:nowMin;   // turnos que pasan de medianoche
+    const lastCap=rg.reduce((k,x,j)=>{ const c=dataByMachine[m][fr0[x.i]]; return c&&c.fab>0?j:k; },-1);
+    let elMin=0; rg.forEach((x,j)=>{ const p=Math.max(0,Math.min(nowT,x.e)-x.s); elMin+=(j<lastCap||(j===lastCap&&p===0))?x.e-x.s:p; });
+    const real=elMin>=20?tot/(elMin/60):null;
     const mins=rec&&rec.updatedAt?Math.max(0,Math.round((Date.now()-new Date(rec.updatedAt).getTime())/60000)):null;
     const hace=mins==null||isNaN(mins)?'':(mins<60?mins+' min':Math.floor(mins/60)+' h '+(mins%60)+' min');
     const sinCap=!rec||Object.keys(dataByMachine[m]).length===0;
@@ -5786,17 +5820,18 @@ function dashHoraTableHtml(ct,short){
     const estCol=sinCap?'var(--text3)':(meta<=0?'':(tot>=meta||dif>=0?'var(--green)':'var(--amber)'));
     const pct=meta>0?Math.min(100,Math.round(tot/meta*100)):0;
     const bars=cols.map((f,i)=>{
-      const c=dataByMachine[m][f];
-      return `<div class="hh-c${i===nowIdx?' now':''}">${c&&c.fab>0?`<div class="hh-bar" style="height:${Math.max(4,Math.round(c.fab/maxV*92))}%;background:${col}"></div>`:''}</div>`;
+      const c=dataByMachine[m][f], t=metaF(f);
+      return `<div class="hh-c${i===nowIdx?' now':''}">${c&&c.fab>0?`<div class="hh-bar" style="height:${Math.max(4,Math.round(c.fab/maxV*92))}%;background:${col}"></div>`:''}${t>0?`<div class="hh-meta" style="bottom:${Math.min(100,Math.round(t/maxV*92))}%" title="Ritmo requerido en esta hora: ${fmtRitmo(t)} pzas"></div>`:''}</div>`;
     }).join('');
     const nums=cols.map((f,i)=>{
-      const c=dataByMachine[m][f], st=startMin(f), futuro=(st!=null&&st>nowMin&&i!==nowIdx);
+      const c=dataByMachine[m][f], st=startMin(f), futuro=(st!=null&&st>nowMin&&i!==nowIdx), t=metaF(f);
       let txt, cls='';
       if(c&&c.fab>0) txt=String(c.fab);
       else if(i===nowIdx) txt='…';
       else if(c&&!futuro) { txt='0'; cls='z'; }
       else { txt='–'; cls='z'; }
-      return `<td class="${i===nowIdx?'now ':''}${cls}">${txt}</td>`;
+      if(t>0 && c && !futuro && i!==nowIdx) cls+=(c.fab>=Math.round(t)?' ok':' bajo');   // la hora en curso aún no se califica
+      return `<td class="${i===nowIdx?'now ':''}${cls}"${t>0?` title="Requeridas en esta hora: ${fmtRitmo(t)}"`:''}>${txt}</td>`;
     }).join('');
     const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
     const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
@@ -5804,10 +5839,10 @@ function dashHoraTableHtml(ct,short){
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
-      <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
+      <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
-      <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${como}</div>`;
+      <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${R>0?`<div class="hh-leg"><span class="hh-leg-l"></span>Ritmo requerido ${fmtRitmo(R)} pzas/h · <span class="ok">verde</span> cumplió la hora · <span class="bajo">ámbar</span> quedó debajo</div>`:''}${como}</div>`;
   }).join('');
   const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
   const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
@@ -5825,6 +5860,17 @@ function franjaNowKey(){
   }
   return '';
 }
+// ── Ritmo requerido: piezas por hora que pide lo programado ──
+// Minutos de una franja del hora por hora («8AM–9AM» = 60, «4:30PM–5PM» = 30); null si no se entiende.
+function franjaMinutos(f){
+  const p=String(f||'').replace(/\s*⏸.*$/,'').replace(/⚡/g,'').split('–'); if(p.length!==2) return null;
+  const s=progParseHora(p[0]), e=progParseHora(p[1]); if(s==null||e==null) return null;
+  let d=e-s; if(d<=0) d+=1440; return d;
+}
+function turnoMinutosProd(turno){ return (LASER_FRANJAS[turno]||[]).filter(f=>!f.includes('Comida')).reduce((s,f)=>s+(franjaMinutos(f)||0),0); }
+// Piezas ÷ horas productivas del turno (sin comida ni horas extra). Cada franja pide la parte que le toca por su duración.
+function ritmoRequerido(meta,turno){ const m=turnoMinutosProd(turno); return (meta>0&&m>0)?meta/(m/60):0; }
+function fmtRitmo(v){ return v>=10?String(Math.round(v)):String(Math.round(v*10)/10); }
 // ── REGISTRO ──
 function updateMachineAndTurno(){
   const ct=document.getElementById('reg-ct').value;
@@ -9939,7 +9985,8 @@ function calcHoraTotales(machine, turno){
       labels,
       datasets:[
         {label:'Fabricadas',data:fabData,backgroundColor:'rgba(74,158,255,.7)',borderRadius:3},
-        {label:'Dañadas',data:danData,backgroundColor:'rgba(240,96,96,.7)',borderRadius:3}
+        {label:'Dañadas',data:danData,backgroundColor:'rgba(240,96,96,.7)',borderRadius:3},
+        ...(()=>{ const r=horaRitmoDataset(dataFiltered); return r?[r]:[]; })()
       ]
     },
     options:{
@@ -9953,6 +10000,30 @@ function calcHoraTotales(machine, turno){
   });
 }
 
+// Línea de ritmo requerido en la gráfica de Registrar turno: piezas programadas (o la capacidad, si no hay) ÷ horas del turno.
+// Las horas extra no tienen meta: lo programado es para el turno normal.
+function horaRitmoInfo(){
+  const turno=document.getElementById('reg-turno')?.value||'';
+  const prog=parseFloat(document.getElementById('reg-programadas')?.value)||0;
+  const mach=getMachineByName(document.getElementById('reg-machine')?.value);
+  const meta=prog>0?prog:((mach&&mach.cap)||0);
+  return {meta,deProg:prog>0,R:ritmoRequerido(meta,turno)};
+}
+function horaRitmoDataset(frs){
+  const I=horaRitmoInfo(); if(!(I.R>0)) return null;
+  return {type:'line',label:`Ritmo requerido ${fmtRitmo(I.R)} pzas/h (${I.deProg?'programadas':'capacidad'})`,
+    data:frs.map(d=>{ if(d.isExtra) return null; const mn=franjaMinutos(d.franja); return mn?Math.round(I.R*mn/6)/10:null; }),
+    borderColor:'#f5a623',backgroundColor:'#f5a623',borderDash:[6,4],borderWidth:2,pointRadius:2,tension:0,fill:false,order:-1};
+}
+// Al cambiar las piezas programadas se redibuja solo la línea (sin rehacer la gráfica)
+function horaRitmoRefresh(){
+  if(!horaChart) return;
+  const frs=[...getHoraData(document.getElementById('reg-machine')?.value,document.getElementById('reg-turno')?.value).filter(d=>!d.isBreak),...getHorasExtra(document.getElementById('reg-machine')?.value,document.getElementById('reg-turno')?.value)];
+  if(frs.length!==horaChart.data.labels.length) return;
+  const r=horaRitmoDataset(frs), ds=horaChart.data.datasets, i=ds.findIndex(d=>d.type==='line');
+  if(r){ if(i>=0) ds[i]=r; else ds.push(r); } else if(i>=0) ds.splice(i,1);
+  horaChart.update('none');
+}
 function saveHoraRecord(){
   if(!canCaptureHora()){
     console.warn('saveHoraRecord bloqueado: la cuenta no tiene permiso para capturar hora×hora.');
