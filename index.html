@@ -3009,7 +3009,7 @@ function programaOpenConsumo(fecha,machine,rIdx){
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const opts=tubOptionsHtml(x.tub?x.tub.tipo:'',true,x.tub?'':'Selecciona el tubular…');
   const base=pzMedida(rec,rIdx), I=pzInfo(rec,rIdx), qOP=progQty(rec,rIdx);
-  const largoIni=x.pcm>0?x.pcm:(base?Number(base.largo):''), piezasIni=x.pcm>0?x.pn:qOP;
+  const largoIni=x.pcm>0?x.pcm:(base?Number(base.largo):'');
   const anterior=(x.t>0||x.c.r.length)?progConsText({...x,pcm:0}):'';
   const ov=document.createElement('div'); ov.className='pcm-ov'; ov.id='prog-cons-modal';
   ov.onclick=e=>{ if(e.target===ov) programaCloseConsumo(); };
@@ -3021,8 +3021,8 @@ function programaOpenConsumo(fecha,machine,rIdx){
     <label class="pcm-l">Largo de la pieza (cm)</label>
     <input type="number" id="pcm-p" min="0" step="any" placeholder="Ej. 46.5" value="${largoIni}" oninput="pcmCalc()">
     <div class="pcm-m" style="margin-top:3px">${base?`En la base de medidas: <b>${f3(base.largo)} cm</b>${base.updatedBy?' · registrada por '+esc(base.updatedBy):''}. Si cambias el largo, se actualiza la base.`:(I.id?'Pieza nueva: el largo se guarda en la base de medidas y la próxima vez se registra solo.':'Esta fila no trae Modelo y Parte: el largo no se puede guardar en la base.')}</div>
-    <label class="pcm-l">Piezas cortadas</label>
-    <input type="number" id="pcm-n" min="0" step="1" placeholder="${qOP||0}" value="${piezasIni>0?piezasIni:''}" oninput="pcmCalc()">
+    <label class="pcm-l">Piezas de la OP <span style="font-weight:400;text-transform:none;letter-spacing:0">(Cant. del programa)</span></label>
+    <input type="number" id="pcm-n" value="${qOP>0?qOP:''}" placeholder="0" readonly tabindex="-1" title="Sale de la columna Cant. del programa; no se edita" style="opacity:.7;cursor:not-allowed">
     ${anterior?`<div class="pcm-m" style="margin-top:6px">Registro anterior: ${esc(anterior)} — al guardar se reemplaza por la medida de la pieza.</div>`:''}
     <div class="pcm-eq" id="pcm-eq"></div>
     <div class="pcm-bar"><button class="btn btn-primary" onclick="programaSaveConsumo()" style="font-size:12px;padding:6px 16px">Guardar</button>
@@ -3113,7 +3113,7 @@ function pcmCalc(){
   const cm=v.p*v.n, tot=r3(cm/largo);
   out.push(`${f3(v.p)} cm × ${f3(v.n)} pza${v.n===1?'':'s'} = <b>${f3(cm)} cm</b>`);
   out.push(`Consumo: <b>${f3(tot)}</b> tramo${tot===1?'':'s'} <span class="pcm-m">(tramo de ${f3(largo)} cm${v.tub?'':' — supuesto, elige el tubular'})</span>${v.tub&&v.tub.peso>0&&tot>0?` · ${fmt2(tot*v.tub.peso)} kg`:''}`);
-  if(!(v.n>0)) out.push(`<span class="pcm-w">Anota cuántas piezas se cortaron.</span>`);
+  if(!(v.n>0)) out.push(`<span class="pcm-w">Esta OP no trae cantidad (columna Cant.) en el programa.</span>`);
   if(v.p>largo) out.push(`<span class="pcm-w">⚠ La pieza es más larga que el tramo (${f3(largo)} cm). Revisa la medida.</span>`);
   if(!v.tub) out.push(`<span class="pcm-w">Sin tubular del catálogo: se registrará con el nombre del programa y sin peso.</span>`);
   el.innerHTML=out.join('<br>');
@@ -3130,8 +3130,9 @@ function pcmSaveWith(clear){
     if(!(v.h>0) && !v.l.length){ if(msg) msg.textContent='Captura hojas o recortes (o usa «Borrar consumo»).'; return; }
     if(!v.cal){ if(msg) msg.textContent='Elige la lámina (calibre).'; const s=document.getElementById('pcm-cal'); if(s) s.focus(); return; }
   } else if(!clear){
+    v.n=progQty(rec,c.rIdx);   // las piezas siempre son las de la OP (no se editan)
     if(!(v.p>0)){ if(msg) msg.textContent='Anota el largo de la pieza (o usa «Borrar consumo»).'; const s=document.getElementById('pcm-p'); if(s) s.focus(); return; }
-    if(!(v.n>0)){ if(msg) msg.textContent='Anota cuántas piezas se cortaron.'; const s=document.getElementById('pcm-n'); if(s) s.focus(); return; }
+    if(!(v.n>0)){ if(msg) msg.textContent='Esta OP no trae cantidad (Cant.) en el programa: no se puede calcular el consumo.'; return; }
   }
   const o=lamRec?{h:v.h,l:v.l,c:v.cal,f:v.f,e:v.e,ts:Date.now().toString(36)}:{p:v.p,n:v.n,k:(v.tub&&v.tub.sku)?v.tub.sku:'',ts:Date.now().toString(36)};
   rec.rows[c.rIdx+1][rec.obsColIdx]=clear?('§@'+o.ts):progConsStr(o);
