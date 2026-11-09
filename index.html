@@ -2466,6 +2466,18 @@ function mergeProgramaDia(local,incoming){
   (incoming||[]).forEach(r=>{ if(!progRecValido(r)) return; const cur=map.get(r.id); map.set(r.id,cur?mergeProgRec(cur,r):r); });
   return Array.from(map.values());
 }
+// Un programa que se borró o se movió de fecha desde otro equipo seguía guardado en este (y marcaba atraso en un día
+// donde ya no hay programa). Si el Sheet trae la ventana de fechas completa y ese programa ya no está, se quita aquí;
+// salvo que este equipo aún lo esté subiendo (cola de envío) o se haya subido hace menos de 15 min.
+function progQuitarBorrados(lista,nube,since){
+  const ids=new Set((nube||[]).map(r=>r&&r.id)), lim=Date.now()-15*60000;
+  return (lista||[]).filter(r=>{
+    if(!r||String(r.fecha)<since||ids.has(r.id)) return true;
+    if(_outbox['Programa_Dia|'+r.id]) return true;
+    const t=Math.max(new Date(r.uploadedAt||0).getTime()||0,new Date(r.updatedAt||0).getTime()||0);
+    return t>lim;
+  });
+}
 function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||'',coment:rec.coment||''}; }
 function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progCloudRow(rec)); }
 // Solo el Operador (con permiso de captura) registra cortes y observaciones.
@@ -3662,7 +3674,8 @@ let _progFull=false, _progFetching=false, _progFetchTs=0;
 function refreshProgramaDiaFromCloud(done){
   if(!currentUser||(_progFetching&&Date.now()-_progFetchTs<30000)) return;
   _progFetching=true; _progFetchTs=Date.now();
-  gasRequest({action:'read', sheet:'Programa_Dia', since:isoAddDays(todayStr(),_progFull?-8:-120)},
+  const since=isoAddDays(todayStr(),_progFull?-8:-120);
+  gasRequest({action:'read', sheet:'Programa_Dia', since},
     (data)=>{
       _progFetching=false;
       try{
@@ -3670,8 +3683,10 @@ function refreshProgramaDiaFromCloud(done){
         _progFull=true;
         if(rows.length){
           const mapped=parseCloudRows(rows).map(normProgRec);
-          programaDia=mergeProgramaDia(programaDia, mapped);
+          const antes=programaDia.length;
+          programaDia=progQuitarBorrados(mergeProgramaDia(programaDia, mapped), mapped, since);
           saveProgramaDiaLS();
+          if(programaDia.length<antes) try{ renderDashboard(); }catch(e){}   // p. ej. quita el atraso de un programa que ya se movió
           renderProgramaDia();
           try{ if(document.getElementById('page-reportes')?.classList.contains('active')&&repMode==='programa') renderReportes(); }catch(e){}
         }
