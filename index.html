@@ -5526,8 +5526,8 @@ function dashLaserPendHtml(){
   }).join('');
   // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) va aparte
   const opsHoy=d.ops-d.opsAtr, pzsHoy=Math.max(0,d.pzs-d.pzsAtr);
-  // Desglose del indicador «Atraso» (que solo muestra el total): lo de hoy + lo de días anteriores
-  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span title="Lo mismo que el indicador «Atraso»">Total por cortar<b>${fmtN(d.pzs,0)}</b> pzas</span><span class="pend-hd-hoy" title="Piezas de las OPs del programa de hoy que aún no se cortan">De hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse">De días anteriores<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'}</span>`:''}</div>
+  // Lo de hoy es faltante de corte; solo lo de días anteriores es atraso (el mismo número del indicador «Atraso»)
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Total por cortar<b>${fmtN(d.pzs,0)}</b> pzas</span><span class="pend-hd-hoy" title="Piezas de las OPs del programa de hoy que aún no se cortan (si mañana siguen sin cortarse, pasan a atraso)">Faltante de hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse (lo mismo que el indicador «Atraso»)">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
     <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
     <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
 }
@@ -5592,13 +5592,15 @@ function renderDashboard(){
     const atrasosHoy=getAtrasosHoy(ct);
     const canRegistrarAtraso=currentUser && currentUser.role!=='operador';
     const canEditMetas=canRegistrarAtraso;   // líder e ingeniería editan las metas aquí; operador solo las ve
-    // Tercer indicador. Laser: todo el atraso = piezas de OPs de días anteriores que siguen sin cortar + lo que falta
-    // por cortar de hoy (las mismas OPs de «Qué falta por cortar»). Los demás centros: producidas vs. programadas, como siempre.
+    // Tercer indicador. Laser: el atraso son solo las piezas de OPs de días anteriores que siguen sin cortar; lo que falta
+    // del programa de hoy es «faltante por cortar» (se vuelve atraso si mañana sigue sin cortarse). El desglose va en
+    // «Qué falta por cortar». Los demás centros: producidas vs. programadas, como siempre.
     const pendL=(ct==='LASER')?dashLaserPend():null;
     let hl;
     if(pendL){
-      const pzHoy=Math.max(0,pendL.pzs-pendL.pzsAtr), tot=pendL.pzsAtr+pzHoy;
-      if(tot>0) hl={lbl:'Atraso',icon:'alertTriangle',val:'-'+fmtN(tot,0),col:'#f06060',sub:'pzas',btn:true};   // el desglose va en «Qué falta por cortar»
+      const pzHoy=Math.max(0,pendL.pzs-pendL.pzsAtr);
+      if(pendL.pzsAtr>0) hl={lbl:'Atraso',icon:'alertTriangle',val:'-'+fmtN(pendL.pzsAtr,0),col:'#f06060',sub:'pzas de días anteriores',btn:true};
+      else if(pzHoy>0) hl={lbl:'Faltante por cortar',icon:'clock',val:fmtN(pzHoy,0),col:'var(--amber)',sub:'pzas del programa de hoy · sin atraso',btn:false};
       else if(diffCT>0) hl={lbl:'Adelanto',icon:'target',val:'+'+diffCT,col:'#3ecf8e',sub:'vs. piezas programadas',btn:false};
       else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:'todo el programa está cortado',btn:false};
     } else {
