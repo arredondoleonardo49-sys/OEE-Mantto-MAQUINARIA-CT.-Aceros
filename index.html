@@ -3304,8 +3304,13 @@ function processProgramaFile(file){
     if(esSig) q+='\n\nSi este es el programa que se está cortando HOY ('+progFechaLarga(hoy)+'), cancela y súbelo en la pestaña «Programa del día».';
     if(fn && fn!==fecha) q+='\n\n⚠ El nombre del archivo parece indicar el '+progFechaLarga(fn)+', que no coincide con la fecha donde lo estás subiendo.';
     if(ya.length) q+='\n\nYa hay programa de '+ya.join(', ')+' en esa fecha: se actualiza conservando lo ya cortado en las filas que no cambian.';
-    q+='\n\n¿Continuar?';
-    if(!confirm(q)){ msg.textContent='Carga cancelada.'; msg.style.color='var(--text3)'; const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; return; }
+    const cancela=()=>{ msg.textContent='Carga cancelada: no se cambió nada.'; msg.style.color='var(--text3)'; const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; };
+    if(fecha<hoy){
+      // Día que ya pasó: un clic en «Aceptar» no basta, hay que escribir el número del día (así se subió por error el programa del 9/11 en el 2/11)
+      const dia=String(+fecha.slice(8,10));
+      const r=prompt(q+'\n\nPara subirlo de todos modos en ese día, escribe el número del día ('+dia+'):','');
+      if(r===null || r.trim()!==dia){ cancela(); return; }
+    } else if(!confirm(q+'\n\n¿Continuar?')){ cancela(); return; }
   }
   msg.textContent='Procesando archivo…'; msg.style.color='var(--text3)';
   const reader=new FileReader();
@@ -3313,7 +3318,7 @@ function processProgramaFile(file){
     try{
       const data=new Uint8Array(e.target.result);
       const wb=XLSX.read(data,{type:'array', cellStyles:true, sheetStubs:true});
-      const found=[]; const missing=[]; let kept=0, lost=0;
+      const found=[]; const missing=[], plan=[]; let kept=0, lost=0;
       PROGRAMA_MACHINES.forEach(machine=>{
         const sheetName=findSheetForMachine(wb.SheetNames, machine);
         if(!sheetName){ missing.push(machine); return; }
@@ -3336,7 +3341,7 @@ function processProgramaFile(file){
         const dataRows=body.map(row=>[false, ...row]);
         const obsColIdx=obsRaw>=0 ? obsRaw+1 : -1;
         const old=getProgramaRecord(fecha,machine);
-        let cortes={}, coment={};
+        let cortes={}, coment={}, keptM=0, lostM=0, oldCut=0;
         // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado ni los comentarios)
         if(old && old.rows && old.rows.length>1){
           // Una fila "sigue igual" si coinciden sus datos clave (sin el No., que se recorre si se inserta una fila)
@@ -3352,10 +3357,10 @@ function processProgramaFile(file){
             if(oc[or]) cortes[r]=oc[or];
             if(om[or]) coment[r]=om[or];
           });
-          Object.keys(pool).forEach(k=>pool[k].forEach(or=>{ if(old.rows[or+1][oci]===true) lost++; }));
-          kept+=Object.values(cortes).filter(c=>c.on).length;
+          Object.keys(pool).forEach(k=>pool[k].forEach(or=>{ if(old.rows[or+1][oci]===true) lostM++; }));
+          keptM=Object.values(cortes).filter(c=>c.on).length;
+          oldCut=old.rows.slice(1).filter(row=>row[oci]===true).length;
         }
-        programaDia=programaDia.filter(r=>!(r.fecha===fecha && r.machine===machine));
         const rec={
           id:'prog_'+machine.replace(/\s+/g,'')+'_'+fecha,
           fecha, machine, ct:PROGRAMA_MACHINE_CT[machine], sheetName,
@@ -3364,9 +3369,21 @@ function processProgramaFile(file){
           uploadedBy:currentUser.username, uploadedByName:currentUser.name,
           uploadedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         };
+        plan.push({machine,rec,keptM,lostM,oldCut});
+      });
+      // Candado: si en esa fecha ya hay un programa con OPs cortadas y el archivo casi no coincide con él, lo más seguro es
+      // que sea el programa de OTRO día. Reemplazarlo borraría lo ya cortado y su consumo, así que no se guarda nada sin confirmar.
+      const riesgo=plan.filter(p=>p.oldCut>0 && p.keptM<p.oldCut/2);
+      if(riesgo.length){
+        const det=riesgo.map(p=>`• ${p.machine}: tiene ${p.oldCut} OP${p.oldCut===1?'':'s'} cortada${p.oldCut===1?'':'s'} y el archivo solo coincide en ${p.keptM}`).join('\n');
+        const ok=confirm(`⚠ ESTE ARCHIVO NO PARECE SER EL PROGRAMA DEL ${progFechaLarga(fecha).toUpperCase()}\n\n${det}\n\nSi lo subes, se reemplaza el programa que ya hay en ese día y se pierde lo cortado y su consumo.\n\nSi es el programa de otro día, cancela y súbelo en la pestaña de su día.\n\n¿Reemplazarlo de todos modos?`);
+        if(!ok){ msg.textContent='Carga cancelada: el archivo no coincide con el programa que ya hay en ese día. No se cambió nada.'; msg.style.color='var(--amber)'; const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; return; }
+      }
+      plan.forEach(({machine,rec,keptM,lostM})=>{
+        programaDia=programaDia.filter(r=>!(r.fecha===fecha && r.machine===machine));
         programaDia.push(rec);
         cloudUpsertRow('Programa_Dia', progCloudRow(rec));
-        found.push(machine);
+        found.push(machine); kept+=keptM; lost+=lostM;
         if(PROG_TUB_MACHINES.includes(machine)) syncTubFromPrograma(fecha,machine);
         if(PROG_LAM_MACHINES.includes(machine)) syncLamFromPrograma(fecha,machine);
       });
@@ -3733,7 +3750,10 @@ function renderProgramaDia(force){
   const ut=document.getElementById('programa-upload-title');
   if(ut) ut.textContent=progSub==='hoy'?`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`:`Programa del ${progFechaLarga(fecha)}. ${progSub==='ant'?'Para ver o corregir lo de ese día':'Se sube por adelantado: lo que se corta HOY va en la pestaña de hoy'}`;
   const uh=document.getElementById('programa-upload-head');
-  if(uh) uh.textContent=progSub==='hoy'?'Subir programa del día':`Subir programa del ${progFechaLarga(fecha)}`;
+  if(uh) uh.textContent=progSub==='hoy'?'Subir programa del día':(progSub==='ant'?`⚠ Subir programa del ${progFechaLarga(fecha)} (día que ya pasó)`:`Subir programa del ${progFechaLarga(fecha)}`);
+  // Se ve de inmediato si la carga no va al día de hoy: rojo = día que ya pasó · ámbar = día siguiente
+  if(uploadCard){ uploadCard.style.borderColor=progSub==='ant'?'rgba(240,96,96,.65)':(progSub==='sig'?'rgba(245,166,35,.55)':''); uploadCard.style.background=progSub==='ant'?'rgba(240,96,96,.05)':''; }
+  if(uh) uh.style.color=progSub==='ant'?'#f06060':'';
 
   // Resumen de avance por máquina (todos lo ven) + estado de carga (quien sube)
   const sum=document.getElementById('programa-summary');
