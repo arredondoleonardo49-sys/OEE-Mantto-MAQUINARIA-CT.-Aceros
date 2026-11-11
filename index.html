@@ -669,6 +669,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pcm-sec{font-size:12px;background:transparent;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:6px 12px;font-family:'IBM Plex Sans',sans-serif}
 .programa-cortado-check{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
 .prog-hc{font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.1;color:var(--green);margin-top:1px;white-space:nowrap}
+.prog-av-btn{display:block;margin:3px auto 0;font-size:10px;line-height:1.2;padding:2px 6px;border-radius:999px;border:1px dashed var(--border);background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+.prog-av-btn:hover{border-color:var(--blue);color:var(--blue)}
+.prog-av-btn.has{border-style:solid;border-color:rgba(245,166,35,.5);background:rgba(245,166,35,.12);color:var(--amber);font-weight:600}
+.prog-av-ro{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--amber);margin-top:2px;white-space:nowrap}
 .programa-row-done td{background:rgba(62,207,142,.06);color:var(--text3)}
 .programa-row-done td:first-child{background:rgba(62,207,142,.1)}
 .programa-table tbody tr:hover td{background:var(--bg3)}
@@ -2422,6 +2426,33 @@ function progCortesParse(str){
 function progCortesStr(m){
   return Object.keys(m).map(Number).sort((a,b)=>a-b).map(r=>{ const c=m[r]; return [r,c.on?1:0,c.q,c.f,c.t,c.i,c.ts].join(','); }).join(';');
 }
+// Avances parciales de una OP (p. ej. maquila de 500 pzas que se corta a lo largo del día): cada avance suma sus piezas a la
+// franja del hora por hora en que se registró. Al marcar la OP como cortada solo se suman las que falten.
+// rec.avances = "fila,piezas,AAAAMMDD,turno,franja,marca[,x];…" (x = avance deshecho; se conserva para que la mezcla no lo reviva)
+function progAvParse(str){
+  const m={};
+  String(str||'').split(';').forEach(p=>{
+    if(!p) return; const a=p.split(','); const r=parseInt(a[0]), q=Number(a[1]); if(isNaN(r)||!(q>0)||!a[5]) return;
+    (m[r]=m[r]||[]).push({q,f:a[2]||'',t:parseInt(a[3])||0,i:parseInt(a[4])||0,ts:a[5],x:a[6]==='x'});
+  });
+  Object.keys(m).forEach(r=>m[r].sort((a,b)=>progTs(a.ts)-progTs(b.ts)));
+  return m;
+}
+function progAvStr(m){
+  const out=[];
+  Object.keys(m).map(Number).sort((a,b)=>a-b).forEach(r=>(m[r]||[]).forEach(e=>out.push([r,e.q,e.f,e.t,e.i,e.ts].concat(e.x?['x']:[]).join(','))));
+  return out.join(';');
+}
+// Piezas registradas como avance en la fila r (solo las vigentes); con iso: solo las de ese día
+function progAvSum(av,r,iso){ return (av[r]||[]).reduce((s,e)=>s+((!e.x&&(!iso||isoFromYmd(e.f)===iso))?e.q:0),0); }
+function progAvMerge(a,b){
+  const ma=progAvParse(a), mb=progAvParse(b), out={};
+  [ma,mb].forEach(m=>Object.keys(m).forEach(r=>m[r].forEach(e=>{
+    const L=out[r]=out[r]||[], cur=L.find(x=>x.ts===e.ts);
+    if(!cur) L.push({...e}); else if(e.x) cur.x=true;   // deshecho en cualquiera de los dos: queda deshecho
+  })));
+  return progAvStr(out);
+}
 function progTs(x){ return parseInt(String(x||'0'),36)||0; }
 // Hora en que el Operador marcó la OP como cortada («9:18»); si fue otro día que el del programa, con la fecha («3/11 9:18»).
 function progHoraCorte(c,progFecha){
@@ -2435,13 +2466,15 @@ function progIsCompleted(rec){ return !!rec && String(rec.completado)==='1'; }
 function progStats(rec){
   const body=(rec&&rec.rows||[]).slice(1), ci=rec&&rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
   let done=0,pz=0,pzDone=0;
-  body.forEach((row,r)=>{ const q=progQty(rec,r); pz+=q; if(row[ci]===true){ done++; pzDone+=q; } });
+  const av=progAvParse(rec&&rec.avances);
+  body.forEach((row,r)=>{ const q=progQty(rec,r); pz+=q; if(row[ci]===true){ done++; pzDone+=q; } else pzDone+=Math.min(q,progAvSum(av,r)); });
   return {total:body.length,done,pz,pzDone};
 }
 function normProgRec(r){
   const o={...r,rows:safeParse(r.rows,[])};
   o.cortes=r.cortes==null?'':String(r.cortes);
   o.coment=r.coment==null?'':String(r.coment);
+  o.avances=r.avances==null?'':String(r.avances);
   o.completado=(String(r.completado)==='1')?'1':'';
   return o;
 }
@@ -2456,6 +2489,7 @@ function mergeProgRec(a,b){
     const x=ca[k], y=cb[k]; m[k]=!x?y:!y?x:(progTs(y.ts)>=progTs(x.ts)?y:x);
   });
   out.cortes=progCortesStr(m);
+  out.avances=progAvMerge(a.avances,b.avances);   // avances: se juntan los de los dos equipos
   { const xa=progComParse(a.coment), xb=progComParse(b.coment), mc={};   // comentarios: por fila gana la marca más reciente
     new Set([...Object.keys(xa),...Object.keys(xb)]).forEach(k=>{ const x=xa[k], y=xb[k]; mc[k]=!x?y:!y?x:(progTs(y[1])>=progTs(x[1])?y:x); });
     out.coment=Object.keys(mc).length?JSON.stringify(mc):''; }
@@ -2490,7 +2524,7 @@ function progQuitarBorrados(lista,nube,since){
     return t>lim;
   });
 }
-function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||'',coment:rec.coment||''}; }
+function progCloudRow(rec){ return {...rec,rows:JSON.stringify(rec.rows),cortes:rec.cortes||'',coment:rec.coment||'',avances:rec.avances||''}; }
 function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progCloudRow(rec)); }
 // Solo el Operador (con permiso de captura) registra cortes y observaciones.
 function canFinalizarPrograma(){ return !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero'); }
@@ -2727,7 +2761,9 @@ function programaToggleCut(fecha,machine,rIdx,checked,el){
   const c=progCtx(), ct=rec.ct||PROGRAMA_MACHINE_CT[machine];
   if(c.machine!==machine||c.ct!==ct){ revert(); progMsg('Selecciona la máquina de este programa en Registro.',amber); return; }
   const ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
-  const cortes=progCortesParse(rec.cortes), prev=cortes[rIdx], q=progQty(rec,rIdx);
+  const cortes=progCortesParse(rec.cortes), prev=cortes[rIdx], qOP=progQty(rec,rIdx);
+  // Si la OP ya llevaba avances registrados, al marcarla como cortada solo se suman las piezas que faltaban
+  const yaAv=Math.min(qOP,progAvSum(progAvParse(rec.avances),rIdx)), q=Math.max(0,qOP-yaAv);
   const ti=(TURNOS_CT[ct]||[]).indexOf(c.turno);
   let idx=0;
   if(checked){
@@ -2757,7 +2793,96 @@ function programaToggleCut(fecha,machine,rIdx,checked,el){
   progSave(rec);
   if(autoCons) syncTubFromPrograma(fecha,machine);
   if(el) try{ el.blur(); }catch(e){}
-  progMsg(checked?`✓ Corte registrado${q>0?` · +${q} pzas en ${progFranjaLabel(c.turno,idx)}`:''}${autoCons&&checked?' · consumo con la medida de la base':''}`:'✓ Corte desmarcado');
+  progMsg(checked?`✓ Corte registrado${q>0?` · +${q} pzas en ${progFranjaLabel(c.turno,idx)}`:''}${yaAv>0?` (las otras ${yaAv} ya estaban en sus avances)`:''}${autoCons&&checked?' · consumo con la medida de la base':''}`:`✓ Corte desmarcado${yaAv>0?` · sus avances (${yaAv} pzas) se conservan`:''}`);
+  renderProgramaDia(true);
+  try{ renderDashboard(); }catch(e){}
+}
+// ── Avance parcial de una OP: el operador anota cuántas lleva cortadas y la diferencia entra a la hora en curso ──
+function progAvCheck(fecha,machine,rIdx){
+  const amber='var(--amber)';
+  if(!canCutPrograma()){ progMsg('Solo el Operador registra avances.',amber); return null; }
+  const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]) return null;
+  if(progIsCompleted(rec)){ progMsg('Este programa está completado: reábrelo para corregirlo.',amber); return null; }
+  const c=progCtx(), ct=rec.ct||PROGRAMA_MACHINE_CT[machine];
+  if(c.machine!==machine||c.ct!==ct){ progMsg('Selecciona la máquina de este programa en Registro.',amber); return null; }
+  if(!progHoraListo(c)){ progMsg('Espera un momento: se está cargando el hora por hora de este turno.',amber); return null; }
+  return {rec,c,ct,ti:(TURNOS_CT[ct]||[]).indexOf(c.turno)};
+}
+function progAvanceDlg(fecha,machine,rIdx){
+  const k=progAvCheck(fecha,machine,rIdx); if(!k) return;
+  const {rec,c}=k, ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
+  if(rec.rows[rIdx+1][ci]===true){ progMsg('Esta OP ya está marcada como cortada.','var(--amber)'); return; }
+  const q=progQty(rec,rIdx), av=progAvParse(rec.avances), lleva=Math.min(q,progAvSum(av,rIdx));
+  const idx=progFranjaIdx(c.turno,new Date()); if(idx<0){ progMsg('No se pudo ubicar la franja del turno.','var(--amber)'); return; }
+  const H=(rec.rows[0]||[]).map(h=>String(h).trim().toLowerCase()), row=rec.rows[rIdx+1];
+  const cel=re=>{ const i=H.findIndex(h=>re.test(h)); return i>=0&&row[i]!=null?String(row[i]).trim():''; };
+  const op=cel(/^(op\b|o\.p|orden)/), mo=cel(/^modelo/), parte=cel(/^(parte|no\.? ?parte|descrip)/);
+  const lista=(av[rIdx]||[]).filter(e=>!e.x);
+  const ult=lista[lista.length-1], tn=t=>((TURNOS_CT[rec.ct]||[])[t]||'').split(' (')[0];
+  const puedeDeshacer=!!ult && ult.f===ymd(c.fecha) && ult.t===k.ti;
+  const hist=lista.map(e=>{ const d=new Date(progTs(e.ts)); return `<div style="display:flex;justify-content:space-between;gap:10px"><span>${isoFromYmd(e.f)!==c.fecha?dayLabel(isoFromYmd(e.f))+' · ':''}${escH(progFranjaLabel((TURNOS_CT[rec.ct]||[])[e.t],e.i))}${tn(e.t)?` <span style="color:var(--text3)">· ${escH(tn(e.t))}</span>`:''}</span><b style="font-family:'IBM Plex Mono',monospace">+${e.q}</b></div>`; }).join('');
+  const old=document.getElementById('prog-av-modal'); if(old) old.remove();
+  const m=document.createElement('div'); m.id='prog-av-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;max-width:420px;width:100%;padding:18px 20px;max-height:92vh;overflow:auto">
+    <div style="font-size:15px;font-weight:700;margin-bottom:2px">Registrar avance${op?' · '+(/^op/i.test(op)?'':'OP ')+escH(op):''}</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">${escH([mo,parte].filter(Boolean).join(' · '))}</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px 10px;text-align:center"><div style="font-size:10px;color:var(--text3)">PROGRAMADAS</div><b style="font-family:'IBM Plex Mono',monospace;font-size:20px">${fmtN(q,0)}</b></div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px 10px;text-align:center"><div style="font-size:10px;color:var(--text3)">VAN CORTADAS</div><b style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--green)">${fmtN(lleva,0)}</b></div>
+      <div style="flex:1;background:var(--bg3);border-radius:8px;padding:8px 10px;text-align:center"><div style="font-size:10px;color:var(--text3)">FALTAN</div><b style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--amber)">${fmtN(q-lleva,0)}</b></div>
+    </div>
+    <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">¿Cuántas piezas llevas cortadas <b>en total</b> de esta OP?</label>
+    <input type="number" id="pav-total" min="${lleva+1}" max="${q}" step="1" inputmode="numeric" placeholder="Más de ${lleva}" style="width:100%;font-size:20px;font-family:'IBM Plex Mono',monospace;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+    <div id="pav-info" style="font-size:12px;color:var(--text3);margin:6px 0 2px;min-height:17px">La diferencia se suma al hora por hora en <b style="color:var(--text2)">${escH(progFranjaLabel(c.turno,idx))}</b>.</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Cuando termines la OP, márcala como cortada: solo se suman las que falten.</div>
+    ${hist?`<div style="font-size:12px;color:var(--text2);border-top:1px solid var(--border);padding-top:8px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px"><div style="font-size:10px;color:var(--text3)">AVANCES REGISTRADOS</div>${hist}</div>`:''}
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">
+      ${puedeDeshacer?`<button class="btn" onclick="progAvanceDeshacer('${rec.fecha}','${rec.machine}',${rIdx})" style="font-size:12px;padding:6px 12px;border:1px solid rgba(240,96,96,.4);background:transparent;color:#f06060;margin-right:auto" title="Quita el último avance (+${ult.q}) del hora por hora">↩ Deshacer +${ult.q}</button>`:''}
+      <button class="btn" onclick="document.getElementById('prog-av-modal').remove()" style="font-size:12px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text2)">Cancelar</button>
+      <button class="btn btn-primary" id="pav-ok" onclick="progAvanceGuardar('${rec.fecha}','${rec.machine}',${rIdx})" style="font-size:12px;padding:6px 14px" disabled>Registrar avance</button></div></div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{ if(e.target===m) m.remove(); });
+  const inp=document.getElementById('pav-total'), ok=document.getElementById('pav-ok'), info=document.getElementById('pav-info'), fr=escH(progFranjaLabel(c.turno,idx));
+  const upd=()=>{
+    const v=parseInt(inp.value), d=v-lleva;
+    if(isNaN(v)){ ok.disabled=true; ok.textContent='Registrar avance'; info.innerHTML=`La diferencia se suma al hora por hora en <b style="color:var(--text2)">${fr}</b>.`; info.style.color='var(--text3)'; return; }
+    if(d<=0){ ok.disabled=true; info.textContent=`Debe ser más de ${lleva} (las que ya van).${puedeDeshacer?' Para corregir un avance usa «Deshacer».':''}`; info.style.color='var(--amber)'; return; }
+    if(v>=q){ ok.disabled=false; ok.textContent='Marcar OP como cortada'; info.innerHTML=`Llegaste a las ${fmtN(q,0)}: la OP se marca como cortada y se suman <b>+${fmtN(q-lleva,0)}</b> en ${fr}.`; info.style.color='var(--green)'; return; }
+    ok.disabled=false; ok.textContent='Registrar avance'; info.innerHTML=`Se suman <b style="color:var(--green)">+${fmtN(d,0)}</b> pzas en <b style="color:var(--text2)">${fr}</b> · faltarán ${fmtN(q-v,0)}.`; info.style.color='var(--text2)';
+  };
+  inp.oninput=upd; inp.onkeydown=e=>{ if(e.key==='Enter'&&!ok.disabled) ok.click(); };
+  setTimeout(()=>{ try{ inp.focus(); }catch(e){} },50);
+}
+function progAvanceGuardar(fecha,machine,rIdx){
+  const k=progAvCheck(fecha,machine,rIdx); if(!k) return;
+  const {rec,c}=k, inp=document.getElementById('pav-total'), v=parseInt(inp&&inp.value);
+  const q=progQty(rec,rIdx), av=progAvParse(rec.avances), lleva=Math.min(q,progAvSum(av,rIdx)), d=v-lleva;
+  if(isNaN(v)||d<=0) return;
+  const close=()=>{ const dl=document.getElementById('prog-av-modal'); if(dl) dl.remove(); };
+  if(v>=q){ close(); programaToggleCut(fecha,machine,rIdx,true,null); return; }   // completó la OP: se marca cortada (suma lo que falta)
+  if(!progConfirmarAdelanto(rec)) return;
+  const idx=progFranjaIdx(c.turno,new Date()); if(idx<0){ progMsg('No se pudo ubicar la franja del turno.','var(--amber)'); return; }
+  (av[rIdx]=av[rIdx]||[]).push({q:d,f:ymd(c.fecha),t:k.ti,i:idx,ts:Date.now().toString(36),x:false});
+  rec.avances=progAvStr(av); rec.updatedAt=new Date().toISOString();
+  progHoraDelta(c,idx,d);
+  progSave(rec);
+  close();
+  progMsg(`✓ Avance registrado · +${d} pzas en ${progFranjaLabel(c.turno,idx)} · van ${v} de ${q}`);
+  renderProgramaDia(true);
+  try{ renderDashboard(); }catch(e){}
+}
+function progAvanceDeshacer(fecha,machine,rIdx){
+  const k=progAvCheck(fecha,machine,rIdx); if(!k) return;
+  const {rec,c}=k, av=progAvParse(rec.avances), lista=(av[rIdx]||[]).filter(e=>!e.x), ult=lista[lista.length-1];
+  if(!ult) return;
+  if(ult.f!==ymd(c.fecha)||ult.t!==k.ti){ progMsg('Ese avance quedó en otro turno o fecha: cámbiate a ese turno para corregirlo.','var(--amber)'); return; }
+  if(!confirm(`¿Quitar el avance de +${ult.q} pzas (${progFranjaLabel(c.turno,ult.i)}) del hora por hora?`)) return;
+  ult.x=true; rec.avances=progAvStr(av); rec.updatedAt=new Date().toISOString();
+  progHoraDelta(c,ult.i,-ult.q);
+  progSave(rec);
+  const dl=document.getElementById('prog-av-modal'); if(dl) dl.remove();
+  progMsg(`✓ Avance quitado · −${ult.q} pzas en ${progFranjaLabel(c.turno,ult.i)}`);
   renderProgramaDia(true);
   try{ renderDashboard(); }catch(e){}
 }
@@ -3221,11 +3346,17 @@ function progProgramadasEfectivas(machine,fecha){
     if(!rec||rec.machine!==machine) return;
     if(rec.fecha===fecha) any=true;
     const ci=progCantCol(rec); if(ci<0) return;
-    const cortes=progCortesParse(rec.cortes);
+    const cortes=progCortesParse(rec.cortes), av=progAvParse(rec.avances);
     (rec.rows||[]).slice(1).forEach((row,r)=>{
       const q=parseFloat(row[ci]); if(!(q>0)) return;
       const c=cortes[r], cutIso=(c&&c.on&&c.f)?isoFromYmd(c.f):'';
-      const eff=progEsMaquilaFila(rec,row)?cutIso:((cutIso&&cutIso<rec.fecha)?cutIso:rec.fecha);
+      if(progEsMaquilaFila(rec,row)){
+        // Maquila: cuentan las piezas cortadas ese día (sus avances del día + lo que faltaba si ese día se marcó como cortada)
+        const n=Math.min(q,progAvSum(av,r,fecha)+(cutIso===fecha?Math.max(0,q-progAvSum(av,r)):0));
+        if(n>0){ total+=n; any=true; }
+        return;
+      }
+      const eff=(cutIso&&cutIso<rec.fecha)?cutIso:rec.fecha;
       if(eff===fecha){ total+=q; any=true; }
     });
   });
@@ -3239,13 +3370,20 @@ function progProgramadasTablero(machine,fecha){
   programaDia.forEach(rec=>{
     if(!rec||rec.machine!==machine) return;
     const ci=progCantCol(rec); if(ci<0) return;
-    const cortes=progCortesParse(rec.cortes), rows=(rec.rows||[]).slice(1);
+    const cortes=progCortesParse(rec.cortes), av=progAvParse(rec.avances), rows=(rec.rows||[]).slice(1);
     const cutIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
-    const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha);
+    const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha || progAvSum(av,r,fecha)>0);
     rows.forEach((row,r)=>{
       const q=parseFloat(row[ci]); if(!(q>0)) return;
-      const ci2=cutIso(r);
-      if(ci2===fecha || (!ci2 && enCurso && !progEsMaquilaFila(rec,row))){ total+=q; any=true; }   // maquila pendiente: aún no es meta de hoy
+      const ci2=cutIso(r), avHoy=progAvSum(av,r,fecha), avOtros=Math.min(q,progAvSum(av,r)-avHoy);
+      if(progEsMaquilaFila(rec,row)){
+        // Maquila: es meta de hoy solo lo que se corta hoy (avances de hoy + lo que faltaba si hoy se marcó como cortada)
+        const n=Math.min(q,avHoy+(ci2===fecha?Math.max(0,q-avHoy-avOtros):0));
+        if(n>0){ total+=n; any=true; }
+        return;
+      }
+      // Lo que ya se cortó en avances de otros días no vuelve a ser meta de hoy
+      if(ci2===fecha || (!ci2 && enCurso)){ total+=Math.max(0,q-avOtros); any=true; }
     });
     if(rec.fecha===fecha) any=true;
   });
@@ -3360,13 +3498,13 @@ function processProgramaFile(file){
         const dataRows=body.map(row=>[false, ...row]);
         const obsColIdx=obsRaw>=0 ? obsRaw+1 : -1;
         const old=getProgramaRecord(fecha,machine);
-        let cortes={}, coment={}, keptM=0, lostM=0, oldCut=0;
+        let cortes={}, coment={}, avan={}, keptM=0, lostM=0, oldCut=0;
         // Si ya había avance, se conserva en las filas que siguen igual en el archivo nuevo (se puede corregir o ampliar un programa sin perder lo cortado ni los comentarios)
         if(old && old.rows && old.rows.length>1){
           // Una fila "sigue igual" si coinciden sus datos clave (sin el No., que se recorre si se inserta una fila)
           const KEYCOLS=['modelo','op','cant.','familia','parte','tubular','nombre del dibujo'];
           const keyOf=(hrow,row)=>{ const hl=(hrow||[]).map(x=>String(x).trim().toLowerCase()); return JSON.stringify(KEYCOLS.map(k=>{ const i=hl.indexOf(k); return i>=0?String(row[i]==null?'':row[i]).trim():''; })); };
-          const pool={}; const oc=progCortesParse(old.cortes), om=progComParse(old.coment), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
+          const pool={}; const oc=progCortesParse(old.cortes), om=progComParse(old.coment), oav=progAvParse(old.avances), oci=old.cortadoColIdx!=null?old.cortadoColIdx:0;
           old.rows.slice(1).forEach((row,r)=>{ const k=keyOf(old.rows[0],row); (pool[k]=pool[k]||[]).push(r); });
           dataRows.forEach((row,r)=>{
             const k=keyOf(header,row), list=pool[k]; if(!list||!list.length) return;
@@ -3375,6 +3513,7 @@ function processProgramaFile(file){
             if(obsColIdx>=0 && old.obsColIdx>=0) row[obsColIdx]=oldRow[old.obsColIdx];
             if(oc[or]) cortes[r]=oc[or];
             if(om[or]) coment[r]=om[or];
+            if(oav[or]) avan[r]=oav[or];
           });
           Object.keys(pool).forEach(k=>pool[k].forEach(or=>{ if(old.rows[or+1][oci]===true) lostM++; }));
           keptM=Object.values(cortes).filter(c=>c.on).length;
@@ -3384,7 +3523,7 @@ function processProgramaFile(file){
           id:'prog_'+machine.replace(/\s+/g,'')+'_'+fecha,
           fecha, machine, ct:PROGRAMA_MACHINE_CT[machine], sheetName,
           rows:[header, ...dataRows], obsColIdx, cortadoColIdx:0,
-          cortes:progCortesStr(cortes), coment:Object.keys(coment).length?JSON.stringify(coment):'', completado:'', compTs:'', compBy:'',
+          cortes:progCortesStr(cortes), coment:Object.keys(coment).length?JSON.stringify(coment):'', avances:progAvStr(avan), completado:'', compTs:'', compBy:'',
           uploadedBy:currentUser.username, uploadedByName:currentUser.name,
           uploadedAt:new Date().toISOString(), updatedAt:new Date().toISOString()
         };
@@ -3490,7 +3629,7 @@ function renderProgramaTable(rec){
   const body=rows.slice(1);
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
   const canCut=canCutPrograma() && !progIsCompleted(rec);
-  const cortes=progCortesParse(rec.cortes);
+  const cortes=progCortesParse(rec.cortes), avs=progAvParse(rec.avances);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   if(progIsLamRec(rec) && !(rec.obsColIdx>=0)) progEnsureObsCol(rec);
   const obsColIdx=rec.obsColIdx!=null?rec.obsColIdx:-1;
@@ -3518,9 +3657,13 @@ function renderProgramaTable(rec){
     const cIdx=c.i;
     if(c.k==='d' && cIdx===cortadoColIdx){
       const cc=cortes[rIdx]; let tip='', hora='';
-      if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; hora=progHoraCorte(cc,rec.fecha); tip=`Cortado el ${isoFromYmd(cc.f)}${hora?' a las '+hora.split(' ').pop():''} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}`; }
+      const qR=progQty(rec,rIdx), avR=Math.min(qR,progAvSum(avs,rIdx));
+      if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; hora=progHoraCorte(cc,rec.fecha); tip=`Cortado el ${isoFromYmd(cc.f)}${hora?' a las '+hora.split(' ').pop():''} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}${avR>0?` (+ ${avR} en avances)`:''}`; }
       else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
-      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)">${hora?`<div class="prog-hc" title="${esc(tip)}">${esc(hora)}</div>`:''}</td>`;
+      // Avance parcial (OPs grandes que se cortan a lo largo del día): botón para el Operador; los demás ven cuántas van
+      const avTip=`Van ${avR} de ${qR} pzas cortadas`;
+      const avHtml=(!isDone&&qR>1)?(canCut?`<button type="button" class="prog-av-btn${avR>0?' has':''}" title="${avR>0?esc(avTip)+' · ':''}Registrar cuántas piezas llevas de esta OP (entran al hora por hora en la hora actual)" onclick="progAvanceDlg('${rec.fecha}','${rec.machine}',${rIdx})">${avR>0?`${fmtN(avR,0)}/${fmtN(qR,0)}`:'＋ avance'}</button>`:(avR>0?`<div class="prog-av-ro" title="${esc(avTip)}">${fmtN(avR,0)}/${fmtN(qR,0)}</div>`:'')):'';
+      return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)">${hora?`<div class="prog-hc" title="${esc(tip)}">${esc(hora)}</div>`:''}${avHtml}</td>`;
     }
     if(c.k==='cons'){
       const txt=(lam?progConsTextLam(x):progConsText(x))+(!lam&&x.auto?' · base':'');
@@ -3809,7 +3952,7 @@ function renderProgramaDia(force){
   let aviso='';
   if(canCut && !completed){
     const idx=progFranjaIdx(c.turno,new Date());
-    aviso=`<div class="programa-aviso">⏱ Cada fila que marques suma sus piezas al hora por hora de <b>${machine}</b> · ${(c.turno||'').split(' (')[0]} · <b>${idx>=0?progFranjaLabel(c.turno,idx):'—'}</b> (${c.fecha}).${progSub==='sig'?' <span style="color:var(--amber)">Estás cortando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
+    aviso=`<div class="programa-aviso">⏱ Cada fila que marques suma sus piezas al hora por hora de <b>${machine}</b> · ${(c.turno||'').split(' (')[0]} · <b>${idx>=0?progFranjaLabel(c.turno,idx):'—'}</b> (${c.fecha}). Si una OP grande se corta en varias horas, usa <b>＋ avance</b> para anotar cuántas llevas.${progSub==='sig'?' <span style="color:var(--amber)">Estás cortando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
   } else if(!canCut && !completed){
     aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
   }
@@ -5506,9 +5649,9 @@ function dashLaserPend(){
       const cortes=progCortesParse(rec.cortes), cd=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
       const isDone=(row,r)=>!!((cortes[r]&&cortes[r].on)||row[cd]===true);
       const cutIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
-      const pend=rows.filter((row,r)=>!isDone(row,r)).length;
+      const pend=rows.filter((row,r)=>!isDone(row,r)).length, av=progAvParse(rec.avances);
       // En curso: el de hoy, uno al que ya se le cortó algo hoy (se adelanta) o el vigente que aún tiene filas por cortar
-      const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
+      const enCurso=rec.fecha===fecha || rows.some((row,r)=>cutIso(r)===fecha || progAvSum(av,r,fecha)>0) || (vig&&vig.id===rec.id&&pend>0);
       const atr=String(rec.fecha)<fecha;   // programa de un día anterior: lo que siga sin cortar es atraso
       if(!enCurso && !(atr && pend>0 && String(rec.fecha)>=desde && !progIsCompleted(rec))) return;
       anyProg=true;
@@ -5523,13 +5666,15 @@ function dashLaserPend(){
       const iMo=fi(/^modelo/), vence=addDiasHabiles(rec.fecha,MAQUILA_LASER_DIAS);
       rows.forEach((row,r)=>{
         if(isDone(row,r)) return;
-        const q=cq>=0?parseFloat(row[cq]):NaN;
+        const qOP=cq>=0?parseFloat(row[cq]):NaN;
         const cells=cols.map(c=>{ const v=row[c[1]]; return (v==null||v===false||v===true)?'':String(v).trim(); });
-        if(!(q>0) && !cells.some(x=>x)) return;
+        if(!(qOP>0) && !cells.some(x=>x)) return;
+        // Con avances parciales, lo que falta es lo programado menos lo que ya se cortó
+        const avR=qOP>0?Math.min(qOP,progAvSum(av,r)):0, q=qOP>0?qOP-avR:qOP;
         const esMaq=iMo>=0 && MAQUILA_SKUS_LASER.has(String(row[iMo]==null?'':row[iMo]).trim());
         const maq=esMaq && fecha<=vence;   // maquila aún en plazo
         const esAtr=atr && !maq;
-        out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr:esAtr,maq,maqVencida:esMaq&&!maq,vence:esMaq?vence:'',fecha:rec.fecha});
+        out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr:esAtr,maq,maqVencida:esMaq&&!maq,vence:esMaq?vence:'',fecha:rec.fecha,falta:q,av:avR,qOP});
         ops++; if(q>0) pzs+=q;
         if(maq){
           opsMaq++; if(q>0) pzsMaq+=q; if(!maqVence||vence<maqVence) maqVence=vence;
@@ -5557,7 +5702,7 @@ function dashLaserPendHtml(){
     const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`, dia=r.atr?dm(r.fecha):'';
     const tag=r.maq?`<span class="pend-maq-tag">Maquila · vence ${dm(r.vence)}</span>`:(r.atr?`<span class="pend-atr-tag">${r.maqVencida?'Atraso · maquila vencida':'Atraso · '+dia}</span>`:'');
     const tip=r.maq?`OP de maquila (SKU ${MAQUILA_LASER_DIAS} días hábiles): vence el ${fmtDMY(r.vence)}; mientras tanto no es atraso`:(r.atr?(r.maqVencida?`Maquila que venció el ${fmtDMY(r.vence)} sin cortarse: cuenta como atraso`:`OP del programa del ${fmtDMY(r.fecha)} que no se cortó: sus piezas cuentan como atraso`):'');
-    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}"${tip?` title="${escH(tip)}"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
+    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}"${tip?` title="${escH(tip)}"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
   }).join('');
   // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) y la maquila van aparte
   const opsHoy=d.ops-d.opsAtr-d.opsMaq, pzsHoy=Math.max(0,d.pzs-d.pzsAtr-d.pzsMaq);
