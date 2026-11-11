@@ -490,8 +490,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #page-dashboard:fullscreen .dash-hh-wrap th{font-size:13px}
 #page-dashboard:fullscreen #ct-cards{grid-column:1;grid-row:1;margin:0!important}
 #page-dashboard:fullscreen #dash-hora-card{grid-column:1;grid-row:2 / 4;margin:0!important}
-#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1 / 3;margin:0!important;min-height:0;overflow:auto}
-#page-dashboard:fullscreen .content>.ct-section{grid-column:2;grid-row:3;margin:0;min-width:0}
+#page-dashboard:fullscreen #dash-chart-card{grid-column:2;grid-row:1 / 4;margin:0!important;min-height:0;overflow:auto}
+/* Pantalla completa (todos los centros): sin la tabla de máquinas; la tarjeta de la derecha ocupa toda la columna */
+#page-dashboard:fullscreen .content>.ct-section{display:none!important}
 #page-dashboard:fullscreen .content>.ct-section .ct-header{display:none}
 #page-dashboard:fullscreen .content>.ct-section .tbl th:first-child,#page-dashboard:fullscreen .content>.ct-section .tbl td:first-child{display:none}
 #page-dashboard:fullscreen .content>.ct-section .tbl{font-size:10.5px}
@@ -566,6 +567,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 #page-dashboard:fullscreen #dash-chart-card.pending-on #dash-mat-panel{flex:1;min-height:0}
 #page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
 #page-dashboard:fullscreen #dash-mat-panel.pend .pend-vp{max-height:none}
+/* Pantalla completa: la gráfica OEE (centros sin lista de pendientes) crece con la tarjeta */
+#page-dashboard:fullscreen #dash-chart-card:not(.pending-on){display:flex;flex-direction:column}
+#page-dashboard:fullscreen #dash-chart-card:not(.pending-on) #dash-chart-wrap{flex:1;min-height:260px;height:auto!important}
+/* Pantalla completa: sin «Capacidad instalada» ni «OEE promedio del CT»; los cuadros que quedan se reparten el ancho y el título se acomoda en renglones */
+#page-dashboard:fullscreen .ct-hl-cap,#page-dashboard:fullscreen .ct-card-hero{display:none}
+#page-dashboard:fullscreen .ct-highlight-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+#page-dashboard:fullscreen .ct-highlight-label{flex-wrap:wrap;line-height:1.25;text-align:center}
 .mat-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .mat-tbl th{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.4px;text-transform:uppercase;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
 .mat-tbl td{padding:6px 10px;border-bottom:0.5px solid var(--border);color:var(--text2)}
@@ -5490,7 +5498,7 @@ function dashLaserPend(){
   const names=getMachinesByCT('LASER').map(m=>m.name);
   const set=new Set(names.length?names:PROG_TUB_MACHINES);
   let desde=fecha; for(let k=0;k<PEND_ATRASO_DIAS;){ desde=isoAddDays(desde,-1); const w=isoDow(desde); if(w!==0&&w!==6) k++; }
-  const out=[]; let ops=0, pzs=0, anyProg=false, opsAtr=0, pzsAtr=0, opsMaq=0, pzsMaq=0, maqVence='';
+  const out=[], maqM={}; let ops=0, pzs=0, anyProg=false, opsAtr=0, pzsAtr=0, opsMaq=0, pzsMaq=0, maqVence='';
   Array.from(set).sort().forEach(mn=>{
     const vig=progActiveRecord(fecha,mn);
     programaDia.filter(r=>r&&r.machine===mn).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
@@ -5523,12 +5531,16 @@ function dashLaserPend(){
         const esAtr=atr && !maq;
         out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr:esAtr,maq,maqVencida:esMaq&&!maq,vence:esMaq?vence:'',fecha:rec.fecha});
         ops++; if(q>0) pzs+=q;
-        if(maq){ opsMaq++; if(q>0) pzsMaq+=q; if(!maqVence||vence<maqVence) maqVence=vence; }
+        if(maq){
+          opsMaq++; if(q>0) pzsMaq+=q; if(!maqVence||vence<maqVence) maqVence=vence;
+          const mm=maqM[mn]||(maqM[mn]={ops:0,pzs:0,vence:''});   // por máquina, para su tarjeta de hora × hora
+          mm.ops++; if(q>0) mm.pzs+=q; if(!mm.vence||vence<mm.vence) mm.vence=vence;
+        }
         else if(esAtr){ opsAtr++; if(q>0) pzsAtr+=q; }
       });
     });
   });
-  return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr,opsMaq,pzsMaq,maqVence};
+  return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr,opsMaq,pzsMaq,maqVence,maqM};
 }
 function dashLaserPendHtml(){
   const d=dashLaserPend();
@@ -5655,15 +5667,15 @@ function renderDashboard(){
               <div class="ct-highlight-val" style="color:var(--text)" id="ct-maquila-val">${procDet.maquila}</div>
               <div class="ct-highlight-sub">${Object.keys(procDet.maqBy).map(m=>escH(m)+': '+procDet.maqBy[m]).join(' · ')||'Prensa 60 · Prensa 90'}</div>
             </div>`:`<div class="ct-highlight-box">
-              <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
+              <div class="ct-highlight-label"${autoProgramadas!=null?' title="Se calcula solo con el programa de corte (GW1 + GW2)"':''}>${ic('barChart',12)}Piezas programadas (CT)</div>
               ${(autoProgramadas==null&&canEditMetas)?`<input type="number" min="0" class="ct-meta-input" value="${target.piezasProgramadas||0}" title="Meta de piezas programadas del CT (editable)" onchange="updateCtTargetField('${ct}','piezasProgramadas',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>`}
-              <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}</div>
+              <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}${autoProgramadas!=null?' · auto (GW1+GW2)':''}</div>
             </div>${pendL?`<div class="ct-highlight-box" title="OPs de los SKU de maquila sin cortar: tienen ${MAQUILA_LASER_DIAS} días hábiles; mientras no vencen no son atraso">
               <div class="ct-highlight-label">${ic('wrench',12)}Maquila pendiente</div>
               <div class="ct-highlight-val" style="color:${pendL.pzsMaq>0?'#b48cff':'var(--text)'}" id="ct-maquila-val">${fmtN(pendL.pzsMaq,0)}</div>
               <div class="ct-highlight-sub">${pendL.pzsMaq>0?`pzas · ${pendL.opsMaq} OP${pendL.opsMaq===1?'':'s'} · vence el ${+pendL.maqVence.slice(8,10)}/${+pendL.maqVence.slice(5,7)}`:'sin maquila pendiente'}</div>
             </div>`:''}`}
-            <div class="ct-highlight-box">
+            <div class="ct-highlight-box ct-hl-cap">
               <div class="ct-highlight-label">${ic('gauge',12)}Capacidad instalada (CT)</div>
               ${canEditMetas?`<input type="number" min="0" class="ct-meta-input" value="${target.capacidadInstalada||0}" title="Capacidad instalada del CT (editable)" onchange="updateCtTargetField('${ct}','capacidadInstalada',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${target.capacidadInstalada||0}</div>`}
               <div class="ct-highlight-sub">pzas / turno</div>
@@ -5967,6 +5979,8 @@ function dashHoraTableHtml(ct,short){
   const frac=totSpan>0?Math.min(1,doneSpan/totSpan):0;
   const pz=n=>n===1?'1 pza':n+' pzas';
   let grand=0, grandDan=0, extraCol=0;
+  // Laser: maquila pendiente de cada máquina (no cuenta en programadas ni en el ritmo, pero se ve en su tarjeta)
+  const maqM=(ct==='LASER')?(dashLaserPend().maqM||{}):{};
   const panels=cardNames.map((m,mi)=>{
     const col=FIXED[m]||COLORS[(extraCol++)%COLORS.length];
     let tot=0, dTot=0, maxV=5;
@@ -5997,6 +6011,8 @@ function dashHoraTableHtml(ct,short){
     const estado=sinCap?'Sin captura aún':(meta<=0?'':(tot>=meta?'Arriba de la meta':(dif>=0?'Al corriente':'Por debajo del ritmo')));
     const estCol=sinCap?'var(--text3)':(meta<=0?'':(tot>=meta||dif>=0?'var(--green)':'var(--amber)'));
     const pct=meta>0?Math.min(100,Math.round(tot/meta*100)):0;
+    const mq=maqM[m];
+    const maqKpi=(mq&&mq.pzs>0)?`<div class="hh-big sm" title="Maquila por cortar: ${mq.ops} OP${mq.ops===1?'':'s'} · vence el ${+mq.vence.slice(8,10)}/${+mq.vence.slice(5,7)}. No cuenta en las programadas ni en el ritmo; cuenta el día que se corta."><b style="color:#b48cff">${fmtN(mq.pzs,0)}</b><span>maquila pendiente</span></div>`:'';
     const bars=cols.map((f,i)=>{
       const c=dataByMachine[m][f], t=metaF(f);
       return `<div class="hh-c${i===nowIdx?' now':''}">${c&&c.fab>0?`<div class="hh-bar" style="height:${Math.max(4,Math.round(c.fab/maxV*92))}%;background:${col}"></div>`:''}${t>0?`<div class="hh-meta" style="bottom:${Math.min(100,Math.round(t/maxV*92))}%" title="Ritmo requerido en esta hora: ${fmtRitmo(t)} pzas"></div>`:''}</div>`;
@@ -6017,7 +6033,7 @@ function dashHoraTableHtml(ct,short){
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
-      <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
+      <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
       <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${R>0?`<div class="hh-leg"><span class="hh-leg-l"></span>Ritmo requerido ${fmtRitmo(R)} pzas/h · <span class="ok">verde</span> cumplió la hora · <span class="bajo">ámbar</span> quedó debajo</div>`:''}${como}</div>`;
