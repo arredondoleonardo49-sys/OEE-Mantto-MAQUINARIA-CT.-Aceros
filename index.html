@@ -3198,8 +3198,15 @@ function programaReabrir(fecha,machine){
   progMsg('Programa reabierto'); renderProgramaDia(true);
 }
 function toggleProgDone(key){ progShowDone[key]=!progShowDone[key]; renderProgramaDia(true); }
+// ¿La fila es de maquila de Laser (SKU de MAQUILA_SKUS_LASER en la columna Modelo)?
+function progEsMaquilaFila(rec,row){
+  if(!rec||!PROG_TUB_MACHINES.includes(rec.machine)) return false;
+  const i=((rec.rows&&rec.rows[0])||[]).findIndex(h=>String(h).trim().toLowerCase()==='modelo');
+  return i>=0 && MAQUILA_SKUS_LASER.has(String(row[i]==null?'':row[i]).trim());
+}
 // Piezas programadas efectivas de una máquina en un día: lo que se cortó por adelantado cuenta el día en que se cortó
 // (como programado y producido), y ya no vuelve a contar el día al que pertenecía el programa.
+// La maquila (tiene días para cortarse) solo cuenta el día en que se corta: así no infla la meta ni el ritmo mientras está en plazo.
 function progProgramadasEfectivas(machine,fecha){
   let total=0, any=false;
   programaDia.forEach(rec=>{
@@ -3210,7 +3217,7 @@ function progProgramadasEfectivas(machine,fecha){
     (rec.rows||[]).slice(1).forEach((row,r)=>{
       const q=parseFloat(row[ci]); if(!(q>0)) return;
       const c=cortes[r], cutIso=(c&&c.on&&c.f)?isoFromYmd(c.f):'';
-      const eff=(cutIso&&cutIso<rec.fecha)?cutIso:rec.fecha;
+      const eff=progEsMaquilaFila(rec,row)?cutIso:((cutIso&&cutIso<rec.fecha)?cutIso:rec.fecha);
       if(eff===fecha){ total+=q; any=true; }
     });
   });
@@ -3230,7 +3237,7 @@ function progProgramadasTablero(machine,fecha){
     rows.forEach((row,r)=>{
       const q=parseFloat(row[ci]); if(!(q>0)) return;
       const ci2=cutIso(r);
-      if(ci2===fecha || (!ci2 && enCurso)){ total+=q; any=true; }
+      if(ci2===fecha || (!ci2 && enCurso && !progEsMaquilaFila(rec,row))){ total+=q; any=true; }   // maquila pendiente: aún no es meta de hoy
     });
     if(rec.fecha===fecha) any=true;
   });
