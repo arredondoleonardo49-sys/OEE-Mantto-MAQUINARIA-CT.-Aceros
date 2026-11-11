@@ -558,6 +558,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .pend-atr-tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;background:rgba(240,96,96,.16);color:#f06060;white-space:nowrap}
 .pend-hd .pend-hd-atr{color:#f06060}.pend-hd .pend-hd-atr b{color:#f06060}
 .pend-hd .pend-hd-hoy{color:var(--amber)}.pend-hd .pend-hd-hoy b{color:var(--amber)}
+.pend-row.maq{background:rgba(180,140,255,.08);box-shadow:inset 3px 0 0 #b48cff}
+.pend-row.maq .pend-l1 .n{color:#b48cff}
+.pend-maq-tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 6px;background:rgba(180,140,255,.18);color:#b48cff;white-space:nowrap}
+.pend-hd .pend-hd-maq{color:#b48cff}.pend-hd .pend-hd-maq b{color:#b48cff}
 #page-dashboard:fullscreen #dash-chart-card.pending-on{display:flex;flex-direction:column;overflow:hidden}
 #page-dashboard:fullscreen #dash-chart-card.pending-on #dash-mat-panel{flex:1;min-height:0}
 #page-dashboard:fullscreen #dash-mat-panel.pend{flex:1;min-height:0;display:flex!important;flex-direction:column}
@@ -5469,12 +5473,17 @@ function ctDiaTerminado(ct){
 // Las OPs de programas de días anteriores (no completados, de los últimos PEND_ATRASO_DIAS días hábiles) siguen en la lista,
 // en otro color, y sus piezas cuentan como atraso.
 const PEND_ATRASO_DIAS=5;
+// Maquila de Laser: las OPs de estos SKU (columna Modelo del programa) tienen MAQUILA_LASER_DIAS días hábiles para cortarse.
+// Mientras no vencen no son atraso ni faltante de hoy: van en «Maquila pendiente». Ya vencidas, cuentan como atraso.
+const MAQUILA_SKUS_LASER=new Set(['22401001','22401009','22401010','22401011','22401012','22401013','22401014','22401015',
+  '22401016','22401017','22401018','22401019','22401020','22401021','22120004','22120008','22120009']);
+const MAQUILA_LASER_DIAS=4;
 function dashLaserPend(){
   const fecha=todayStr();
   const names=getMachinesByCT('LASER').map(m=>m.name);
   const set=new Set(names.length?names:PROG_TUB_MACHINES);
   let desde=fecha; for(let k=0;k<PEND_ATRASO_DIAS;){ desde=isoAddDays(desde,-1); const w=isoDow(desde); if(w!==0&&w!==6) k++; }
-  const out=[]; let ops=0, pzs=0, anyProg=false, opsAtr=0, pzsAtr=0;
+  const out=[]; let ops=0, pzs=0, anyProg=false, opsAtr=0, pzsAtr=0, opsMaq=0, pzsMaq=0, maqVence='';
   Array.from(set).sort().forEach(mn=>{
     const vig=progActiveRecord(fecha,mn);
     programaDia.filter(r=>r&&r.machine===mn).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
@@ -5496,18 +5505,23 @@ function dashLaserPend(){
         const skip=new Set([cd,rec.obsColIdx]); cols=[];
         H.forEach((h,i)=>{ if(cols.length<6 && !skip.has(i) && h && !PROG_HIDE_COLS.includes(h)) cols.push([String(rec.rows[0][i]),i]); });
       }
+      const iMo=fi(/^modelo/), vence=addDiasHabiles(rec.fecha,MAQUILA_LASER_DIAS);
       rows.forEach((row,r)=>{
         if(isDone(row,r)) return;
         const q=cq>=0?parseFloat(row[cq]):NaN;
         const cells=cols.map(c=>{ const v=row[c[1]]; return (v==null||v===false||v===true)?'':String(v).trim(); });
         if(!(q>0) && !cells.some(x=>x)) return;
-        out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr,fecha:rec.fecha});
+        const esMaq=iMo>=0 && MAQUILA_SKUS_LASER.has(String(row[iMo]==null?'':row[iMo]).trim());
+        const maq=esMaq && fecha<=vence;   // maquila aún en plazo
+        const esAtr=atr && !maq;
+        out.push({m:mn,labels:cols.map(c=>c[0]),cells,atr:esAtr,maq,maqVencida:esMaq&&!maq,vence:esMaq?vence:'',fecha:rec.fecha});
         ops++; if(q>0) pzs+=q;
-        if(atr){ opsAtr++; if(q>0) pzsAtr+=q; }
+        if(maq){ opsMaq++; if(q>0) pzsMaq+=q; if(!maqVence||vence<maqVence) maqVence=vence; }
+        else if(esAtr){ opsAtr++; if(q>0) pzsAtr+=q; }
       });
     });
   });
-  return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr};
+  return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr,opsMaq,pzsMaq,maqVence};
 }
 function dashLaserPendHtml(){
   const d=dashLaserPend();
@@ -5521,13 +5535,15 @@ function dashLaserPendHtml(){
     const op=iO>=0?iO:(iM>=0?-1:0);
     const used=new Set([iQ,op,iM].filter(i=>i>=0));
     const rest=r.cells.map((v,i)=>({v,i})).filter(x=>!used.has(x.i)&&x.v).map(x=>escH(x.v));
-    const dia=r.atr?`${+r.fecha.slice(8,10)}/${+r.fecha.slice(5,7)}`:'';
-    return `<div class="pend-row${r.atr?' atr':''}"${r.atr?` title="OP del programa del ${escH(fmtDMY(r.fecha))} que no se cortó: sus piezas cuentan como atraso"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${r.atr?`<span class="pend-atr-tag">Atraso · ${dia}</span>`:''}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>${r.atr?'pzas atraso':'pzas'}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
+    const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`, dia=r.atr?dm(r.fecha):'';
+    const tag=r.maq?`<span class="pend-maq-tag">Maquila · vence ${dm(r.vence)}</span>`:(r.atr?`<span class="pend-atr-tag">${r.maqVencida?'Atraso · maquila vencida':'Atraso · '+dia}</span>`:'');
+    const tip=r.maq?`OP de maquila (SKU ${MAQUILA_LASER_DIAS} días hábiles): vence el ${fmtDMY(r.vence)}; mientras tanto no es atraso`:(r.atr?(r.maqVencida?`Maquila que venció el ${fmtDMY(r.vence)} sin cortarse: cuenta como atraso`:`OP del programa del ${fmtDMY(r.fecha)} que no se cortó: sus piezas cuentan como atraso`):'');
+    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}"${tip?` title="${escH(tip)}"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n">${escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
   }).join('');
-  // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) va aparte
-  const opsHoy=d.ops-d.opsAtr, pzsHoy=Math.max(0,d.pzs-d.pzsAtr);
+  // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) y la maquila van aparte
+  const opsHoy=d.ops-d.opsAtr-d.opsMaq, pzsHoy=Math.max(0,d.pzs-d.pzsAtr-d.pzsMaq);
   // Lo de hoy es faltante de corte; solo lo de días anteriores es atraso (el mismo número del indicador «Atraso»)
-  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Total por cortar<b>${fmtN(d.pzs,0)}</b> pzas</span><span class="pend-hd-hoy" title="Piezas de las OPs del programa de hoy que aún no se cortan (si mañana siguen sin cortarse, pasan a atraso)">Faltante de hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse (lo mismo que el indicador «Atraso»)">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Total por cortar<b>${fmtN(d.pzs,0)}</b> pzas</span><span class="pend-hd-hoy" title="Piezas de las OPs del programa de hoy que aún no se cortan (si mañana siguen sin cortarse, pasan a atraso)">Faltante de hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsMaq?`<span class="pend-hd-maq" title="OPs de los SKU de maquila: tienen ${MAQUILA_LASER_DIAS} días hábiles para cortarse y no cuentan como atraso">Maquila pendiente<b>${fmtN(d.pzsMaq,0)}</b> pzas · ${d.opsMaq} OP${d.opsMaq===1?'':'s'}</span>`:''}${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin cortarse (lo mismo que el indicador «Atraso»)">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}</div>
     <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
     <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
 }
@@ -5598,11 +5614,11 @@ function renderDashboard(){
     const pendL=(ct==='LASER')?dashLaserPend():null;
     let hl;
     if(pendL){
-      const pzHoy=Math.max(0,pendL.pzs-pendL.pzsAtr);
+      const pzHoy=Math.max(0,pendL.pzs-pendL.pzsAtr-pendL.pzsMaq);   // la maquila en plazo va en su propio indicador
       if(pendL.pzsAtr>0) hl={lbl:'Atraso',icon:'alertTriangle',val:'-'+fmtN(pendL.pzsAtr,0),col:'#f06060',sub:'pzas de días anteriores',btn:true};
       else if(pzHoy>0) hl={lbl:'Faltante por cortar',icon:'clock',val:fmtN(pzHoy,0),col:'var(--amber)',sub:'pzas del programa de hoy · sin atraso',btn:false};
       else if(diffCT>0) hl={lbl:'Adelanto',icon:'target',val:'+'+diffCT,col:'#3ecf8e',sub:'vs. piezas programadas',btn:false};
-      else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:'todo el programa está cortado',btn:false};
+      else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:pendL.pzsMaq>0?'sin atraso · la maquila va aparte':'todo el programa está cortado',btn:false};
     } else {
       hl={lbl:esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso'),icon:esAdelanto?'target':(enCurso?'clock':'alertTriangle'),
         val:esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT),col:esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060'),
@@ -5621,7 +5637,7 @@ function renderDashboard(){
           </div>
         </div>
         <div class="ct-card-body">
-          <div class="ct-highlight-row${modoProc?' hl4':''}">
+          <div class="ct-highlight-row${(modoProc||pendL)?' hl4':''}">
             ${modoProc?`<div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas procesadas (CT)</div>
               <div class="ct-highlight-val" style="color:var(--text)" id="ct-procesadas-val">${procDet.total}</div>
@@ -5635,7 +5651,11 @@ function renderDashboard(){
               <div class="ct-highlight-label">${ic('barChart',12)}Piezas programadas (CT)${autoProgramadas!=null?' <span style="color:var(--text3);font-weight:400">· auto (GW1+GW2)</span>':''}</div>
               ${(autoProgramadas==null&&canEditMetas)?`<input type="number" min="0" class="ct-meta-input" value="${target.piezasProgramadas||0}" title="Meta de piezas programadas del CT (editable)" onchange="updateCtTargetField('${ct}','piezasProgramadas',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${piezasProgramadasCT}</div>`}
               <div class="ct-highlight-sub">Producidas hoy: ${piezasProducidasCT}</div>
-            </div>`}
+            </div>${pendL?`<div class="ct-highlight-box" title="OPs de los SKU de maquila sin cortar: tienen ${MAQUILA_LASER_DIAS} días hábiles; mientras no vencen no son atraso">
+              <div class="ct-highlight-label">${ic('wrench',12)}Maquila pendiente</div>
+              <div class="ct-highlight-val" style="color:${pendL.pzsMaq>0?'#b48cff':'var(--text)'}" id="ct-maquila-val">${fmtN(pendL.pzsMaq,0)}</div>
+              <div class="ct-highlight-sub">${pendL.pzsMaq>0?`pzas · ${pendL.opsMaq} OP${pendL.opsMaq===1?'':'s'} · vence el ${+pendL.maqVence.slice(8,10)}/${+pendL.maqVence.slice(5,7)}`:'sin maquila pendiente'}</div>
+            </div>`:''}`}
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic('gauge',12)}Capacidad instalada (CT)</div>
               ${canEditMetas?`<input type="number" min="0" class="ct-meta-input" value="${target.capacidadInstalada||0}" title="Capacidad instalada del CT (editable)" onchange="updateCtTargetField('${ct}','capacidadInstalada',this.value)">`:`<div class="ct-highlight-val" style="color:var(--text)">${target.capacidadInstalada||0}</div>`}
