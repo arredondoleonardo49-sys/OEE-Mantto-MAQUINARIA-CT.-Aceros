@@ -782,6 +782,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .hh-big span{font-size:10.5px;color:var(--text3);margin-top:3px}
 .hh-big.sm b{font-size:19px}
 .hh-sp{flex:1}
+.hh-kn,.hh-kb{display:contents}.hh-ls{display:none}
 .hh-bd{display:flex;flex-direction:column;align-items:center;border-radius:8px;padding:4px 9px;line-height:1.1;min-width:70px}
 .hh-bd b{font-family:'IBM Plex Mono',monospace;font-size:17px}.hh-bd span{font-size:9px;opacity:.85;margin-top:2px;text-align:center}
 .hh-bd.ok{background:rgba(62,207,142,.16);color:var(--green)}.hh-bd.warn{background:rgba(245,166,35,.15);color:var(--amber)}
@@ -812,6 +813,27 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 #ct-cards .ct-card-stat-label{font-size:9.5px}
 #page-dashboard:fullscreen #ct-cards .ct-card{height:auto}
 #page-dashboard:fullscreen #ct-cards{align-self:start}
+/* Proyección (pantalla completa): números y nombres de máquina más grandes, horas a dos dígitos (08 … 17), barras más
+   juntas y los datos de cada máquina en un solo renglón con las mismas columnas (la maquila queda al mismo nivel) */
+#page-dashboard:fullscreen #ct-cards .ct-highlight-val,#page-dashboard:fullscreen #ct-cards .ct-meta-input{font-size:34px}
+#page-dashboard:fullscreen #ct-cards .ct-highlight-label,#page-dashboard:fullscreen #ct-cards .ct-highlight-sub{font-size:11px}
+#page-dashboard:fullscreen #ct-cards .ct-card-stat-val{font-size:28px}
+#page-dashboard:fullscreen #ct-cards .ct-card-stat-label{font-size:10.5px}
+#page-dashboard:fullscreen #ct-cards .ct-card-stat-icon{width:34px;height:34px}
+#page-dashboard:fullscreen .hh-ph{margin-bottom:4px}
+#page-dashboard:fullscreen .hh-nm{font-size:26px;line-height:1}
+#page-dashboard:fullscreen .hh-dot{width:14px;height:14px;border-radius:3px}
+#page-dashboard:fullscreen .hh-st{font-size:14px}
+#page-dashboard:fullscreen .hh-kpi{flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:6px}
+#page-dashboard:fullscreen .hh-kn{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;align-items:end}
+#page-dashboard:fullscreen .hh-kn .hh-big span{min-height:2.3em;line-height:1.15}
+#page-dashboard:fullscreen .hh-sp{display:none}
+#page-dashboard:fullscreen .hh-kb{display:flex;justify-content:flex-end;gap:8px}
+#page-dashboard:fullscreen .hh-kb:empty{display:none}
+#page-dashboard:fullscreen .hh-bar{width:88%}
+#page-dashboard:fullscreen .hh-lf{display:none}
+#page-dashboard:fullscreen .hh-ls{display:inline}
+#page-dashboard:fullscreen .hh-t tfoot td{font-size:13px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding-top:3px}
 </style>
 </head>
 <body>
@@ -6122,6 +6144,12 @@ function dashHoraTableHtml(ct,short){
     const h=(H,M)=>M==='00'?String(+H):H+':'+M;
     return h(mm[1],mm[2])+'–<wbr>'+h(mm[3],mm[4]);
   };
+  // Pantalla completa: solo la hora a dos dígitos (08, 09 … 17). Las franjas que empiezan a la media (12:30, 13:30…) toman la
+  // hora siguiente (la de 12 es la comida). Si dos franjas quedaran con la misma hora, la que empieza a la media lleva sus minutos.
+  const p2=n=>String(n).padStart(2,'0');
+  const hhCorta=cols.map(f=>{ if(f==='__x') return '⚡'; const st=startMin(f); return st==null?'':p2(Math.round(st/60)%24); });
+  const hhRep={}; hhCorta.forEach(x=>{ hhRep[x]=(hhRep[x]||0)+1; });
+  const colCorta=i=>{ const x=hhCorta[i], st=startMin(cols[i]); if(!x) return colLabel(cols[i]); return (hhRep[x]>1&&st%60)?p2(Math.floor(st/60)%24)+':'+p2(st%60):x; };
   const COLORS=['#b48cff','#f5a623','#2ec4c4','#ff8fb1','#e0d35c'], FIXED={GW1:'#4a9eff',GW2:'#3ecf8e'};
   // Máquinas sin captura hoy no ocupan tarjeta (se listan en una línea); si nadie ha capturado aún, se muestran todas.
   const conDatos=machineNames.filter(m=>Object.keys(dataByMachine[m]).length>0);
@@ -6186,12 +6214,12 @@ function dashHoraTableHtml(ct,short){
       return `<td class="${i===nowIdx?'now ':''}${cls}"${t>0?` title="Requeridas en esta hora: ${fmtRitmo(t)}"`:''}>${txt}</td>`;
     }).join('');
     const dans=cols.map((f,i)=>{ const c=dataByMachine[m][f]; return `<td class="${i===nowIdx?'now':''}">${c&&c.dan>0?`<span class="hh-d">${c.dan}</span>`:''}</td>`; }).join('');
-    const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}">${colLabel(f)}</td>`).join('');
+    const labs=cols.map((f,i)=>`<td class="${i===nowIdx?'now':''}"${f!=='__x'&&FRANJA_DISPLAY[f]?` title="${escH(FRANJA_DISPLAY[f])}"`:''}><span class="hh-lf">${colLabel(f)}</span><span class="hh-ls">${colCorta(i)}</span></td>`).join('');
     grand+=tot; grandDan+=dTot;
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
-      <div class="hh-kpi"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}<div class="hh-sp"></div>${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div>
+      <div class="hh-kpi"><div class="hh-kn"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}</div><div class="hh-sp"></div><div class="hh-kb">${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div></div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
       <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${R>0?`<div class="hh-leg"><span class="hh-leg-l"></span>Ritmo requerido ${fmtRitmo(R)} pzas/h · <span class="ok">verde</span> cumplió la hora · <span class="bajo">ámbar</span> quedó debajo</div>`:''}${como}</div>`;
