@@ -854,6 +854,11 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 #page-dashboard:fullscreen .hh-top{gap:26px}
 #page-dashboard:fullscreen .hh-k{font-size:13px}
 #page-dashboard:fullscreen .hh-k b{font-size:18px}
+.hh-top2{display:none}
+#page-dashboard:fullscreen .hh-top{display:none}
+#page-dashboard:fullscreen .hh-top2{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:12px;margin-bottom:8px}
+#page-dashboard:fullscreen .hh-tc{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;min-width:0;padding:0 10px}
+#page-dashboard:fullscreen .hh-tc .hh-dan{margin-left:auto}
 #page-dashboard:fullscreen .hh-rt{display:inline}
 #page-dashboard:fullscreen .hh-rt .hh-rt-dot{vertical-align:0}
 </style>
@@ -6260,7 +6265,7 @@ function dashHoraTableHtml(ct,short){
     grand+=tot; grandDan+=dTot;
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
-    if(R>0) ritmos.push({m,col,R,real:(real!=null&&!sinCap)?real:null,tip:`${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno`});
+    ritmos.push({m,col,R,real:(real!=null&&!sinCap)?real:null,tip:`${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno`});
     return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${meta>0?`<span class="hh-pg">· <b>${meta}</b> ${metaLbl}</span>`:''}${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
       <div class="hh-kpi"><div class="hh-kn"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm hh-k-meta"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm hh-k-rt" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm hh-k-rt" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}</div><div class="hh-sp"></div><div class="hh-kb">${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div></div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
@@ -6268,7 +6273,9 @@ function dashHoraTableHtml(ct,short){
       <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${R>0?`<div class="hh-leg"><span class="hh-leg-l"></span>Ritmo requerido ${fmtRitmo(R)} pzas/h · <span class="ok">verde</span> cumplió la hora · <span class="bajo">ámbar</span> quedó debajo</div>`:''}${como}</div>`;
   }).join('');
   const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
-  const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k hh-cur">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}${ritmos.map(x=>`<span class="hh-k hh-rt"><i class="hh-rt-dot" style="background:${x.col}"></i>${escH(x.m)}<b style="color:var(--amber)" title="${escH(x.tip)}">${fmtRitmo(x.R)}</b> req${x.real!=null?` ·<b style="color:${x.real>=x.R?'var(--green)':'var(--amber)'}" title="Piezas de hoy ÷ horas del turno que ya pasaron">${fmtRitmo(x.real)}</b> reales`:''} pzas/h</span>`).join('')}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
+  const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k hh-cur">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`
+    // Pantalla completa: en lugar de «En curso», las pzas/h de cada máquina, cada una encima de su tarjeta (misma rejilla que las tarjetas)
+    +(ritmos.length?`<div class="hh-top2">${ritmos.map((x,i)=>`<div class="hh-tc">${i===0?`<span class="hh-k">Total hoy<b>${grand}</b></span>`:''}${x.R>0?`<span class="hh-k hh-rt"><i class="hh-rt-dot" style="background:${x.col}"></i>${escH(x.m)}<b style="color:var(--amber)" title="${escH(x.tip)}">${fmtRitmo(x.R)}</b> req${x.real!=null?` ·<b style="color:${x.real>=x.R?'var(--green)':'var(--amber)'}" title="Piezas de hoy ÷ horas del turno que ya pasaron">${fmtRitmo(x.real)}</b> reales`:''} pzas/h</span>`:''}${i===ritmos.length-1?`<span class="hh-k hh-dan">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span>`:''}</div>`).join('')}</div>`:'');
   const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
   const html=`${resumen}${panels?`<div class="hh-grid${resumen?' rt-top':''}">${panels}</div>`:''}${vacias}`;
   return {names:machineNames,html};
