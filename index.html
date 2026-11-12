@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Imágenes de muebles (de las fichas técnicas y folios de ingenieria.lineaitalia.net) para el panel «Qué falta por cortar» -->
+<script src="assets/modelos/indice.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#181b24;--bg3:#1e2130;--border:#2a2e3f;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--blue:#4a9eff;--green:#3ecf8e;--amber:#f5a623;--red:#f06060;--radius:8px;--radius-lg:12px;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -544,6 +546,12 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .pend-l1 .mo{font-size:12px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pend-l1 .n{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);font-size:15px;white-space:nowrap}.pend-l1 .n small{font-size:10px;color:var(--text3);font-weight:400;margin-left:3px}
 .pend-l2{font-size:11px;color:var(--text3);padding-left:44px;overflow-wrap:anywhere}
+/* Imagen del mueble a la izquierda de cada pendiente (ayuda visual); sin imagen queda el hueco para que todo se alinee */
+.pend-row.ci{flex-direction:row;align-items:center;gap:10px}
+.pend-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.pend-img{width:72px;height:54px;flex-shrink:0;object-fit:contain;background:#fff;border-radius:6px;padding:2px}
+.pend-img.sin{background:var(--bg2);border:1px dashed var(--border);padding:0}
+#page-dashboard:fullscreen .pend-img{width:104px;height:78px}
 .pend-vp{position:relative;overflow:hidden;max-height:400px;flex:1;min-height:0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
 .pend-vp.static{-webkit-mask-image:none;mask-image:none}
 .pend-in.run{animation:pendUp var(--pd,30s) linear infinite;will-change:transform}
@@ -783,6 +791,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .hh-big.sm b{font-size:19px}
 .hh-sp{flex:1}
 .hh-kn,.hh-kb{display:contents}.hh-ls{display:none}
+.hh-pg,.hh-rt{display:none}.hh-rt-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
 .hh-bd{display:flex;flex-direction:column;align-items:center;border-radius:8px;padding:4px 9px;line-height:1.1;min-width:70px}
 .hh-bd b{font-family:'IBM Plex Mono',monospace;font-size:17px}.hh-bd span{font-size:9px;opacity:.85;margin-top:2px;text-align:center}
 .hh-bd.ok{background:rgba(62,207,142,.16);color:var(--green)}.hh-bd.warn{background:rgba(245,166,35,.15);color:var(--amber)}
@@ -834,6 +843,19 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 #page-dashboard:fullscreen .hh-lf{display:none}
 #page-dashboard:fullscreen .hh-ls{display:inline}
 #page-dashboard:fullscreen .hh-t tfoot td{font-size:13px;font-weight:600;font-family:'IBM Plex Mono',monospace;padding-top:3px}
+/* Programadas junto al nombre de la máquina; arriba, en vez de «En curso», las pzas/h requeridas y reales de cada máquina */
+#page-dashboard:fullscreen .hh-pg{display:inline;font-size:14px;color:var(--text3);margin-left:4px}
+#page-dashboard:fullscreen .hh-pg b{font-family:'IBM Plex Mono',monospace;font-size:22px;color:var(--text2);margin-right:2px}
+#page-dashboard:fullscreen .hh-k-meta,#page-dashboard:fullscreen .hh-top .hh-cur{display:none}
+#page-dashboard:fullscreen .hh-grid.rt-top .hh-k-rt{display:none}
+/* Con las pzas/h arriba, piezas · maquila y los avisos (% y minutos) caben en un solo renglón: más alto para las barras */
+#page-dashboard:fullscreen .hh-grid.rt-top .hh-kpi{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;column-gap:10px}
+#page-dashboard:fullscreen .hh-grid.rt-top .hh-kn{grid-auto-columns:minmax(min-content,max-content);column-gap:24px}
+#page-dashboard:fullscreen .hh-top{gap:26px}
+#page-dashboard:fullscreen .hh-k{font-size:13px}
+#page-dashboard:fullscreen .hh-k b{font-size:18px}
+#page-dashboard:fullscreen .hh-rt{display:inline}
+#page-dashboard:fullscreen .hh-rt .hh-rt-dot{vertical-align:0}
 </style>
 </head>
 <body>
@@ -5722,11 +5744,28 @@ function dashLaserPend(){
   });
   return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr,opsMaq,pzsMaq,maqVence,maqM};
 }
+// Imagen del mueble para un modelo del programa (assets/modelos/<clave>.jpg, índice en assets/modelos/indice.js):
+//   especiales FA/FB/FC/FD-6779-B → folio F6779 · pieza 1003-B → 1003 · color NI105 / BLS175 → 105 / 175 · D149S → 149S
+let _imgKeys=null;
+function modeloImgKey(mod){
+  if(!mod||!window.MODELOS_IMG) return '';
+  if(!_imgKeys) _imgKeys=new Set(MODELOS_IMG.keys||[]);
+  const M=String(mod).toUpperCase().replace(/^#+/,'').replace(/\s+/g,''), t=[];
+  const fm=M.match(/^F[A-Z]?-?(\d{3,5})/); if(fm) t.push('F'+fm[1]);
+  t.push(M);
+  const base=M.replace(/-[A-Z0-9]$/,''); t.push(base);
+  const nm=base.match(/^[A-Z_]{0,4}?(\d{3,5}(?:[A-Z]{1,2})?(?:-\d)?)$/); if(nm){ t.push(nm[1]); t.push(nm[1].replace(/[A-Z]+$/,'')); }
+  const pr=base.match(/^[A-Z]{1,4}([A-Z]{3,}[A-Z0-9-]*)$/); if(pr) t.push(pr[1]);
+  const al=MODELOS_IMG.alias||{};   // folio sin dibujo → imagen de su modelo base
+  for(const k of t){ if(k&&_imgKeys.has(k)) return k; if(k&&al[k]&&_imgKeys.has(al[k])) return al[k]; }
+  return '';
+}
 function dashLaserPendHtml(){
   const d=dashLaserPend();
   if(!d.anyProg) return '<div class="empty-state" style="padding:1.2rem 0">No hay programa de corte vigente para hoy en Laser.</div>';
   if(!d.rows.length) return '<div class="pend-ok">✓ Todo el programa en curso ya está cortado.</div>';
   const mcls=m=>m==='GW1'?'':(m==='GW2'?' m2':' m3');
+  const hayImg=!!(window.MODELOS_IMG&&MODELOS_IMG.keys&&MODELOS_IMG.keys.length);
   // Cada pendiente va en dos renglones (así cabe sin barra de desplazamiento): OP · modelo · cantidad / familia · parte · tubular
   const rows=d.rows.map(r=>{
     const L=r.labels.map(l=>String(l).trim().toLowerCase());
@@ -5737,7 +5776,9 @@ function dashLaserPendHtml(){
     const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`, dia=r.atr?dm(r.fecha):'';
     const tag=r.maq?`<span class="pend-maq-tag">Maquila · vence ${dm(r.vence)}</span>`:(r.atr?`<span class="pend-atr-tag">${r.maqVencida?'Atraso · maquila vencida':'Atraso · '+dia}</span>`:'');
     const tip=r.maq?`OP de maquila (SKU ${MAQUILA_LASER_DIAS} días hábiles): vence el ${fmtDMY(r.vence)}; mientras tanto no es atraso`:(r.atr?(r.maqVencida?`Maquila que venció el ${fmtDMY(r.vence)} sin cortarse: cuenta como atraso`:`OP del programa del ${fmtDMY(r.fecha)} que no se cortó: sus piezas cuentan como atraso`):'');
-    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}"${tip?` title="${escH(tip)}"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
+    const ik=hayImg?modeloImgKey(iM>=0?r.cells[iM]:''):'';
+    const img=hayImg?(ik?`<img class="pend-img" src="assets/modelos/${encodeURIComponent(ik)}.jpg" alt="" loading="lazy" onerror="this.className='pend-img sin';this.removeAttribute('src')">`:'<span class="pend-img sin"></span>'):'';
+    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}${hayImg?' ci':''}"${tip?` title="${escH(tip)}"`:''}>${img}${hayImg?'<div class="pend-tx">':''}<div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}${hayImg?'</div>':''}</div>`;
   }).join('');
   // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) y la maquila van aparte
   const opsHoy=d.ops-d.opsAtr-d.opsMaq, pzsHoy=Math.max(0,d.pzs-d.pzsAtr-d.pzsMaq);
@@ -6165,6 +6206,7 @@ function dashHoraTableHtml(ct,short){
   const frac=totSpan>0?Math.min(1,doneSpan/totSpan):0;
   const pz=n=>n===1?'1 pza':n+' pzas';
   let grand=0, grandDan=0, extraCol=0;
+  const ritmos=[];   // pzas/h requeridas y reales de cada máquina (en pantalla completa van en la línea de arriba)
   // Laser: maquila pendiente de cada máquina (no cuenta en programadas ni en el ritmo, pero se ve en su tarjeta)
   const maqM=(ct==='LASER')?(dashLaserPend().maqM||{}):{};
   const panels=cardNames.map((m,mi)=>{
@@ -6218,16 +6260,17 @@ function dashHoraTableHtml(ct,short){
     grand+=tot; grandDan+=dTot;
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
-    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
-      <div class="hh-kpi"><div class="hh-kn"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}</div><div class="hh-sp"></div><div class="hh-kb">${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div></div>
+    if(R>0) ritmos.push({m,col,R,real:(real!=null&&!sinCap)?real:null,tip:`${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno`});
+    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${meta>0?`<span class="hh-pg">· <b>${meta}</b> ${metaLbl}</span>`:''}${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
+      <div class="hh-kpi"><div class="hh-kn"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm hh-k-meta"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm hh-k-rt" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm hh-k-rt" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}</div><div class="hh-sp"></div><div class="hh-kb">${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div></div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
       <table class="hh-t"><tbody><tr class="hh-n">${nums}</tr><tr class="hh-dr">${dans}</tr></tbody><tfoot><tr>${labs}</tr></tfoot></table></div></div>${R>0?`<div class="hh-leg"><span class="hh-leg-l"></span>Ritmo requerido ${fmtRitmo(R)} pzas/h · <span class="ok">verde</span> cumplió la hora · <span class="bajo">ámbar</span> quedó debajo</div>`:''}${como}</div>`;
   }).join('');
   const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
-  const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
+  const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k hh-cur">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}${ritmos.map(x=>`<span class="hh-k hh-rt"><i class="hh-rt-dot" style="background:${x.col}"></i>${escH(x.m)}<b style="color:var(--amber)" title="${escH(x.tip)}">${fmtRitmo(x.R)}</b> req${x.real!=null?` ·<b style="color:${x.real>=x.R?'var(--green)':'var(--amber)'}" title="Piezas de hoy ÷ horas del turno que ya pasaron">${fmtRitmo(x.real)}</b> reales`:''} pzas/h</span>`).join('')}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`;
   const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
-  const html=`${resumen}${panels?`<div class="hh-grid">${panels}</div>`:''}${vacias}`;
+  const html=`${resumen}${panels?`<div class="hh-grid${resumen?' rt-top':''}">${panels}</div>`:''}${vacias}`;
   return {names:machineNames,html};
 }
 // Franja horaria en curso (clave de FRANJA_DISPLAY) según la hora del dispositivo; '' si ninguna.
