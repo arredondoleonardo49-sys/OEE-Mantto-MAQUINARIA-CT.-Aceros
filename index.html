@@ -8,8 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Imágenes de muebles (de las fichas técnicas y folios de ingenieria.lineaitalia.net) para el panel «Qué falta por cortar» -->
-<script src="assets/modelos/indice.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#181b24;--bg3:#1e2130;--border:#2a2e3f;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--blue:#4a9eff;--green:#3ecf8e;--amber:#f5a623;--red:#f06060;--radius:8px;--radius-lg:12px;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -546,12 +544,6 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .pend-l1 .mo{font-size:12px;color:var(--text2);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pend-l1 .n{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text);font-size:15px;white-space:nowrap}.pend-l1 .n small{font-size:10px;color:var(--text3);font-weight:400;margin-left:3px}
 .pend-l2{font-size:11px;color:var(--text3);padding-left:44px;overflow-wrap:anywhere}
-/* Imagen del mueble a la izquierda de cada pendiente (ayuda visual); sin imagen queda el hueco para que todo se alinee */
-.pend-row.ci{flex-direction:row;align-items:center;gap:10px}
-.pend-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.pend-img{width:72px;height:54px;flex-shrink:0;object-fit:contain;background:#fff;border-radius:6px;padding:2px}
-.pend-img.sin{background:var(--bg2);border:1px dashed var(--border);padding:0}
-#page-dashboard:fullscreen .pend-img{width:104px;height:78px}
 .pend-vp{position:relative;overflow:hidden;max-height:400px;flex:1;min-height:0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
 .pend-vp.static{-webkit-mask-image:none;mask-image:none}
 .pend-in.run{animation:pendUp var(--pd,30s) linear infinite;will-change:transform}
@@ -5749,28 +5741,11 @@ function dashLaserPend(){
   });
   return {rows:out,ops,pzs,anyProg,opsAtr,pzsAtr,opsMaq,pzsMaq,maqVence,maqM};
 }
-// Imagen del mueble para un modelo del programa (assets/modelos/<clave>.jpg, índice en assets/modelos/indice.js):
-//   especiales FA/FB/FC/FD-6779-B → folio F6779 · pieza 1003-B → 1003 · color NI105 / BLS175 → 105 / 175 · D149S → 149S
-let _imgKeys=null;
-function modeloImgKey(mod){
-  if(!mod||!window.MODELOS_IMG) return '';
-  if(!_imgKeys) _imgKeys=new Set(MODELOS_IMG.keys||[]);
-  const M=String(mod).toUpperCase().replace(/^#+/,'').replace(/\s+/g,''), t=[];
-  const fm=M.match(/^F[A-Z]?-?(\d{3,5})/); if(fm) t.push('F'+fm[1]);
-  t.push(M);
-  const base=M.replace(/-[A-Z0-9]$/,''); t.push(base);
-  const nm=base.match(/^[A-Z_]{0,4}?(\d{3,5}(?:[A-Z]{1,2})?(?:-\d)?)$/); if(nm){ t.push(nm[1]); t.push(nm[1].replace(/[A-Z]+$/,'')); }
-  const pr=base.match(/^[A-Z]{1,4}([A-Z]{3,}[A-Z0-9-]*)$/); if(pr) t.push(pr[1]);
-  const al=MODELOS_IMG.alias||{};   // folio sin dibujo → imagen de su modelo base
-  for(const k of t){ if(k&&_imgKeys.has(k)) return k; if(k&&al[k]&&_imgKeys.has(al[k])) return al[k]; }
-  return '';
-}
 function dashLaserPendHtml(){
   const d=dashLaserPend();
   if(!d.anyProg) return '<div class="empty-state" style="padding:1.2rem 0">No hay programa de corte vigente para hoy en Laser.</div>';
   if(!d.rows.length) return '<div class="pend-ok">✓ Todo el programa en curso ya está cortado.</div>';
   const mcls=m=>m==='GW1'?'':(m==='GW2'?' m2':' m3');
-  const hayImg=!!(window.MODELOS_IMG&&MODELOS_IMG.keys&&MODELOS_IMG.keys.length);
   // Cada pendiente va en dos renglones (así cabe sin barra de desplazamiento): OP · modelo · cantidad / familia · parte · tubular
   const rows=d.rows.map(r=>{
     const L=r.labels.map(l=>String(l).trim().toLowerCase());
@@ -5781,9 +5756,7 @@ function dashLaserPendHtml(){
     const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`, dia=r.atr?dm(r.fecha):'';
     const tag=r.maq?`<span class="pend-maq-tag">Maquila · vence ${dm(r.vence)}</span>`:(r.atr?`<span class="pend-atr-tag">${r.maqVencida?'Atraso · maquila vencida':'Atraso · '+dia}</span>`:'');
     const tip=r.maq?`OP de maquila (SKU ${MAQUILA_LASER_DIAS} días hábiles): vence el ${fmtDMY(r.vence)}; mientras tanto no es atraso`:(r.atr?(r.maqVencida?`Maquila que venció el ${fmtDMY(r.vence)} sin cortarse: cuenta como atraso`:`OP del programa del ${fmtDMY(r.fecha)} que no se cortó: sus piezas cuentan como atraso`):'');
-    const ik=hayImg?modeloImgKey(iM>=0?r.cells[iM]:''):'';
-    const img=hayImg?(ik?`<img class="pend-img" src="assets/modelos/${encodeURIComponent(ik)}.jpg" alt="" loading="lazy" onerror="this.className='pend-img sin';this.removeAttribute('src')">`:'<span class="pend-img sin"></span>'):'';
-    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}${hayImg?' ci':''}"${tip?` title="${escH(tip)}"`:''}>${img}${hayImg?'<div class="pend-tx">':''}<div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}${hayImg?'</div>':''}</div>`;
+    return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}"${tip?` title="${escH(tip)}"`:''}><div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${rest.length?`<div class="pend-l2">${rest.join(' · ')}</div>`:''}</div>`;
   }).join('');
   // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) y la maquila van aparte
   const opsHoy=d.ops-d.opsAtr-d.opsMaq, pzsHoy=Math.max(0,d.pzs-d.pzsAtr-d.pzsMaq);
