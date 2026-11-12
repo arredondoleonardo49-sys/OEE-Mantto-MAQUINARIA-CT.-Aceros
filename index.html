@@ -34,6 +34,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .nav-item.active{background:var(--bg3);color:var(--text);border-left-color:var(--blue);font-weight:500}
 .sidebar.collapsed .nav-item.active{border-left:none;border-right:2px solid var(--blue)}
 .nav-item svg{width:18px;height:18px;flex-shrink:0;transition:filter .2s,transform .15s}
+a.nav-item,a.nav-item-mini{text-decoration:none}
 .nav-item:hover svg{transform:scale(1.1)}
 
 /* Neon red for paro cost */
@@ -876,6 +877,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       <span>Configuración</span>
     </div>
   </div>
+  <!-- Otras plataformas: se abren en otra pestaña (cada una con su propia base de datos). Láser Tubo lee el programa del
+       día que se sube aquí (localStorage 'oee_programa_dia_v1', mismo dominio): si cambia ese formato, avisar a Leonardo. -->
+  <div class="nav-section" style="padding-top:0">
+    <div class="nav-label">Otras plataformas</div>
+    <a class="nav-item nav-ext" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Abre la plataforma de Láser Tubo en otra pestaña">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <span>Láser Tubo ↗</span>
+    </a>
+  </div>
   <div class="sidebar-bottom" style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)">
     <div class="sidebar-user" id="sidebar-user">
       <div class="sidebar-user-avatar" id="sidebar-user-avatar">–</div>
@@ -912,6 +922,9 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   <div class="nav-item-mini" onclick="navigate('config',this)" data-label="Configuración" title="Configuración">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
   </div>
+  <a class="nav-item-mini nav-ext" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Láser Tubo ↗ (se abre en otra pestaña)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </a>
 </nav>
 <div class="main" id="main-container">
 <div class="main-single" id="main-single">
@@ -9128,7 +9141,7 @@ function toggleRegSplit(){
     if(sidebarMini){
       sidebarMini.style.display='flex';
       sidebarMini.querySelectorAll('.nav-item-mini').forEach(item=>{
-        item.classList.toggle('active', item.getAttribute('onclick').includes("navigate('registro'"));
+        item.classList.toggle('active', (item.getAttribute('onclick')||'').includes("navigate('registro'"));
       });
     }
     if(btn) btn.classList.add('active');
