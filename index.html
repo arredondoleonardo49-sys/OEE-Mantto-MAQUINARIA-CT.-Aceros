@@ -551,7 +551,10 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .pend-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .pend-img{width:72px;height:54px;flex-shrink:0;object-fit:contain;background:#fff;border-radius:6px;padding:2px}
 .pend-img.sin{background:var(--bg2);border:1px dashed var(--border);padding:0}
+/* Sin imagen confiable: en el recuadro va el folio o modelo (FD-6061, CUBSETT-L150) */
+.pend-img.et{display:flex;align-items:center;justify-content:center;text-align:center;padding:3px;font:600 10.5px/1.15 'IBM Plex Mono',monospace;color:var(--text2);overflow-wrap:anywhere;overflow:hidden}
 #page-dashboard:fullscreen .pend-img{width:104px;height:78px}
+#page-dashboard:fullscreen .pend-img.et{font-size:13px}
 .pend-vp{position:relative;overflow:hidden;max-height:400px;flex:1;min-height:0;-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
 .pend-vp.static{-webkit-mask-image:none;mask-image:none}
 .pend-in.run{animation:pendUp var(--pd,30s) linear infinite;will-change:transform}
@@ -5773,6 +5776,15 @@ function parteImgKey(parte){
   for(const k of c){ const ik=modeloImgKey(k); if(ik) return ik; }
   return '';
 }
+// Texto del recuadro cuando no hay imagen: folio del especial (FD-6061-B → FD-6061) o modelo sin la letra de pieza (1003-B → 1003)
+function modeloEtiqueta(mod){
+  const M=String(mod||'').toUpperCase().replace(/^#+/,'').replace(/\s+/g,'');
+  const fm=M.match(/^(F[A-Z]?)-?(\d{3,5})/); if(fm) return fm[1]+'-'+fm[2];
+  return M.replace(/-[A-Z0-9]$/,'');
+}
+const pendEtHtml=t=>`<span class="pend-img sin et">${escH(t)}</span>`;
+// Si una imagen no carga, se cambia por el recuadro con el folio o modelo
+function pendImgFalla(el){ try{ el.outerHTML=pendEtHtml(el.getAttribute('data-et')||''); }catch(e){} }
 function dashLaserPendHtml(){
   const d=dashLaserPend();
   if(!d.anyProg) return '<div class="empty-state" style="padding:1.2rem 0">No hay programa de corte vigente para hoy en Laser.</div>';
@@ -5791,7 +5803,8 @@ function dashLaserPendHtml(){
     const tip=r.maq?`OP de maquila (SKU ${MAQUILA_LASER_DIAS} días hábiles): vence el ${fmtDMY(r.vence)}; mientras tanto no es atraso`:(r.atr?(r.maqVencida?`Maquila que venció el ${fmtDMY(r.vence)} sin cortarse: cuenta como atraso`:`OP del programa del ${fmtDMY(r.fecha)} que no se cortó: sus piezas cuentan como atraso`):'');
     const moTx=iM>=0?String(r.cells[iM]||'').trim():'', iPa=L.findIndex(l=>/^(parte|no\.? ?parte|descrip)/.test(l));
     const ik=hayImg?(modeloImgKey(moTx)||((/^\d{6,}$/.test(moTx)||!moTx)&&iPa>=0?parteImgKey(r.cells[iPa]):'')):'';
-    const img=hayImg?(ik?`<img class="pend-img" src="assets/modelos/${encodeURIComponent(ik)}.jpg" alt="" loading="lazy" onerror="this.className='pend-img sin';this.removeAttribute('src')">`:'<span class="pend-img sin"></span>'):'';
+    const et=modeloEtiqueta(moTx);
+    const img=hayImg?(ik?`<img class="pend-img" src="assets/modelos/${encodeURIComponent(ik)}.jpg" alt="" loading="lazy" data-et="${escH(et)}" onerror="pendImgFalla(this)">`:pendEtHtml(et)):'';
     return `<div class="pend-row${r.maq?' maq':(r.atr?' atr':'')}${hayImg?' ci':''}"${tip?` title="${escH(tip)}"`:''}>${img}${hayImg?'<div class="pend-tx">':''}<div class="pend-l1"><span class="pend-m${mcls(r.m)}">${escH(r.m)}</span>${hayImg?'':tag}${op>=0&&r.cells[op]?`<span class="op">${escH(r.cells[op])}</span>`:''}${iM>=0&&r.cells[iM]?`<span class="mo" title="${escH(r.cells[iM])}">${escH(r.cells[iM])}</span>`:''}${iQ>=0?`<span class="n"${r.av>0?` title="Faltan ${fmtN(r.falta,0)} · ya van ${fmtN(r.av,0)} de ${fmtN(r.qOP,0)} (avance parcial)"`:''}>${r.av>0?fmtN(r.falta,0):escH(r.cells[iQ])}<small>${r.maq?'pzas maquila':(r.atr?'pzas atraso':'pzas')}${r.av>0?` · van ${fmtN(r.av,0)}/${fmtN(r.qOP,0)}`:''}</small></span>`:''}</div>${(rest.length||(hayImg&&tag))?`<div class="pend-l2">${hayImg&&tag?tag+' ':''}${rest.join(' · ')}</div>`:''}${hayImg?'</div>':''}</div>`;
   }).join('');
   // Faltan por cortar hoy = OPs de los programas de hoy (o del vigente) que aún no se cortan; el atraso (días anteriores) y la maquila van aparte
