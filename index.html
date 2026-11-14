@@ -685,6 +685,20 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .prog-av-btn:hover{border-color:var(--blue);color:var(--blue)}
 .prog-av-btn.has{border-style:solid;border-color:rgba(245,166,35,.5);background:rgba(245,166,35,.12);color:var(--amber);font-weight:600}
 .prog-av-ro{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--amber);margin-top:2px;white-space:nowrap}
+/* Programa del CT: modelos y familias excluidos al subir el programa */
+.prog-excl{margin-top:10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2)}
+.prog-excl-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 12px;cursor:pointer;font-size:12px;color:var(--text2)}
+.prog-excl-h b{color:var(--text)}.prog-excl-sub{font-size:11px;color:var(--text3)}
+.prog-excl-b{padding:2px 12px 10px;display:flex;flex-direction:column;gap:8px}
+.prog-excl-chips{display:flex;flex-wrap:wrap;gap:6px;font-size:11px}
+.prog-excl-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 4px 3px 9px;border-radius:99px;background:rgba(240,96,96,.1);border:1px solid rgba(240,96,96,.35);color:var(--text2)}
+.prog-excl-chip b{color:var(--text);font-family:'IBM Plex Mono',monospace}
+.prog-excl-chip button{border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 4px}
+.prog-excl-chip button:hover{color:var(--red)}
+.prog-excl-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.prog-excl-add input{flex:1 1 240px;min-width:0;font-size:12px;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text)}
+.prog-excl-add .btn{font-size:11px;padding:6px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)}
+.prog-excl-note{font-size:11px;color:var(--amber)}
 .programa-row-done td{background:rgba(62,207,142,.06);color:var(--text3)}
 .programa-row-done td:first-child{background:rgba(62,207,142,.1)}
 .programa-table tbody tr:hover td{background:var(--bg3)}
@@ -1247,7 +1261,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
             <div class="programa-upload-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
             <div id="programa-upload-title" style="font-size:13px;font-weight:600;color:var(--text)">Selecciona el archivo Excel del programa de hoy</div>
             <div style="font-size:11px;color:var(--text2);margin-top:4px">o <b>arrástralo y suéltalo aquí</b></div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong></div>
+            <div id="programa-upload-hint" style="font-size:11px;color:var(--text3);margin-top:4px">Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong></div>
             <input type="file" id="programa-file-input" accept=".xlsx,.xlsm,.xls" onchange="handleProgramaUpload(event)">
           </label>
         </div>
@@ -1705,7 +1719,39 @@ const PROGRAMA_MACHINES=['GW1','GW2','Laser de Cama'];
 // Los reportes (programas de corte y reportes del centro Laser) solo incluyen estas máquinas
 const REPORT_LASER_MACHINES=['GW1','GW2'];
 function repMachineOk(ct,name){ return ct!=='LASER'||REPORT_LASER_MACHINES.includes(name); }
-const PROGRAMA_MACHINE_CT={'GW1':'LASER','GW2':'LASER','Laser de Cama':'TROQUELES'};
+// Programa del CT (Est. Muebles y Troqueles): una sola lista de OPs para todo el centro (reporte de BC «Órdenes producción
+// lanzadas»). Se marca la SALIDA de cada OP; no lleva consumo ni medidas (en Troqueles el consumo vendrá de Nidos de Láser).
+// Laser de Cama conserva su propio programa con consumo de lámina. Se guarda en Programa_Dia con una «máquina» del CT.
+const PROG_CT_KEYS={'EST. MUEBLES':'Programa Est. Muebles','TROQUELES':'Programa Troqueles'};
+const PROG_CT_MACHINES=Object.values(PROG_CT_KEYS);
+const PROGRAMA_MACHINE_CT={'GW1':'LASER','GW2':'LASER','Laser de Cama':'TROQUELES','Programa Est. Muebles':'EST. MUEBLES','Programa Troqueles':'TROQUELES'};
+function progIsCtRec(rec){ return !!rec && PROG_CT_MACHINES.includes(rec.machine); }
+// Programa que le toca a la máquina elegida en Registro: el suyo (GW1, GW2, Laser de Cama) o el de su centro de trabajo
+function progKeyFor(machine,ct){
+  if(PROGRAMA_MACHINES.includes(machine)) return machine;
+  const c=ct||((machines.find(m=>m.name===machine)||{}).ct);
+  return PROG_CT_KEYS[c]||null;
+}
+// Modelos y familias que NO entran al programa del CT al subirlo (se guardan por CT en CT_Targets.progExcluir, en la nube).
+// De inicio, Est. Muebles excluye MAMPARAS (Leonardo, 2026-11-13). Familia: sin «PT-» y sin la «S» final, por prefijo.
+const PROG_CT_EXCLUIR_DEF={'EST. MUEBLES':{familias:['MAMPARAS'],modelos:[]}};
+function progExclGet(ct){
+  const v=safeParse((ctTargets[ct]||{}).progExcluir,null);
+  const b=(v&&typeof v==='object')?v:(PROG_CT_EXCLUIR_DEF[ct]||{});
+  return {familias:(b.familias||[]).slice(),modelos:(b.modelos||[]).slice()};
+}
+function progExclSet(ct,v){
+  if(!ctTargets[ct]) ctTargets[ct]={piezasProgramadas:0,capacidadInstalada:0};
+  ctTargets[ct].progExcluir=JSON.stringify({familias:v.familias,modelos:v.modelos});
+  saveCtTarget(ct);
+}
+const progExNorm=s=>String(s==null?'':s).trim().toUpperCase().replace(/^PT-/,'');
+function progExclMotivo(ex,modelo,familia){
+  const m=progExNorm(modelo), f=progExNorm(familia);
+  if(m && ex.modelos.some(x=>progExNorm(x)===m)) return 'Modelo '+m;
+  const fx=ex.familias.find(x=>{ const r=progExNorm(x).replace(/S$/,''); return r && f.startsWith(r); });
+  return fx?'Familia '+progExNorm(fx):'';
+}
 const ROLE_LABEL={operador:'Operador',lider:'Líder',ingeniero:'Ingeniero'};
 const SK_USERS='oee_users_v1', SK_CURRENT_USER='oee_current_user_v1', SK_CHECKLIST_RECORDS='oee_checklist_records_v1';
 // Token de sesión que entrega el Apps Script al iniciar sesión: acompaña cada petición (sin él, el
@@ -1802,7 +1848,7 @@ function progRecValido(r){ return !!(r && r.id && r.machine && /^\d{4}-\d{2}-\d{
 function saveProgramaDiaLS(){
   try{
     const lim=isoAddDays(todayStr(),-60), keep=new Set();
-    PROGRAMA_MACHINES.forEach(m=>{ const a=progActiveRecord('9999-12-31',m); if(a) keep.add(a.id); });
+    [...PROGRAMA_MACHINES,...PROG_CT_MACHINES].forEach(m=>{ const a=progActiveRecord('9999-12-31',m); if(a) keep.add(a.id); });
     localStorage.setItem(SK_PROGRAMA, JSON.stringify(programaDia.filter(r=>progRecValido(r)&&(keep.has(r.id)||String(r.fecha)>=lim))));
   }catch(e){ console.warn('No se pudo guardar el programa en este equipo',e); }
 }
@@ -2453,6 +2499,44 @@ function extractSheetTable(ws){
   }
   return {header, dataRows, obsColIdx};
 }
+// Programa del CT (Est. Muebles / Troqueles): lista de OPs del reporte de BC «Órdenes producción lanzadas» (Nº, Descripción,
+// Cód. procedencia mov., Nº ruta, Cantidad, Grupo contable…) o un programa con columnas OP / Modelo / Cant. Se toma la primera
+// hoja que tenga columna de OP y de cantidad; solo pasan los renglones con OP. Columnas: No. · OP · Modelo · Descripción ·
+// Cant. · Familia · Ruta · Vence (sin costos ni capacidades).
+function progCtTabla(wb){
+  const n=s=>String(s==null?'':s).trim().toLowerCase();
+  const fechaTxt=v=>{
+    if(typeof v==='number' && v>20000 && v<80000){ const d=new Date(Math.round((v-25569)*86400000)); return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0'); }
+    if(v instanceof Date && !isNaN(v)) return String(v.getDate()).padStart(2,'0')+'/'+String(v.getMonth()+1).padStart(2,'0');
+    return String(v==null?'':v).trim();
+  };
+  for(const sheet of wb.SheetNames){
+    const ws=wb.Sheets[sheet]; if(!ws) continue;
+    const all=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',blankrows:false,raw:true});
+    for(let h=0;h<Math.min(all.length,30);h++){
+      const H=(all[h]||[]).map(n);
+      const iQ=H.findIndex(x=>/^(cantidad|cant\.?)$/.test(x)); if(iQ<0) continue;
+      const below=all.slice(h+1,h+40);
+      const opLike=i=>i>=0 && below.some(r=>/^op/i.test(String((r||[])[i]==null?'':r[i]).trim()));
+      let iOP=H.findIndex(x=>/^(op|o\.p\.?|orden)$/.test(x)); if(!opLike(iOP)) iOP=H.findIndex((x,i)=>/^(nº|n°|no\.?|núm\.?|num\.?)$/.test(x)&&opLike(i));
+      if(iOP<0) continue;
+      const find=re=>H.findIndex(x=>re.test(x));
+      const cols=[['OP',iOP],['Modelo',find(/^(c[oó]d\.? procedencia|modelo)/)],['Descripción',find(/^descripci[oó]n$/)],['Cant.',iQ],
+        ['Familia',find(/^(grupo contable prod|familia)/)],['Ruta',find(/^(n[ºo°]\.? ?ruta|ruta)$/)],['Vence',find(/^fecha (de )?vencimiento/)]].filter(c=>c[1]>=0);
+      const rows=[];
+      all.slice(h+1).forEach(r=>{
+        const op=String((r||[])[iOP]==null?'':r[iOP]).trim(); if(!/^op/i.test(op)) return;
+        rows.push([rows.length+1, ...cols.map(([lbl,i])=>{ const v=r[i];
+          if(lbl==='Familia') return String(v==null?'':v).trim().replace(/^PT-/i,'');
+          if(lbl==='Vence') return fechaTxt(v);
+          if(lbl==='Cant.'){ const q=parseFloat(v); return isNaN(q)?v:q; }
+          return String(v==null?'':v).trim(); })]);
+      });
+      if(rows.length) return {sheet, header:['No.',...cols.map(c=>c[0])], rows};
+    }
+  }
+  return null;
+}
 // ── Programa: cortes → hora por hora, programa siguiente y programa completado ─────────────────
 // Cada fila del programa se marca como «cortada» (solo el Operador). Esa marca suma las piezas (columna Cant.)
 // a la franja del hora por hora en que se cortó, y queda en el Sheet con su bitácora (fecha, turno, franja).
@@ -2824,15 +2908,18 @@ function programaToggleCut(fecha,machine,rIdx,checked,el){
   if(progIsCompleted(rec)){ revert(); progMsg('Este programa está completado: reábrelo para corregirlo.',amber); return; }
   if(checked && !progConfirmarAdelanto(rec)){ revert(); return; }
   const c=progCtx(), ct=rec.ct||PROGRAMA_MACHINE_CT[machine];
-  if(c.machine!==machine||c.ct!==ct){ revert(); progMsg('Selecciona la máquina de este programa en Registro.',amber); return; }
+  if(progKeyFor(c.machine,c.ct)!==machine||c.ct!==ct){ revert(); progMsg(progIsCtRec(rec)?'Selecciona en Registro una máquina de este centro de trabajo.':'Selecciona la máquina de este programa en Registro.',amber); return; }
+  // Programa del CT (Est. Muebles / Troqueles): solo se registra la salida de la OP (hora y turno), sin sumar al hora por hora
+  const ctRec=progIsCtRec(rec);
   const ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
-  const cortes=progCortesParse(rec.cortes), prev=cortes[rIdx], qOP=progQty(rec,rIdx);
+  const cortes=progCortesParse(rec.cortes), prev=cortes[rIdx], qOP=ctRec?0:progQty(rec,rIdx);
   // Si la OP ya llevaba avances registrados, al marcarla como cortada solo se suman las piezas que faltaban
-  const yaAv=Math.min(qOP,progAvSum(progAvParse(rec.avances),rIdx)), q=Math.max(0,qOP-yaAv);
+  const yaAv=ctRec?0:Math.min(qOP,progAvSum(progAvParse(rec.avances),rIdx)), q=Math.max(0,qOP-yaAv);
   const ti=(TURNOS_CT[ct]||[]).indexOf(c.turno);
   let idx=0;
   if(checked){
     idx=progFranjaIdx(c.turno,new Date());
+    if(idx<0 && ctRec) idx=0;
     if(idx<0){ revert(); progMsg('No se pudo ubicar la franja del turno.',amber); return; }
     if(q>0 && !progHoraListo(c)){ revert(); progMsg('Espera un momento: se está cargando el hora por hora de este turno.',amber); return; }
     cortes[rIdx]={on:true,q,f:ymd(c.fecha),t:ti,i:idx,ts:Date.now().toString(36)};
@@ -2858,7 +2945,8 @@ function programaToggleCut(fecha,machine,rIdx,checked,el){
   progSave(rec);
   if(autoCons) syncTubFromPrograma(fecha,machine);
   if(el) try{ el.blur(); }catch(e){}
-  progMsg(checked?`✓ Corte registrado${q>0?` · +${q} pzas en ${progFranjaLabel(c.turno,idx)}`:''}${yaAv>0?` (las otras ${yaAv} ya estaban en sus avances)`:''}${autoCons&&checked?' · consumo con la medida de la base':''}`:`✓ Corte desmarcado${yaAv>0?` · sus avances (${yaAv} pzas) se conservan`:''}`);
+  if(ctRec) progMsg(checked?'✓ Salida de la OP registrada':'✓ Salida desmarcada');
+  else progMsg(checked?`✓ Corte registrado${q>0?` · +${q} pzas en ${progFranjaLabel(c.turno,idx)}`:''}${yaAv>0?` (las otras ${yaAv} ya estaban en sus avances)`:''}${autoCons&&checked?' · consumo con la medida de la base':''}`:`✓ Corte desmarcado${yaAv>0?` · sus avances (${yaAv} pzas) se conservan`:''}`);
   renderProgramaDia(true);
   try{ renderDashboard(); }catch(e){}
 }
@@ -3518,8 +3606,11 @@ function processProgramaFile(file){
     return;
   }
   const fecha=progTargetFecha();
+  // Est. Muebles / Troqueles (salvo Laser de Cama): el archivo es la lista de OPs de todo el CT
+  const ctKey=(k=>PROG_CT_MACHINES.includes(k)?k:null)(progKeyFor(document.getElementById('reg-machine')?.value,document.getElementById('reg-ct')?.value));
+  const progList=ctKey?[ctKey]:PROGRAMA_MACHINES;
   // Candado: se confirma explícitamente para qué día se guarda el programa (evita subirlo en la pestaña equivocada)
-  { const hoy=todayStr(), esSig=(fecha>hoy), ya=PROGRAMA_MACHINES.filter(m=>getProgramaRecord(fecha,m));
+  { const hoy=todayStr(), esSig=(fecha>hoy), ya=progList.filter(m=>getProgramaRecord(fecha,m));
     const fn=progFechaEnNombre(file.name);
     let q='Archivo: '+file.name+'\n\nSe guardará como programa del '+progFechaLarga(fecha)+(esSig?'  →  «PROGRAMA SIGUIENTE» (se corta por adelantado, NO es el de hoy).':(fecha===hoy?'  →  programa de HOY.':(fecha<hoy?'  →  programa ANTERIOR.':'.')));
     if(fecha<hoy) q+='\n\n⚠ Es un programa de un día ANTERIOR ('+progFechaLarga(fecha)+'), no el de hoy. Si es el de hoy, cancela y súbelo en «Programa del día».';
@@ -3540,12 +3631,23 @@ function processProgramaFile(file){
     try{
       const data=new Uint8Array(e.target.result);
       const wb=XLSX.read(data,{type:'array', cellStyles:true, sheetStubs:true});
-      const found=[]; const missing=[], plan=[]; let kept=0, lost=0;
-      PROGRAMA_MACHINES.forEach(machine=>{
-        const sheetName=findSheetForMachine(wb.SheetNames, machine);
-        if(!sheetName){ missing.push(machine); return; }
-        const ws=wb.Sheets[sheetName];
-        const {header:rawHeader, dataRows:rawDataRows, obsColIdx:rawObsColIdx}=extractSheetTable(ws);
+      const found=[]; const missing=[], plan=[]; let kept=0, lost=0, exclN=0, exclTxt='', todoExcl=false;
+      progList.forEach(machine=>{
+        let sheetName, rawHeader, rawDataRows;
+        if(ctKey){
+          const t=progCtTabla(wb); if(!t){ missing.push(machine); return; }
+          sheetName=t.sheet; rawHeader=t.header;
+          // Modelos / familias excluidos del CT: no entran al programa
+          const ex=progExclGet(PROGRAMA_MACHINE_CT[machine]), iM=t.header.indexOf('Modelo'), iF=t.header.indexOf('Familia'), cnt={};
+          rawDataRows=t.rows.filter(r=>{ const mot=progExclMotivo(ex,iM>=0?r[iM]:'',iF>=0?r[iF]:''); if(mot){ cnt[mot]=(cnt[mot]||0)+1; return false; } return true; });
+          rawDataRows.forEach((r,k)=>{ r[0]=k+1; });
+          exclN=t.rows.length-rawDataRows.length; exclTxt=Object.entries(cnt).map(([k,v])=>`${k} ×${v}`).join(', ');
+          if(!rawDataRows.length && exclN){ todoExcl=true; return; }
+        } else {
+          sheetName=findSheetForMachine(wb.SheetNames, machine);
+          if(!sheetName){ missing.push(machine); return; }
+          ({header:rawHeader, dataRows:rawDataRows}=extractSheetTable(wb.Sheets[sheetName]));
+        }
         if(!rawDataRows.length){ missing.push(machine); return; }
         // GW1/GW2: ya no se usan «Firma de entregado», «Pz x tramo» y «Tubos» (se quitan), y «Observaciones» pasa a ser
         // el «Consumo real» (si el archivo no la trae, se agrega).
@@ -3612,10 +3714,10 @@ function processProgramaFile(file){
       });
       saveProgramaDiaLS();
       if(found.length){
-        msg.textContent=`✓ Cargado (${fecha}): ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'')+(kept?` · se conservó el avance de ${kept} fila${kept===1?'':'s'}`:'')+(lost?` · ${lost} fila${lost===1?'':'s'} cortada${lost===1?'':'s'} ya no está${lost===1?'':'n'} en el archivo (lo producido se queda en el hora por hora)`:'');
+        msg.textContent=`✓ Cargado (${fecha}): ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'')+(kept?` · se conservó el avance de ${kept} fila${kept===1?'':'s'}`:'')+(lost?` · ${lost} fila${lost===1?'':'s'} cortada${lost===1?'':'s'} ya no está${lost===1?'':'n'} en el archivo (lo producido se queda en el hora por hora)`:'')+(exclN?` · ${exclN===1?'no entró 1 OP excluida':`no entraron ${exclN} OPs excluidas`} (${exclTxt})`:'');
         msg.style.color=(missing.length||lost)?'var(--amber)':'var(--green)';
       } else {
-        msg.textContent='⚠ No se encontró ninguna hoja que coincida con GW1, GW2 o Laser de Cama.';
+        msg.textContent=todoExcl?`⚠ Todas las OPs del archivo están excluidas (${exclTxt}): no se cargó nada.`:(ctKey?'⚠ No se encontró la lista de OPs: el archivo debe traer una columna de OP (Nº u OP) y una de Cantidad.':'⚠ No se encontró ninguna hoja que coincida con GW1, GW2 o Laser de Cama.');
         msg.style.color='var(--amber)';
       }
       { const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; }
@@ -3635,7 +3737,7 @@ function renderProgramaProgress(rec){
   let extra='';
   if(progIsLamRec(rec) && rec.obsColIdx>=0){ const lt=progLamTotals(rec); if(lt.hojas>0||lt.recortes>0) extra=` · Consumo real: ${fmt2(lt.hojas)} hojas${lt.recortes>0?` · ${lt.recortes} recorte${lt.recortes===1?'':'s'}${lt.explosionados?` (${lt.explosionados} explosionado${lt.explosionados===1?'':'s'})`:''}`:''}`; }
   if(progIsTubRec(rec) && rec.obsColIdx>=0){ const ct=progConsTotals(rec), dz=tubDesgloseTxt(ct); if(ct.total>0) extra=` · Consumo real: ${fmt2(ct.total)} tramos${dz?` (${dz})`:''}`; }
-  el.textContent=`${st.done} / ${st.total} filas cortadas`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'')+extra;
+  el.textContent=`${st.done} / ${st.total} ${progIsCtRec(rec)?'OPs terminadas':'filas cortadas'}`+(st.pz>0?` · ${fmt2(st.pzDone)} / ${fmt2(st.pz)} pzas`:'')+extra;
 }
 // Filtros activos por columna de la tabla del Programa del día — se
 // conservan entre reconstrucciones de la tabla (sync en segundo plano,
@@ -3684,7 +3786,7 @@ function progDisplayCols(rec,tub,lam){
     const n=String(h).trim().toLowerCase();
     if(tub && PROG_HIDE_COLS.includes(n)) return;
     if((tub||lam) && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'com',i,label:'Comentarios'}); out.push({k:'eq',i,label:lam?'Recortes (lám.)':'Equiv. tramos'}); return; }
-    out.push({k:'d',i,label:h});
+    out.push({k:'d',i,label:(i===rec.cortadoColIdx&&progIsCtRec(rec))?'Terminada':h});
   });
   return out;
 }
@@ -3707,7 +3809,7 @@ function renderProgramaTable(rec){
         const cur=programaFilters[j]||'';
         return `<th><select class="programa-filter-select" onchange="setProgramaFilter(${j},this.value)">
           <option value="">Todos</option>
-          <option value="__done__" ${cur==='__done__'?'selected':''}>✓ Cortados</option>
+          <option value="__done__" ${cur==='__done__'?'selected':''}>✓ ${progIsCtRec(rec)?'Terminadas':'Cortados'}</option>
           <option value="__pending__" ${cur==='__pending__'?'selected':''}>Pendientes</option>
         </select></th>`;
       }
@@ -3727,7 +3829,8 @@ function renderProgramaTable(rec){
       else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
       // Avance parcial (OPs grandes que se cortan a lo largo del día): botón para el Operador; los demás ven cuántas van
       const avTip=`Van ${avR} de ${qR} pzas cortadas`;
-      const avHtml=(!isDone&&qR>1)?(canCut?`<button type="button" class="prog-av-btn${avR>0?' has':''}" title="${avR>0?esc(avTip)+' · ':''}Registrar cuántas piezas llevas de esta OP (entran al hora por hora en la hora actual)" onclick="progAvanceDlg('${rec.fecha}','${rec.machine}',${rIdx})">${avR>0?`${fmtN(avR,0)}/${fmtN(qR,0)}`:'＋ avance'}</button>`:(avR>0?`<div class="prog-av-ro" title="${esc(avTip)}">${fmtN(avR,0)}/${fmtN(qR,0)}</div>`:'')):'';
+      if(isDone&&cc&&cc.on&&progIsCtRec(rec)) tip=tip.replace(/^Cortado el /,'Salió el ');
+      const avHtml=(!isDone&&qR>1&&!progIsCtRec(rec))?(canCut?`<button type="button" class="prog-av-btn${avR>0?' has':''}" title="${avR>0?esc(avTip)+' · ':''}Registrar cuántas piezas llevas de esta OP (entran al hora por hora en la hora actual)" onclick="progAvanceDlg('${rec.fecha}','${rec.machine}',${rIdx})">${avR>0?`${fmtN(avR,0)}/${fmtN(qR,0)}`:'＋ avance'}</button>`:(avR>0?`<div class="prog-av-ro" title="${esc(avTip)}">${fmtN(avR,0)}/${fmtN(qR,0)}</div>`:'')):'';
       return `<td style="text-align:center"><input type="checkbox" class="programa-cortado-check" ${isDone?'checked':''} ${canCut?'':'disabled'} title="${esc(tip)}" onchange="programaToggleCut('${rec.fecha}','${rec.machine}',${rIdx},this.checked,this)">${hora?`<div class="prog-hc" title="${esc(tip)}">${esc(hora)}</div>`:''}${avHtml}</td>`;
     }
     if(c.k==='cons'){
@@ -3896,9 +3999,9 @@ function exportProgramaDia(){
 function updateProgramaTabState(machine){
   const tabBtn=document.getElementById('reg-tab-programa-btn');
   if(!tabBtn) return;
-  const applies=PROGRAMA_MACHINES.includes(machine);
+  const applies=!!progKeyFor(machine,document.getElementById('reg-ct')?.value);
   tabBtn.classList.toggle('tab-disabled', !applies);
-  tabBtn.title=applies?'':'Solo disponible para GW1, GW2 y Laser de Cama';
+  tabBtn.title=applies?'':'Disponible para Laser (GW1, GW2), Troqueles y Est. Muebles';
   // Si estaba activa esta pestaña y la máquina deja de aplicar, regresar a Registro
   const tabContent=document.getElementById('reg-tab-programa');
   if(!applies && tabContent && tabContent.classList.contains('active')){
@@ -3941,6 +4044,45 @@ function refreshProgramaDiaFromCloud(done){
   );
 }
 let _progLastKey='';
+// Panel «Excluidos del programa» (Líder / Ingeniería, programa del CT): modelos y familias que ya no entran al subir el programa
+let _progExclOpen=false;
+function progExclPanelHtml(machine,rec){
+  const ct=PROGRAMA_MACHINE_CT[machine], ex=progExclGet(ct), e=s=>escH(String(s));
+  const tot=ex.familias.length+ex.modelos.length;
+  const chip=(kind,v,i)=>`<span class="prog-excl-chip">${kind==='familias'?'Familia':'Modelo'} <b>${e(progExNorm(v))}</b><button type="button" title="Quitar de excluidos" onclick="progExclDel('${ct}','${kind}',${i})">×</button></span>`;
+  // Del programa visible: modelos y familias para elegir, y cuántas OPs ya no saldrían la próxima vez
+  let opts='', afect=0;
+  if(rec&&rec.rows&&rec.rows.length>1){
+    const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iM=H.indexOf('modelo'), iF=H.indexOf('familia'), iD=H.indexOf('descripción');
+    const mods={}, fams={};
+    rec.rows.slice(1).forEach(r=>{ const m=iM>=0?String(r[iM]).trim():'', f=iF>=0?String(r[iF]).trim():'';
+      if(m&&!mods[m]) mods[m]=iD>=0?String(r[iD]).trim():''; if(f) fams[f]=1;
+      if(progExclMotivo(ex,m,f)) afect++; });
+    opts=Object.keys(fams).sort().map(f=>`<option value="${e(f)}">familia</option>`).join('')+Object.keys(mods).sort().map(m=>`<option value="${e(m)}">${e(mods[m])}</option>`).join('');
+  }
+  return `<div class="prog-excl${_progExclOpen?' open':''}">
+    <div class="prog-excl-h" onclick="_progExclOpen=!_progExclOpen;renderProgramaDia(true)"><span>⊘ Excluidos del programa de <b>${e(ct)}</b> (${tot})</span><span class="prog-excl-sub">no entran la próxima vez que se suba el programa</span><span style="margin-left:auto">${_progExclOpen?'▾':'▸'}</span></div>
+    ${_progExclOpen?`<div class="prog-excl-b">
+      <div class="prog-excl-chips">${tot?ex.familias.map((v,i)=>chip('familias',v,i)).join('')+ex.modelos.map((v,i)=>chip('modelos',v,i)).join(''):'<span style="color:var(--text3)">Sin exclusiones.</span>'}</div>
+      <div class="prog-excl-add"><input type="text" id="prog-excl-in" list="prog-excl-dl" placeholder="Modelo (p. ej. FA-6728) o familia (p. ej. MAMPARAS)" autocomplete="off"><datalist id="prog-excl-dl">${opts}</datalist>
+        <button type="button" class="btn" onclick="progExclAdd('${ct}','modelos')">Excluir modelo</button><button type="button" class="btn" onclick="progExclAdd('${ct}','familias')">Excluir familia</button></div>
+      ${afect?`<div class="prog-excl-note">En el programa que ves hay <b>${afect}</b> OP${afect===1?'':'s'} que ya no ${afect===1?'saldría':'saldrían'} al volver a subirlo.</div>`:''}
+    </div>`:''}
+  </div>`;
+}
+function progExclAdd(ct,kind){
+  const inp=document.getElementById('prog-excl-in'), v=progExNorm(inp&&inp.value);
+  if(!v){ progMsg('Escribe el modelo o la familia que quieres excluir.','var(--amber)'); if(inp) inp.focus(); return; }
+  const ex=progExclGet(ct);
+  if(ex[kind].some(x=>progExNorm(x)===v)){ progMsg('Ya estaba excluido.','var(--amber)'); return; }
+  ex[kind].push(v); progExclSet(ct,ex);
+  renderProgramaDia(true); progMsg(`✓ ${kind==='familias'?'Familia':'Modelo'} ${v} excluido: ya no entra al subir el programa`);
+}
+function progExclDel(ct,kind,i){
+  const ex=progExclGet(ct), v=ex[kind][i]; if(v==null) return;
+  ex[kind].splice(i,1); progExclSet(ct,ex);
+  renderProgramaDia(true); progMsg(`✓ ${kind==='familias'?'Familia':'Modelo'} ${progExNorm(v)} vuelve a entrar al programa`);
+}
 function renderProgramaDia(force){
   const container=document.getElementById('programa-table-container');
   const uploadCard=document.getElementById('programa-upload-card');
@@ -3957,17 +4099,19 @@ function renderProgramaDia(force){
   applyProgUploadCollapse();
 
   const ct=document.getElementById('reg-ct').value;
-  const machine=document.getElementById('reg-machine').value;
+  const selMachine=document.getElementById('reg-machine').value;
+  // Est. Muebles / Troqueles (salvo Laser de Cama): se ve el programa de todo el centro de trabajo
+  const machine=progKeyFor(selMachine,ct)||selMachine, ctMode=PROG_CT_MACHINES.includes(machine);
   const regFecha=progRegFecha();
   const fecha=progTargetFecha();
-  updateProgramaTabState(machine);
+  updateProgramaTabState(selMachine);
 
   // Pestañas de la semana: cada día muestra cuántas OPs le faltan por cortar a la máquina elegida (rojo = día que ya pasó)
   const wt=document.getElementById('prog-week-tabs');
   if(wt){
     const lun=progLunes(fecha), hoyR=todayStr(), DN=['Lunes','Martes','Miércoles','Jueves','Viernes'];
     wt.innerHTML=DN.map((n,k)=>{
-      const d=isoAddDays(lun,k), r=PROGRAMA_MACHINES.includes(machine)?getProgramaRecord(d,machine):null;
+      const d=isoAddDays(lun,k), r=(PROGRAMA_MACHINES.includes(machine)||ctMode)?getProgramaRecord(d,machine):null;
       let est='';
       if(r){ const st=progStats(r), pend=st.total-st.done; est=(progIsCompleted(r)||pend<=0)?'<span class="prog-dot ok" title="Todo cortado">✓</span>':`<span class="prog-dot ${d<hoyR?'atr':'pend'}" title="${pend} OP${pend===1?'':'s'} sin cortar">${pend}</span>`; }
       return `<div class="tab${d===fecha?' active':''}" onclick="progSetDia('${d}')" title="${progFechaLarga(d)}">${n} <span class="programa-subf">${+d.slice(8,10)}/${+d.slice(5,7)}${d===hoyR?' · hoy':''}</span>${est}</div>`;
@@ -3976,6 +4120,8 @@ function renderProgramaDia(force){
   }
   const ut=document.getElementById('programa-upload-title');
   if(ut) ut.textContent=progSub==='hoy'?`Selecciona el archivo Excel del programa de ${fecha===todayStr()?'hoy':'este día'} (${fecha})`:`Programa del ${progFechaLarga(fecha)}. ${progSub==='ant'?'Para ver o corregir lo de ese día':'Se sube por adelantado: lo que se corta HOY va en la pestaña de hoy'}`;
+  const uhint=document.getElementById('programa-upload-hint');
+  if(uhint) uhint.innerHTML=ctMode?`Lista de OPs de <strong>${escH(PROGRAMA_MACHINE_CT[machine])}</strong>: reporte de BC «Órdenes producción lanzadas» (columnas Nº y Cantidad). Los modelos y familias excluidos no entran.`:'Se procesarán automáticamente las hojas: <strong>GW1</strong>, <strong>GW2</strong> y <strong>Laser de Cama</strong>';
   const uh=document.getElementById('programa-upload-head');
   if(uh) uh.textContent=progSub==='hoy'?'Subir programa del día':(progSub==='ant'?`⚠ Subir programa del ${progFechaLarga(fecha)} (día que ya pasó)`:`Subir programa del ${progFechaLarga(fecha)}`);
   // Se ve de inmediato si la carga no va al día de hoy: rojo = día que ya pasó · ámbar = día siguiente
@@ -3985,7 +4131,7 @@ function renderProgramaDia(force){
   // Resumen de avance por máquina (todos lo ven) + estado de carga (quien sube)
   const sum=document.getElementById('programa-summary');
   if(sum){
-    sum.innerHTML=PROGRAMA_MACHINES.map(m=>{
+    sum.innerHTML=(ctMode?[machine]:PROGRAMA_MACHINES).map(m=>{
       const r=progViewRecord(fecha,m);
       if(!r) return canUpload?`<div class="programa-status-chip pend">${ic('alertCircle',11)} ${m} — sin cargar</div>`:'';
       const st=progStats(r), pct=st.total?Math.round(st.done/st.total*100):0;
@@ -3995,15 +4141,15 @@ function renderProgramaDia(force){
   }
   if(statusRow) statusRow.innerHTML='';
 
-  if(!PROGRAMA_MACHINES.includes(machine)){
-    container.innerHTML=`<div class="empty-state">El programa del día solo aplica para GW1, GW2 y Laser de Cama.<br>Selecciona una de esas máquinas en "Identificación del turno" para verlo aquí.</div>`;
+  if(!PROGRAMA_MACHINES.includes(machine) && !ctMode){
+    container.innerHTML=`<div class="empty-state">El programa del día aplica para Laser (GW1, GW2), Troqueles y Est. Muebles.<br>Selecciona una máquina de esos centros en "Identificación del turno" para verlo aquí.</div>`;
     container._progHtml=null; delete container.dataset.progKey;
     return;
   }
   try{ progAutoFillContext(); }catch(e){}
   const rec=progViewRecord(fecha,machine);
   if(!rec){
-    container.innerHTML=`<div class="empty-state">${(progSub==='sig'||progSub==='ant')?`Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.`:`Aún no hay ningún programa cargado de <strong>${machine}</strong>.`}</div>`;
+    container.innerHTML=`<div class="empty-state">${(progSub==='sig'||progSub==='ant')?`Aún no se ha subido el programa de producción de <strong>${machine}</strong> para el ${fecha}.`:`Aún no hay ningún programa cargado de <strong>${machine}</strong>.`}</div>`+((ctMode&&canUpload)?`<div style="padding:0 1rem 1rem">${progExclPanelHtml(machine,null)}</div>`:'');
     container._progHtml=null; delete container.dataset.progKey;
     return;
   }
@@ -4015,7 +4161,9 @@ function renderProgramaDia(force){
   const c=progCtx();
   // Aviso de a qué franja del hora por hora van los cortes (o que es solo seguimiento)
   let aviso='';
-  if(canCut && !completed){
+  if(canCut && !completed && ctMode){
+    aviso=`<div class="programa-aviso">✓ Marca cada OP cuando sale terminada de <b>${PROGRAMA_MACHINE_CT[machine]}</b>: queda la hora y el turno (${(c.turno||'').split(' (')[0]}, ${c.fecha}).${progSub==='sig'?' <span style="color:var(--amber)">Estás registrando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
+  } else if(canCut && !completed){
     const idx=progFranjaIdx(c.turno,new Date());
     aviso=`<div class="programa-aviso">⏱ Cada fila que marques suma sus piezas al hora por hora de <b>${machine}</b> · ${(c.turno||'').split(' (')[0]} · <b>${idx>=0?progFranjaLabel(c.turno,idx):'—'}</b> (${c.fecha}). Si una OP grande se corta en varias horas, usa <b>＋ avance</b> para anotar cuántas llevas.${progSub==='sig'?' <span style="color:var(--amber)">Estás cortando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
   } else if(!canCut && !completed){
@@ -4059,9 +4207,10 @@ function renderProgramaDia(force){
         <span style="margin-left:auto">Subido por ${rec.uploadedByName} — ${hhmm}</span>
         <span id="programa-obs-msg" style="color:var(--green);font-weight:600"></span>
         ${canFinalizarPrograma()?`<button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="progMoverDlg('${rec.fecha}','${machine}')" title="Cambia la fecha de este programa (por ejemplo, si se subió en la pestaña equivocada)">Mover fecha</button>`:''}
-        <button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el reporte del día en PDF: consumo real de material de GW1 y GW2">${ic('box',12)}Descargar registro del día</button>
+        ${ctMode?'':`<button class="btn" style="font-size:11px;padding:5px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);display:inline-flex;align-items:center;gap:5px" onclick="exportProgramaDia()" title="Descarga el reporte del día en PDF: consumo real de material de GW1 y GW2">${ic('box',12)}Descargar registro del día</button>`}
       </div>
       ${cierre}
+      ${(ctMode&&canUpload)?progExclPanelHtml(machine,rec):''}
       ${showTable?`<div style="display:flex;align-items:center;gap:10px;margin-top:8px">
         <span style="font-size:11px;color:var(--text3)">Escribe en cualquier columna para filtrar — se combinan entre sí.</span>
         <span id="programa-filter-count" style="font-size:11px;color:var(--blue);font-weight:600"></span>
@@ -5459,7 +5608,7 @@ function loadFromCloud(){
         const localTime=localT&&localT.updatedAt?new Date(localT.updatedAt).getTime():0;
         const incomingTime=r.updatedAt?new Date(r.updatedAt).getTime():0;
         if(!localT || !localT.updatedAt || incomingTime>=localTime){
-          ctTargets[r.ct]={piezasProgramadas:parseFloat(r.piezasProgramadas)||0, capacidadInstalada:parseFloat(r.capacidadInstalada)||0, adelantoManual:String(r.adelantoManual||''), updatedAt:r.updatedAt};
+          ctTargets[r.ct]={piezasProgramadas:parseFloat(r.piezasProgramadas)||0, capacidadInstalada:parseFloat(r.capacidadInstalada)||0, adelantoManual:String(r.adelantoManual||''), progExcluir:String(r.progExcluir||''), updatedAt:r.updatedAt};
         }
       });
       localStorage.setItem(SK.ctTargets, JSON.stringify(ctTargets));
@@ -9441,6 +9590,7 @@ function saveCtTarget(ct){
     piezasProgramadas:ctTargets[ct].piezasProgramadas,
     capacidadInstalada:ctTargets[ct].capacidadInstalada,
     adelantoManual:ctTargets[ct].adelantoManual||'',
+    progExcluir:ctTargets[ct].progExcluir||'',
     updatedAt:ctTargets[ct].updatedAt
   });
   renderDashboard();
