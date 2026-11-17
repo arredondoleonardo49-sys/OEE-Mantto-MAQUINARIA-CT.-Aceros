@@ -391,6 +391,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .rt-l1{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.6fr)}
 .rt-l1-lam{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.6fr)}
 .rt-l2{grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1fr) 30px;margin-top:6px}
+.rt-l1.rt-l1-pza{grid-template-columns:minmax(0,3fr) minmax(0,1fr)}.rt-l2.rt-l2-pza{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 30px}
 .rt-entry input,.rt-entry select{font-size:12px;padding:4px 7px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text);width:100%;box-sizing:border-box;min-width:0}
 .rt-entry input[readonly]{background:var(--bg);color:var(--text2)}
 .rt-add{font-size:11px;font-family:'IBM Plex Sans',sans-serif;background:transparent;border:1px dashed var(--border);color:var(--text2);border-radius:var(--radius);cursor:pointer;padding:4px 11px}
@@ -878,6 +879,32 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 #page-dashboard:fullscreen .hh-tc .hh-dan{margin-left:auto}
 #page-dashboard:fullscreen .hh-rt{display:inline}
 #page-dashboard:fullscreen .hh-rt .hh-rt-dot{vertical-align:0}
+/* Pantalla completa con hora×hora y «Cierre del día» juntos (Troqueles, Estructura): las tarjetas de hora×hora van lado a lado,
+   con todo el alto, y se compactan para verse completas (barras sin desplazamiento, nombre en un renglón, avisos dentro). */
+#page-dashboard:fullscreen .dash-split{grid-template-columns:minmax(0,1fr) minmax(220px,250px);gap:10px}
+#page-dashboard:fullscreen .dash-split .hh-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+#page-dashboard:fullscreen .dash-split .hh-pn{padding:8px 9px 5px}
+#page-dashboard:fullscreen .dash-split .hh-ph{flex-wrap:wrap;row-gap:2px;column-gap:6px}
+#page-dashboard:fullscreen .dash-split .hh-nm{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:calc(100% - 20px)}
+#page-dashboard:fullscreen .dash-split .hh-pg{font-size:12px;margin-left:0}
+#page-dashboard:fullscreen .dash-split .hh-pg b{font-size:16px}
+#page-dashboard:fullscreen .dash-split .hh-st{font-size:12px}
+#page-dashboard:fullscreen .dash-split .hh-kpi{gap:4px;margin:2px 0 5px}
+#page-dashboard:fullscreen .dash-split .hh-kn{gap:6px}
+#page-dashboard:fullscreen .dash-split .hh-big b{font-size:24px}
+#page-dashboard:fullscreen .dash-split .hh-big.sm b{font-size:16px}
+#page-dashboard:fullscreen .dash-split .hh-big span{font-size:9.5px}
+#page-dashboard:fullscreen .dash-split .hh-kb{gap:6px}
+#page-dashboard:fullscreen .dash-split .hh-bd{padding:2px 7px;min-width:0}
+#page-dashboard:fullscreen .dash-split .hh-bd b{font-size:13px}
+#page-dashboard:fullscreen .dash-split .hh-prog{margin-bottom:5px}
+#page-dashboard:fullscreen .dash-split .hh-sc{overflow:hidden}
+#page-dashboard:fullscreen .dash-split .hh-in{min-width:0!important}
+#page-dashboard:fullscreen .dash-split .hh-n td{font-size:12.5px}
+#page-dashboard:fullscreen .dash-split .hh-t tfoot td{font-size:11.5px}
+#page-dashboard:fullscreen .dash-split .hh-leg{display:block;font-size:9.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#page-dashboard:fullscreen .dash-split .hh-leg-l{vertical-align:middle;margin-right:5px}
+#page-dashboard:fullscreen .dash-split .hh-como{display:none}
 </style>
 </head>
 <body>
@@ -7226,7 +7253,7 @@ function aprovHhExtra(r){
   const L=aprovHhLists();
   const key=e=>lam?(e.calibre||''):(e.tubular?tubCanon(e.tubular):'');
   const put=(f,k,n)=>{ if(!k||!(n>0)) return; out[f][k]=(out[f][k]||0)+n; out['t'+f]+=n; };
-  const ok=e=>e.fecha===r.fecha&&maqs.includes(e.machine)&&(e.tipo==='lamina')===lam&&(dia||e.turno===r.turno);
+  const ok=e=>e.fecha===r.fecha&&maqs.includes(e.machine)&&e.tipo!=='pieza'&&(e.tipo==='lamina')===lam&&(dia||e.turno===r.turno);
   L.rt.forEach(e=>{ if(ok(e)) put('rt',key(e),Number(e.consumo)||0); });
   L.fp.forEach(e=>{ if(ok(e)) put('fp',key(e),Number(e.consumo)||0); });
   return out;
@@ -8325,14 +8352,15 @@ function retrabajoReportParts(ws){
   return {groups,sections,totP,totL:Math.round(totL*1000)/1000,totC:Math.round(totC*1000)/1000,totK:Math.round(totK*100)/100,totM,conMerma,pend,turnos};
 }
 function printRetrabajoReport(ws){ openPrintHtml(buildWeeklyReportHtml(ws)); }
-// ── PIEZAS FUERA DE PROGRAMA (hora×hora de GW1 / GW2 / Laser de Cama) en los reportes ──
-// ents = renglones del registro (pieza, material, cantidad, motivo, consumo); sinDet = piezas capturadas en la columna sin registro de material.
+// ── PIEZAS FUERA DE PROGRAMA (hora×hora de todas las máquinas) en los reportes ──
+// ents = renglones del registro (pieza, material, cantidad, motivo, consumo); sinDet = piezas capturadas en la columna sin registro.
+// tipo: 'tubular' (GW1/GW2), 'lamina' (Laser de Cama) o 'pieza' (las demás: sin material ni consumo).
 function fpCollect(){
   const best={};
   horaRecords.forEach(r=>{ if(!r||!machineInRoster(r.machine)||!usaFP(r.machine)) return; const k=horaKey(r.ct,r.machine,r.turno,r.fecha); if(!best[k]||isNewerRecord(r,best[k])) best[k]=r; });
   const ents=[], sinDet=[];
   Object.values(best).forEach(r=>{
-    const ws=aprovWeekStartOf(r.fecha), lam=rtLam(r.machine);
+    const ws=aprovWeekStartOf(r.fecha), lam=rtLam(r.machine), pzaK=fpKind(r.machine)==='pza';
     safeParse(r.franjas,[]).forEach(f=>{
       if(!f||f.isBreak) return;
       const fp=parseInt(f.fp)||0; if(!(fp>0)) return;
@@ -8340,6 +8368,7 @@ function fpCollect(){
       let asig=0;
       det.forEach(x=>{
         const n=Number(x.nPz)||0; asig+=n;
+        if(pzaK){ ents.push({...x,nPz:n,tipo:'pieza',consumo:0,kg:0,machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:String(f.franja||'').replace(/⚡$/,''),ws}); return; }
         const tub=lam?getLaminaByCal(x.calibre):getTubularByTipo(x.tubular);
         const cons=Number(x.consumo)>0?Number(x.consumo):(lam?rtConsumoLam(x.calibre,Number(x.anchoPza)||0,Number(x.largoPza)||0,n):rtConsumo(x.tubular,Number(x.largoPza)||0,n));
         ents.push({...x,nPz:n,tipo:lam?'lamina':'tubular',consumo:cons,kg:cons*(tub&&tub.peso>0?tub.peso:0),machine:r.machine,ct:r.ct,fecha:r.fecha,turno:r.turno,franja:String(f.franja||'').replace(/⚡$/,''),ws});
@@ -8349,10 +8378,10 @@ function fpCollect(){
   });
   return {ents,sinDet};
 }
-function fpMat(e){ return (e.tipo==='lamina'?e.calibre:tubCanon(e.tubular))||'(sin material)'; }
-// Reporte semanal de material: sección con las piezas fuera de programa de la semana
+function fpMat(e){ if(e.tipo==='pieza') return '—'; return (e.tipo==='lamina'?e.calibre:tubCanon(e.tubular))||'(sin material)'; }
+// Reporte semanal de material: sección con las piezas fuera de programa de la semana (solo máquinas que cortan material)
 function fpReportParts(ws){
-  const esc=escH, C=fpCollect(), ents=C.ents.filter(e=>e.ws===ws), sd=C.sinDet.filter(e=>e.ws===ws);
+  const esc=escH, C=fpCollect(), ents=C.ents.filter(e=>e.ws===ws&&e.tipo!=='pieza'), sd=C.sinDet.filter(e=>e.ws===ws&&usaRetrabajo(e.machine));
   const r3=n=>Math.round(n*1000)/1000;
   const sum=l=>({pzas:l.reduce((a,e)=>a+(Number(e.nPz)||0),0),cons:r3(l.reduce((a,e)=>a+e.consumo,0)),kg:l.reduce((a,e)=>a+e.kg,0)});
   const sinDetPz=sd.reduce((a,e)=>a+e.n,0);
@@ -8389,7 +8418,7 @@ function repFueraProgHtml(ct,fechas,weekly,esc,dayLa){
   const top=Object.entries(porMot).sort((a,b)=>b[1]-a[1]);
   const rows=ents.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
   const u=e=>e.tipo==='lamina'?'lám.':'tr.';
-  let html=`<div class="line"><b>Piezas fuera de programa</b> <span class="muted">${tot} pza${tot===1?'':'s'}${sdn?` · <span class="warn">${sdn} sin detalle de material</span>`:''} · no cuentan contra el programa</span></div>`;
+  let html=`<div class="line"><b>Piezas fuera de programa</b> <span class="muted">${tot} pza${tot===1?'':'s'}${sdn?` · <span class="warn">${sdn} sin detalle${sd.some(e=>usaRetrabajo(e.machine))?' de material':''}</span>`:''} · no cuentan contra el programa</span></div>`;
   html+=`<div class="ctline" style="margin-top:2px">${top.map(([m,n])=>`<span>${esc(m)}: <b>${n}</b></span>`).join('')}</div>`;
   if(rows.length) html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th>Pieza</th><th>Material</th><th class="n">Pzas</th><th>Motivo</th><th class="n">Consumo</th></tr></thead><tbody>${rows.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(e.machine)}</b></td><td>${esc((e.turno?'T'+String(e.turno).replace(/^Turno\s*/i,'').slice(0,1)+' · ':'')+e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${e.nPz}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td class="n">${e.consumo>0?e.consumo.toFixed(3)+' '+u(e):'—'}</td></tr>`).join('')}</tbody></table>`;
   return html;
@@ -9993,7 +10022,7 @@ function renderHoraFranjas(machine, turno){
   { const hr=document.getElementById('hora-head-row'); if(hr) hr.classList.toggle('fp',FP);
     const hf=document.getElementById('hora-head-fp'); if(hf) hf.style.display=FP?'':'none';
     const bx=document.getElementById('hora-box-fp'); if(bx) bx.style.display=FP?'':'none';
-    const nt=document.getElementById('hora-nota-fp'); if(nt) nt.textContent=FP?'Al registrar piezas dañadas aparece el registro de retrabajo; al capturar piezas fuera de programa, el registro de pieza, material y cantidad.':'Al registrar piezas dañadas aparece el registro de retrabajo (GW1/GW2/Laser de Cama) o un campo para el motivo (otras máquinas).'; }
+    const nt=document.getElementById('hora-nota-fp'); if(nt) nt.textContent=usaRetrabajo(machine)?'Al registrar piezas dañadas aparece el registro de retrabajo; al capturar piezas fuera de programa, el registro de pieza, material y cantidad.':'Al registrar piezas dañadas aparece un campo para el motivo; al capturar piezas fuera de programa, el registro de pieza, cantidad y motivo.'; }
   resetHoraTouch();
   _gridKey=horaKey(document.getElementById('reg-ct')?.value,machine,turno,document.getElementById('reg-fecha')?.value);
   list.innerHTML = franjas.map((f,i) => {
@@ -10017,7 +10046,7 @@ function renderHoraFranjas(machine, turno){
         ${FP?`<div id="hora-fp-row-${i}" class="rt-wrap fp-wrap" style="display:none">
           <button type="button" class="rt-head" onclick="fpToggle(${i})"><span class="rt-caret">▾</span>＋ Piezas fuera de programa<span class="ap-badge" id="fp-count-${i}">0</span><span class="rt-warn" id="fp-warn-${i}"></span><span class="rt-sum" id="fp-sum-${i}"></span></button>
           <div class="rt-body">
-            <div id="hora-fp-list-${i}" data-kind="${rtLam(machine)?'lam':'tub'}"></div>
+            <div id="hora-fp-list-${i}" data-kind="${fpKind(machine)}"></div>
             <button type="button" class="rt-add" onclick="fpAdd(${i})" ${canCapture?'':'disabled'}>+ Agregar otra pieza</button>
           </div>
         </div>`:''}
@@ -10192,15 +10221,19 @@ function syncRetrabajoPanel(i,dan){
   rtChanged(i,true);
 }
 
-// ── PIEZAS FUERA DE PROGRAMA (GW1 / GW2 / Laser de Cama) ──
+// ── PIEZAS FUERA DE PROGRAMA (todas las máquinas con hora×hora) ──
 // Columna intermedia del hora×hora. Son piezas que no vienen en el programa del día (prototipo, vacuna, muestra…).
 // Al capturarlas se despliega un registro igual al de retrabajo: modelo / pieza, material, medida, cantidad y motivo.
+// Material solo en las máquinas que cortan (GW1/GW2: tubular · Laser de Cama: lámina). En las demás (Dobladora, prensas,
+// Estructura…) el registro es pieza, cantidad y motivo, sin consumo: no se suma al material de Aprovechamiento.
 // NO cuentan contra el programa (cumplimiento), pero sí son producción de la máquina para rendimiento y eficiencia.
 const FP_MOTIVOS=['Prototipo','Vacuna','Muestra','Pedido urgente'];
-function usaFP(machine){ return MAQUINAS_RETRABAJO.includes(machine); }
+function usaFP(machine){ return !!machine; }
+function fpKind(machine){ return usaRetrabajo(machine)?(rtLam(machine)?'lam':'tub'):'pza'; }
 function fpEntries(i){ return Array.from(document.querySelectorAll('#hora-fp-list-'+i+' .rt-entry')); }
 function fpEntryData(e){
   const mot=rtGet(e,'motivo'), n=parseInt(rtGet(e,'nPz'))||0, base={modelo:rtGet(e,'modelo').trim(),nPz:n,motivo:mot,motivoOtro:rtGet(e,'motivoOtro').trim(),operador:e.dataset.op||''};
+  if(e.dataset.kind==='pza') return Object.assign(base,{consumo:0});
   if(e.dataset.kind==='lam'){
     const cal=rtGet(e,'calibre'), ancho=parseFloat(rtGet(e,'anchoPza'))||0, largo=parseFloat(rtGet(e,'largoPza'))||0;
     return Object.assign(base,{calibre:cal,anchoPza:ancho,largoPza:largo,consumo:rtConsumoLam(cal,ancho,largo,n)});
@@ -10216,19 +10249,22 @@ function addFpRow(i,data){
   const list=document.getElementById('hora-fp-list-'+i); if(!list) return null;
   const dis=canCaptureHora()?'':'disabled';
   const d=document.createElement('div'); d.className='rt-entry fp-entry';
-  const isLam=list.dataset.kind==='lam'; d.dataset.kind=isLam?'lam':'tub';
+  const kind=list.dataset.kind==='lam'?'lam':(list.dataset.kind==='pza'?'pza':'tub'), isLam=kind==='lam', isPza=kind==='pza'; d.dataset.kind=kind;
   d.dataset.op=(data&&data.operador)||(currentUser&&currentUser.name)||'';
   const f=(l,inner)=>`<label class="ped-f"><span>${l}</span>${inner}</label>`;
   const T=`data-touch="hora-fp-${i}" oninput="fpChanged(${i})"`;
   const motOpts='<option value="">Selecciona motivo…</option>'+FP_MOTIVOS.concat([RT_OTRO]).map(c=>`<option value="${escH(c)}">${escH(c)}</option>`).join('');
   const nPz=`<input type="number" data-f="nPz" min="0" step="1" placeholder="0" data-touch="hora-fp-${i}" oninput="this.dataset.auto='';fpChanged(${i})" ${dis}>`;
-  const l2=`<div class="rt-l2">
+  const l2=`<div class="rt-l2${isPza?' rt-l2-pza':''}">
       ${f('Motivo',`<select data-f="motivo" ${T} ${dis}>${motOpts}</select><input type="text" data-f="motivoOtro" placeholder="Especifica el motivo" style="display:none;margin-top:4px" ${T} ${dis}>`)}
-      ${f('Consumo ('+(isLam?'láminas':'tramos')+')',`<input type="text" data-f="consumo" readonly placeholder="auto" title="Piezas × ${isLam?'peso de la pieza ÷ peso de la lámina completa':'largo de pieza ÷ largo del tramo'}">`)}
+      ${isPza?'':f('Consumo ('+(isLam?'láminas':'tramos')+')',`<input type="text" data-f="consumo" readonly placeholder="auto" title="Piezas × ${isLam?'peso de la pieza ÷ peso de la lámina completa':'largo de pieza ÷ largo del tramo'}">`)}
       ${f('Operador',`<input type="text" data-f="operador" readonly title="Según la cuenta de acceso">`)}
       <button type="button" class="btn-del" style="align-self:end" title="Quitar" onclick="fpDel(${i},this)" ${dis}>×</button>
     </div>`;
-  d.innerHTML=isLam?`<div class="rt-l1 rt-l1-lam">
+  d.innerHTML=isPza?`<div class="rt-l1 rt-l1-pza">
+      ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. Prototipo F.6630" ${T} ${dis}>`)}
+      ${f('Cantidad',nPz)}
+    </div>${l2}`:isLam?`<div class="rt-l1 rt-l1-lam">
       ${f('Modelo / pza',`<input type="text" data-f="modelo" placeholder="Ej. Prototipo F.6630" ${T} ${dis}>`)}
       ${f('Calibre de lámina',`<select data-f="calibre" ${T} ${dis}><option value="">Selecciona…</option>${laminas.map(l=>`<option value="${escH(l.cal)}">${escH(l.cal)}</option>`).join('')}</select>`)}
       ${f('Ancho de pza (cm)',`<input type="number" data-f="anchoPza" min="0" step="any" placeholder="0" ${T} ${dis}>`)}
@@ -10244,7 +10280,7 @@ function addFpRow(i,data){
   const set=(n,v)=>{ const el=d.querySelector(`[data-f="${n}"]`); if(el&&v!=null&&v!=='') el.value=v; };
   if(data){
     const sel=d.querySelector(isLam?'[data-f="calibre"]':'[data-f="tubular"]'), sv=isLam?data.calibre:data.tubular;
-    if(sv && !Array.from(sel.options).some(o=>o.value===sv)){ const o=document.createElement('option'); o.value=sv; o.textContent=sv; sel.appendChild(o); }
+    if(sv && sel && !Array.from(sel.options).some(o=>o.value===sv)){ const o=document.createElement('option'); o.value=sv; o.textContent=sv; sel.appendChild(o); }
     const ms=d.querySelector('[data-f="motivo"]');
     if(data.motivo && !Array.from(ms.options).some(o=>o.value===data.motivo)){ const o=document.createElement('option'); o.value=data.motivo; o.textContent=data.motivo; ms.appendChild(o); }
     set('modelo',data.modelo);set('tubular',data.tubular);set('calibre',data.calibre);set('anchoPza',data.anchoPza);set('largoPza',data.largoPza);set('nPz',data.nPz);set('motivo',data.motivo);set('motivoOtro',data.motivoOtro);
@@ -10267,7 +10303,7 @@ function fpChanged(i,quiet){
   });
   const fp=parseInt(document.getElementById('hora-fp-'+i)?.value)||0;
   const set=(id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
-  const lamK=document.getElementById('hora-fp-list-'+i)?.dataset.kind==='lam';
+  const lamK=document.getElementById('hora-fp-list-'+i)?.dataset.kind==='lam';   // 'pza': sin consumo (tot = 0)
   set('fp-count-'+i,String(n));
   set('fp-sum-'+i,tot>0?`Consumo: ${tot.toFixed(3)} ${lamK?'láminas':'tramos'}`:'');
   set('fp-warn-'+i,(n>0&&asig!==fp)?`⚠ ${asig} de ${fp} pzas asignadas`:'');
@@ -10840,7 +10876,7 @@ function renderHoraHist(){
     const fpTot=Number(r.totalFueraProg)||franjas.reduce((a,f)=>a+(f.isBreak?0:(parseInt(f.fp)||0)),0);
     const fpSection=fpTot>0?`<div style="padding:.5rem 1rem;background:rgba(167,139,250,.06);border-top:1px solid rgba(167,139,250,.2)">
         <div style="font-size:10px;font-weight:600;color:#a78bfa;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Piezas fuera de programa — ${fpTot} pza${fpTot===1?'':'s'}</div>
-        ${fpRows.map(({fr,x})=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#a78bfa;font-family:'IBM Plex Mono',monospace">${escH(fr)}</span> — ${escH(x.modelo||'Sin nombre')} · ${Number(x.nPz)||0} pza${(Number(x.nPz)||0)===1?'':'s'} · ${escH(x.tubular||x.calibre||'sin material')}${x.largoPza>0?` · ${x.anchoPza>0?x.anchoPza+'×':''}${x.largoPza} cm`:''}${(fpMotivoTxt(x))?` <span style="color:var(--amber)">· ${escH(fpMotivoTxt(x))}</span>`:''}${x.consumo>0?` <span style="color:var(--text3)">· ${Number(x.consumo).toFixed(3)} ${x.calibre?'lám.':'tramos'}</span>`:''}</div>`).join('')||'<div style="font-size:12px;color:var(--text3)">Sin detalle de material.</div>'}
+        ${fpRows.map(({fr,x})=>`<div style="font-size:12px;color:var(--text2);padding:2px 0"><span style="color:#a78bfa;font-family:'IBM Plex Mono',monospace">${escH(fr)}</span> — ${escH(x.modelo||'Sin nombre')} · ${Number(x.nPz)||0} pza${(Number(x.nPz)||0)===1?'':'s'}${usaRetrabajo(r.machine)?' · '+escH(x.tubular||x.calibre||'sin material'):''}${x.largoPza>0?` · ${x.anchoPza>0?x.anchoPza+'×':''}${x.largoPza} cm`:''}${(fpMotivoTxt(x))?` <span style="color:var(--amber)">· ${escH(fpMotivoTxt(x))}</span>`:''}${x.consumo>0?` <span style="color:var(--text3)">· ${Number(x.consumo).toFixed(3)} ${x.calibre?'lám.':'tramos'}</span>`:''}</div>`).join('')||`<div style="font-size:12px;color:var(--text3)">Sin detalle${usaRetrabajo(r.machine)?' de material':''}.</div>`}
       </div>`:'';
     // Dibujos/nidos section
     const dibujos = safeParse(r.dibujos,[]);
