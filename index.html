@@ -10,6 +10,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Imágenes de muebles (de las fichas técnicas y folios de ingenieria.lineaitalia.net) para el panel «Qué falta por cortar» -->
 <script src="assets/modelos/indice.js"></script>
+<!-- Pieza de lámina típica de cada ruta (cajón, canaletas, estructura AURA) para «Qué falta por producir — Troqueles» -->
+<script src="assets/piezas/indice.js"></script>
 <style>
 :root{--bg:#0f1117;--bg2:#181b24;--bg3:#1e2130;--border:#2a2e3f;--text:#e8eaf0;--text2:#8b8fa8;--text3:#555870;--blue:#4a9eff;--green:#3ecf8e;--amber:#f5a623;--red:#f06060;--radius:8px;--radius-lg:12px;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -549,6 +551,8 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .pend-l2{font-size:11px;color:var(--text3);padding-left:44px;overflow-wrap:anywhere}
 /* Imagen del mueble a la izquierda de cada pendiente (ayuda visual); sin imagen queda el hueco para que todo se alinee */
 .pend-row.ci{flex-direction:row;align-items:center;gap:10px}
+.pend-row.ct .pend-l2{padding-left:0}
+.pend-hd .pend-hd-av{color:var(--green)}.pend-hd .pend-hd-av b{color:var(--green)}
 .pend-tx{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .pend-img{width:72px;height:54px;flex-shrink:0;object-fit:contain;background:#fff;border-radius:6px;padding:2px}
 .pend-img.sin{background:var(--bg2);border:1px dashed var(--border);padding:0}
@@ -711,6 +715,11 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .machine-info{flex:1;min-width:0}
 .machine-name-input{font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);width:100%;padding:2px 0;transition:border-color .15s}
 .machine-name-input:focus{outline:none;border-bottom-color:var(--blue)}
+.mname-wrap{display:flex;align-items:center;gap:8px;cursor:text}
+.mname-wrap .machine-name-input{border-bottom:1px dashed var(--border)}
+.mname-wrap:hover .machine-name-input{border-bottom-color:var(--text3)}
+.mname-ed{flex:none;font-size:10.5px;color:var(--text3);white-space:nowrap}
+.mname-wrap:hover .mname-ed,.mname-wrap:focus-within .mname-ed{color:var(--blue)}
 .machine-ct-label{font-size:11px;color:var(--text3);margin-top:2px}
 .machine-cap-row{display:flex;align-items:center;gap:8px;margin-top:6px}
 .machine-cap-input{width:90px;font-size:13px;font-family:'IBM Plex Mono',monospace;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);text-align:right}
@@ -3976,7 +3985,7 @@ function buildProgramaReportHtml(fecha,opts){
     indexHtml=`<section class="noprint"><h2>Programas guardados <small>${fs.length} fecha${fs.length===1?'':'s'} · cada programa se conserva con lo registrado en él hasta que se sube otro que lo sustituya</small></h2>
       ${fs.length?`<table><thead><tr><th>Fecha</th><th>Máquina</th><th class="n">Filas cortadas</th><th class="n">Piezas</th><th class="n">Consumo real (tramos)</th><th>Estado</th></tr></thead><tbody>
       ${fs.slice(0,90).map(f=>byF[f].sort((a,b)=>String(a.machine).localeCompare(String(b.machine))).map((r,i)=>{ const st=progStats(r), ct=progIsTubRec(r)?progConsTotals(r):null;
-        return `<tr${f===fecha?' style="background:#eef2ff"':''}>${i===0?`<td rowspan="${byF[f].length}"><a href="#" onclick="parent.repGoFecha('${f}');return false" style="color:#1d4ed8;font-weight:600">${esc(dayLabel(f))} · ${esc(f)}</a></td>`:''}<td>${esc(r.machine)}</td><td class="n">${st.done} / ${st.total}</td><td class="n">${nf(st.pzDone)} / ${nf(st.pz)}</td><td class="n">${ct?(ct.total>0?n2(ct.total):'–'):'<span class="muted">n/a</span>'}</td><td>${progIsCompleted(r)?'<span class="pill ok">COMPLETADO</span>':(st.total&&st.done===st.total?'<span class="pill ok">TODO CORTADO</span>':'<span class="pill ns">EN CURSO</span>')}</td></tr>`; }).join('')).join('')}
+        return `<tr${f===fecha?' style="background:#eef2ff"':''}>${i===0?`<td rowspan="${byF[f].length}"><a href="#" onclick="parent.repGoFecha('${f}');return false" style="color:#1d4ed8;font-weight:600">${esc(dayLabel(f))} · ${esc(f)}</a></td>`:''}<td>${esc(mNom(r.machine))}</td><td class="n">${st.done} / ${st.total}</td><td class="n">${nf(st.pzDone)} / ${nf(st.pz)}</td><td class="n">${ct?(ct.total>0?n2(ct.total):'–'):'<span class="muted">n/a</span>'}</td><td>${progIsCompleted(r)?'<span class="pill ok">COMPLETADO</span>':(st.total&&st.done===st.total?'<span class="pill ok">TODO CORTADO</span>':'<span class="pill ns">EN CURSO</span>')}</td></tr>`; }).join('')).join('')}
       </tbody></table>`:'<div class="line muted">Aún no hay programas guardados.</div>'}</section>`;
   }
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(tituloFull)}</title>
@@ -5341,7 +5350,7 @@ function saveDiaTotal(){
 function renderDiaCard(){
   const card=document.getElementById('reg-dia-card'); if(!card||!currentUser) return;
   const ct=document.getElementById('reg-ct').value, machine=document.getElementById('reg-machine').value, fecha=document.getElementById('reg-fecha').value;
-  document.getElementById('reg-dia-maquina').textContent=machine?'— '+machine:'';
+  document.getElementById('reg-dia-maquina').textContent=machine?'— '+mNom(machine):'';
   const inp=document.getElementById('dia-piezas'), btn=document.getElementById('btn-guardar-dia');
   const rec=getDiaRecord(ct,machine,fecha);
   // Si cambió la máquina/fecha mostrada, el campo SIEMPRE se refresca (aunque el
@@ -5430,11 +5439,13 @@ function saveMachineTombs(){ try{ localStorage.setItem(SK_MACHINE_TOMBS,JSON.str
 // históricos de máquinas eliminadas se conservan en el Sheet, pero ya no se
 // muestran en la plataforma.
 function machineInRoster(name){ if(!machines.length) return true; return machines.some(x=>x.name===name); }
+// Nombre que se muestra (el que se puso en Configuración); los datos usan siempre el nombre original
+function mNom(n){ const m=machines.find(x=>x.name===n); return (m&&m.alias)?m.alias:String(n==null?'':n); }
 function machineCloudRow(m,deleted){
   return {id:m.id, name:m.name, ct:m.ct, cap:m.cap||0,
     photo:(m.photo && String(m.photo).length<=PHOTO_MAX_CHARS*2)?m.photo:'',   // fotos grandes (subidas antes de esta versión) no caben en la URL
     photoV:(!m.photo || String(m.photo).length<=PHOTO_MAX_CHARS*2)?1:0,   // 1 = la fila ya lleva la foto (vacía = foto eliminada)
-    horaHora:machineUsesHora(m), modo:m.modo||'',
+    horaHora:machineUsesHora(m), modo:m.modo||'', alias:m.alias||'',
     checklist:m.checklist!==false,        // false = checklist de arranque apagado
     deleted:!!deleted, updatedAt:new Date().toISOString()};
 }
@@ -5469,6 +5480,7 @@ function applyMachineRoster(rows){
       if(!r.name || !r.ct) return;
       const nm={id:r.id,name:r.name,ct:r.ct,cap:parseInt(r.cap)||0,photo:String(r.photo||''),modo:(r.modo==='hora'||r.modo==='dia')?r.modo:undefined,updatedAt:r.updatedAt};
       if(parseChecklistFlag(r.checklist)===false) nm.checklist=false;
+      if(r.alias && String(r.alias).trim()) nm.alias=String(r.alias).trim();
       machines.push(nm);
       changed=true;
     } else if((r.updatedAt||'')>(local.updatedAt||'')){
@@ -5476,6 +5488,7 @@ function applyMachineRoster(rows){
       if(r.modo==='hora'||r.modo==='dia') local.modo=r.modo;
       if(String(r.photoV)==='1') local.photo=String(r.photo||''); else if(r.photo) local.photo=String(r.photo);
       const cf=parseChecklistFlag(r.checklist); if(cf===false) local.checklist=false; else if(cf===true) delete local.checklist;
+      if(r.alias!==undefined){ const a=String(r.alias||'').trim(); if(a) local.alias=a; else delete local.alias; }
       local.updatedAt=r.updatedAt; changed=true;
     }
   });
@@ -5990,6 +6003,78 @@ function dashLaserPendHtml(){
     <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
     <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
 }
+// ── Troqueles / Est. Muebles · «Qué falta por producir»: el Programa del día del centro en el Dashboard, igual que Laser ──
+// OPs del programa en curso que aún no se marcan terminadas; las de programas de días anteriores siguen (en rojo) como atraso.
+// Marcar la OP terminada es solo seguimiento del programa: no suma al hora×hora.
+// Imagen: Est. Muebles → el mueble (assets/modelos). Troqueles → la pieza de lámina del modelo (assets/piezas: cajón,
+// canaletas o estructura AURA, según la Biblioteca DXF de Nidos o la descripción); si no hay, el mueble, como en Laser.
+const PIEZA_IMG={cajon:'assets/piezas/cajon.svg',canaleta:'assets/piezas/canaleta.png',aura:'assets/piezas/aura.svg'};
+const PIEZA_TXT={cajon:'Cajón',canaleta:'Canaletas',aura:'Estructura AURA'};
+const CT_NOMBRE={'TROQUELES':'Troqueles','EST. MUEBLES':'Est. Muebles'};
+function piezaCatTroq(ruta,desc,fam){
+  const P=(window.PIEZAS_TROQ&&PIEZAS_TROQ.cat)||{};
+  const r=String(ruta||'').toUpperCase().replace(/\s+/g,'');
+  if(r&&P[r]) return P[r];
+  const b=r.replace(/-\d+$/,''); if(b&&P[b]) return P[b];
+  const D=String(desc||'').toUpperCase(), F=String(fam||'').toUpperCase();
+  if(/\bAURA\b/.test(D+' '+F)) return 'aura';
+  if(/ARCHIVER|CAJONERA|GAVETA|PEDESTAL|\bCAJON|DRAWER|FILE CABINET/.test(D)||/^ARCHIV/.test(F)) return 'cajon';
+  return '';
+}
+function dashCtPend(ct){
+  const key=PROG_CT_KEYS[ct], fecha=todayStr();
+  const d={rows:[],ops:0,pzs:0,anyProg:false,opsAtr:0,pzsAtr:0,opsHoyTot:0,opsHoyDone:0};
+  if(!key) return d;
+  let desde=fecha; for(let k=0;k<PEND_ATRASO_DIAS;){ desde=isoAddDays(desde,-1); const w=isoDow(desde); if(w!==0&&w!==6) k++; }
+  const vig=progActiveRecord(fecha,key);
+  programaDia.filter(r=>r&&r.machine===key).sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))).forEach(rec=>{
+    const rows=(rec.rows||[]).slice(1); if(!rows.length) return;
+    const cortes=progCortesParse(rec.cortes), cd=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
+    const isDone=(row,r)=>!!((cortes[r]&&cortes[r].on)||row[cd]===true);
+    const doneIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
+    const pend=rows.filter((row,r)=>!isDone(row,r)).length;
+    const enCurso=rec.fecha===fecha || rows.some((row,r)=>doneIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
+    const atr=String(rec.fecha)<fecha;   // programa de un día anterior: lo que siga sin terminar es atraso
+    if(!enCurso && !(atr && pend>0 && String(rec.fecha)>=desde && !progIsCompleted(rec))) return;
+    d.anyProg=true;
+    const H=(rec.rows[0]||[]).map(h=>String(h).trim().toLowerCase()), fi=re=>H.findIndex(h=>re.test(h));
+    const iOP=fi(/^op$/), iMo=fi(/^modelo/), iDe=fi(/^descrip/), iFa=fi(/^familia/), iRu=fi(/^ruta/), iVe=fi(/^vence/);
+    const iQ=progCantCol(rec)>=0?progCantCol(rec):fi(/^cant/);
+    const cel=(row,i)=>{ if(i<0) return ''; const v=row[i]; return (v==null||v===true||v===false)?'':String(v).trim(); };
+    if(!atr){ d.opsHoyTot+=rows.length; d.opsHoyDone+=rows.length-pend; }
+    rows.forEach((row,r)=>{
+      if(isDone(row,r)) return;
+      const q=parseFloat(cel(row,iQ));
+      const o={fecha:rec.fecha,atr,op:cel(row,iOP),mo:cel(row,iMo),de:cel(row,iDe),fa:cel(row,iFa),ru:cel(row,iRu),ve:cel(row,iVe),q:q>0?q:0};
+      if(!o.op && !o.mo && !(o.q>0)) return;
+      d.rows.push(o); d.ops++; d.pzs+=o.q; if(atr){ d.opsAtr++; d.pzsAtr+=o.q; }
+    });
+  });
+  return d;
+}
+function dashCtPendHtml(ct,d){
+  d=d||dashCtPend(ct);
+  const troq=ct==='TROQUELES';
+  const av=d.opsHoyTot?`<span class="pend-hd-av" title="OPs del programa en curso que ya se marcaron terminadas (solo seguimiento: no suma al hora×hora)">Terminadas<b>${d.opsHoyDone}</b> de ${d.opsHoyTot} OPs</span>`:'';
+  let mat='';
+  if(troq){ const L=lamTotalsData(troqLamRecords(todayStr())); if(L.total>0) mat=`<span title="Lámina registrada hoy en Aprovechamiento para Troqueles">Lámina hoy<b>${fmtN(L.total,0)}</b> hojas · ${fmt2(L.kg)} kg</span>`; }
+  if(!d.rows.length) return `<div class="pend-hd">${av}${mat}</div><div class="pend-ok">✓ Todas las OPs del programa en curso ya están terminadas.</div>`;
+  const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`;
+  const rows=d.rows.map(r=>{
+    const cat=troq?piezaCatTroq(r.ru,r.de,r.fa):'';
+    const ik=cat?'':(modeloImgKey(r.ru)||modeloImgKey(r.mo));
+    const et=modeloEtiqueta(r.ru||r.mo);
+    const img=cat?`<img class="pend-img" src="${PIEZA_IMG[cat]}" alt="" loading="lazy" title="${escH(PIEZA_TXT[cat])}" data-et="${escH(et)}" onerror="pendImgFalla(this)">`
+      :(ik?`<img class="pend-img" src="assets/modelos/${encodeURIComponent(ik)}.jpg" alt="" loading="lazy" data-et="${escH(et)}" onerror="pendImgFalla(this)">`:pendEtHtml(et));
+    const tag=r.atr?`<span class="pend-atr-tag">Atraso · ${dm(r.fecha)}</span>`:'';
+    const l2=[r.de,r.fa,cat?PIEZA_TXT[cat]:'',r.ve?'vence '+r.ve:''].filter(Boolean).map(escH).join(' · ');
+    return `<div class="pend-row ci ct${r.atr?' atr':''}"${r.atr?` title="OP del programa del ${fmtDMY(r.fecha)} que no se ha terminado: cuenta como atraso"`:''}>${img}<div class="pend-tx"><div class="pend-l1">${r.op?`<span class="op">${escH(r.op)}</span>`:''}${r.mo?`<span class="mo" title="${escH(r.mo)}">${escH(r.mo)}</span>`:''}${r.q>0?`<span class="n">${fmtN(r.q,0)}<small>${r.atr?'pzas atraso':'pzas'}</small></span>`:''}</div>${(l2||tag)?`<div class="pend-l2">${tag?tag+' ':''}${l2}</div>`:''}</div></div>`;
+  }).join('');
+  const opsHoy=d.ops-d.opsAtr, pzsHoy=Math.max(0,d.pzs-d.pzsAtr);
+  return `<div class="pend-hd"><span>OPs pendientes<b>${d.ops}</b></span><span>Piezas por producir<b>${fmtN(d.pzs,0)}</b></span>${av}<span class="pend-hd-hoy" title="OPs del programa de hoy que aún no se terminan (si mañana siguen así, pasan a atraso)">Faltante de hoy<b>${fmtN(pzsHoy,0)}</b> pzas · ${opsHoy} OP${opsHoy===1?'':'s'}</span>${d.opsAtr?`<span class="pend-hd-atr" title="OPs de programas de días anteriores que siguen sin terminarse">Atraso<b>${fmtN(d.pzsAtr,0)}</b> pzas · ${d.opsAtr} OP${d.opsAtr===1?'':'s'} de días anteriores</span>`:''}${mat}</div>
+    <div class="pend-board"><div class="pend-vp"><div class="pend-in" id="pend-in"><div class="pend-set">${rows}<div class="pend-gap"></div></div></div></div></div>
+    <div class="pend-hint" id="pend-hint" style="display:none">Se desplaza solo · pasa el cursor para pausar</div>`;
+}
 // La lista se mueve sola hacia arriba (en bucle) cuando no cabe completa; velocidad constante pensada para poder leerla
 const PEND_PX_POR_SEG=20;
 function pendStartMarquee(){
@@ -6175,9 +6260,9 @@ function renderDashboard(){
       const photo=m.photo?`<img src="${m.photo}" style="width:100px;height:100px;border-radius:8px;object-fit:cover;border:1px solid var(--border)">`:`<div style="width:100px;height:100px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px">📷</div>`;
       if(!LASER_MAQUINAS_HORA.includes(m.name)){
         const d=getDiaRecord(ct,m.name,todayStr());
-        return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="10" style="font-size:12px">${diaHasPiezas(d)?`<span style="color:var(--text3)">Cierre del día:</span> <b style="font-family:'IBM Plex Mono',monospace;font-size:14px">${d.piezas}</b> <span style="color:var(--text3)">piezas${d.op?' · '+d.op:''}</span>`:'<span style="color:var(--amber)">Cierre del día — pendiente de captura</span>'}${(d&&Number(d.parosNoProg)>0)?` <span style="color:var(--amber)">· ${d.parosNoProg} min de paros</span>`:''}</td></tr>`;
+        return`<tr><td>${photo}</td><td><strong>${escH(mNom(m.name))}</strong></td><td colspan="10" style="font-size:12px">${diaHasPiezas(d)?`<span style="color:var(--text3)">Cierre del día:</span> <b style="font-family:'IBM Plex Mono',monospace;font-size:14px">${d.piezas}</b> <span style="color:var(--text3)">piezas${d.op?' · '+d.op:''}</span>`:'<span style="color:var(--amber)">Cierre del día — pendiente de captura</span>'}${(d&&Number(d.parosNoProg)>0)?` <span style="color:var(--amber)">· ${d.parosNoProg} min de paros</span>`:''}</td></tr>`;
       }
-      if(!rec)return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td colspan="10" style="color:var(--text3);font-size:12px">Sin registros hoy</td></tr>`;
+      if(!rec)return`<tr><td>${photo}</td><td><strong>${escH(mNom(m.name))}</strong></td><td colspan="10" style="color:var(--text3);font-size:12px">Sin registros hoy</td></tr>`;
       const cumplCell=rec.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(rec.cumpl)}">${rec.cumpl}%</span>`:'–';
       const costoHora=COSTO_HORA_CT[ct]||0;
       const parosMin=rec.parosNoProg||0;
@@ -6188,7 +6273,7 @@ function renderDashboard(){
       const costoLabel=costoParo>0
         ?`<span style="font-family:'IBM Plex Mono',monospace;color:#f06060;font-weight:600">$${costoParo.toLocaleString('es-MX')}</span>`
         :`<span style="color:var(--text3)">–</span>`;
-      return`<tr><td>${photo}</td><td><strong>${m.name}</strong></td><td style="font-family:'IBM Plex Mono',monospace">${rec.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${rec.piezasTotal||0}</td><td>${cumplCell}</td><td>${rec.disp}%</td><td>${rec.rend}%</td><td>${rec.cal}%</td>
+      return`<tr><td>${photo}</td><td><strong>${escH(mNom(m.name))}</strong></td><td style="font-family:'IBM Plex Mono',monospace">${rec.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${rec.piezasTotal||0}</td><td>${cumplCell}</td><td>${rec.disp}%</td><td>${rec.rend}%</td><td>${rec.cal}%</td>
         <td><div style="display:flex;align-items:center;gap:8px"><div class="oee-bar"><div class="oee-fill" style="width:${rec.oee}%;background:${oeeColor(rec.oee)}"></div></div><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(rec.oee)}">${rec.oee}%</span></div></td>
         <td>${oeeBadge(rec.oee)}</td><td>${parosLabel}</td><td>${costoLabel}</td></tr>`;
     }).join('');
@@ -6206,15 +6291,17 @@ function renderDashboard(){
   const color=ct==='TROQUELES'?'#4a9eff':ct==='LASER'?'#3ecf8e':'#f5a623';
   // Centro Laser: en lugar del OEE por máquina, el material tubular consumido por GW1 + GW2 (almacén surte por centro)
   const matPanel=document.getElementById('dash-mat-panel'), chartWrap=document.getElementById('dash-chart-wrap');
-  if((ct==='LASER'||ct==='TROQUELES') && matPanel){
-    if(titleEl) titleEl.textContent=ct==='LASER'?'Qué falta por cortar — Laser':'Material consumido — Troqueles (hoy)';
+  // Troqueles / Est. Muebles con Programa del día: «Qué falta por producir» (como Laser); sin programa, lo de antes
+  const ctPend=(PROG_CT_KEYS[ct]&&matPanel)?dashCtPend(ct):null, conPend=ct==='LASER'||!!(ctPend&&ctPend.anyProg);
+  if((ct==='LASER'||ct==='TROQUELES'||conPend) && matPanel){
+    if(titleEl) titleEl.textContent=ct==='LASER'?'Qué falta por cortar — Laser':(conPend?'Qué falta por producir — '+(CT_NOMBRE[ct]||ct):'Material consumido — Troqueles (hoy)');
     if(dashChart){ try{ dashChart.destroy(); }catch(e){} dashChart=null; }
     if(chartWrap) chartWrap.style.display='none';
-    matPanel.style.display='block'; matPanel.classList.toggle('pend',ct==='LASER');
-    { const cc=document.getElementById('dash-chart-card'); if(cc) cc.classList.toggle('pending-on',ct==='LASER'); }
-    if(ct==='LASER'){
+    matPanel.style.display='block'; matPanel.classList.toggle('pend',conPend);
+    { const cc=document.getElementById('dash-chart-card'); if(cc) cc.classList.toggle('pending-on',conPend); }
+    if(conPend){
       // Solo se repinta si cambió el contenido: así la lista no se reinicia en cada refresco automático
-      const h=dashLaserPendHtml();
+      const h=ct==='LASER'?dashLaserPendHtml():dashCtPendHtml(ct,ctPend);
       if(matPanel._pendHtml!==h){ matPanel.innerHTML=h; matPanel._pendHtml=h; try{ pendStartMarquee(); }catch(e){} }
     } else {
       matPanel._pendHtml=null;
@@ -6304,7 +6391,7 @@ function renderDashResumenPanel(ct){
     const estado=hoy.has
       ?`<span style="color:var(--green)">✓</span> ${hhmm(hoy.updated)}${hoy.op?' · '+escH(hoy.op):''}`
       :`<span style="color:var(--amber)">⏳ Pendiente</span>`;
-    diaRows.push(`<tr><td><strong>${escH(m.name)}</strong><div class="dia-st">${estado}</div></td>
+    diaRows.push(`<tr><td><strong>${escH(mNom(m.name))}</strong><div class="dia-st">${estado}</div></td>
       <td style="text-align:right;${mono};font-weight:700;font-size:14px;color:${hoy.has?'var(--text)':'var(--text3)'}">${hoy.has?hoy.piezas:'–'}${hoy.rechazo>0?`<div style="font-size:10px;font-weight:400;color:#f06060">${hoy.rechazo} rech.</div>`:''}${hoy.parosMin>0?`<div style="font-size:10px;font-weight:400;color:var(--amber)">${hoy.parosMin} min paro</div>`:''}</td>
       <td style="text-align:right;${mono};color:var(--text2)">${ay||'–'}</td>
       <td style="text-align:right;${mono};color:var(--text2)">${sem||'–'}</td></tr>`);
@@ -6464,7 +6551,7 @@ function dashHoraTableHtml(ct,short){
     const badge=(meta>0&&!sinCap)?(dif>=0?`<div class="hh-bd ok"><b>+${dif}</b><span>pzas de adelanto</span></div>`:`<div class="hh-bd warn"><b>${Math.round(tot/meta*100)}%</b><span>${prog>0?'de lo programado':'de la capacidad'}</span></div>`):'';
     const como=(meta>0&&!sinCap)?`<div class="hh-como"><b>${dif>0?`Va ${pz(dif)} por delante de lo que le toca a esta hora`:(dif<0?`Va ${pz(-dif)} por debajo de lo que le toca a esta hora`:'Va justo en lo que le toca a esta hora')}</b><span>a esta hora deberían llevar ${esperado} · faltan ${Math.max(0,meta-tot)} para las ${meta} ${metaLbl}</span></div>`:'';
     ritmos.push({m,col,R,real:(real!=null&&!sinCap)?real:null,tip:`${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno`});
-    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm">${escH(m)}</b>${meta>0?`<span class="hh-pg">· <b>${meta}</b> ${metaLbl}</span>`:''}${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
+    return `<div class="hh-pn"><div class="hh-ph"><span class="hh-dot" style="background:${col}"></span><b class="hh-nm" title="${escH(mNom(m))}">${escH(mNom(m))}</b>${meta>0?`<span class="hh-pg">· <b>${meta}</b> ${metaLbl}</span>`:''}${estado?`<span class="hh-st" style="color:${estCol}">${estado}</span>`:''}</div>
       <div class="hh-kpi"><div class="hh-kn"><div class="hh-big"><b>${tot}</b><span>piezas</span></div>${dTot>0?`<div class="hh-big sm"><b style="color:var(--red)">${dTot}</b><span>dañadas</span></div>`:''}${meta>0?`<div class="hh-big sm hh-k-meta"><b style="color:var(--text2)">${meta}</b><span>${metaLbl}</span></div>`:''}${R>0?`<div class="hh-big sm hh-k-rt" title="${meta} ${metaLbl} ÷ ${fmtRitmo(turnoMinutosProd(turnoM)/60)} h productivas del turno"><b style="color:var(--amber)">${fmtRitmo(R)}</b><span>pzas/h requeridas</span></div>`:''}${R>0&&real!=null&&!sinCap?`<div class="hh-big sm hh-k-rt" title="Piezas de hoy ÷ horas del turno que ya pasaron"><b style="color:${real>=R?'var(--green)':'var(--amber)'}">${fmtRitmo(real)}</b><span>pzas/h reales</span></div>`:''}${maqKpi}</div><div class="hh-sp"></div><div class="hh-kb">${badge}${hace?`<div class="hh-bd mut"><b>${hace}</b><span>sin capturar</span></div>`:''}</div></div>
       ${meta>0?`<div class="hh-prog"><div style="width:${pct}%;background:${col}"></div></div>`:''}
       <div class="hh-sc"><div class="hh-in" style="min-width:${cols.length*34}px"><div class="hh-bars" style="grid-template-columns:repeat(${cols.length},1fr)">${bars}</div>
@@ -6473,8 +6560,8 @@ function dashHoraTableHtml(ct,short){
   const curTxt=nowIdx>=0&&nowKey!=='__x'?(FRANJA_DISPLAY[nowKey]||'').replace(/\s/g,''):'';
   const resumen=short?'':`<div class="hh-top"><span class="hh-k">Total hoy<b>${grand}</b></span>${curTxt?`<span class="hh-k hh-cur">En curso<b style="color:var(--amber)">${curTxt}</b></span>`:''}<span class="hh-k">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span></div>`
     // Pantalla completa: en lugar de «En curso», las pzas/h de cada máquina, cada una encima de su tarjeta (misma rejilla que las tarjetas)
-    +(ritmos.length?`<div class="hh-top2">${ritmos.map((x,i)=>`<div class="hh-tc">${i===0?`<span class="hh-k">Total hoy<b>${grand}</b></span>`:''}${x.R>0?`<span class="hh-k hh-rt"><i class="hh-rt-dot" style="background:${x.col}"></i>${escH(x.m)}<b style="color:var(--amber)" title="${escH(x.tip)}">${fmtRitmo(x.R)}</b> req${x.real!=null?` ·<b style="color:${x.real>=x.R?'var(--green)':'var(--amber)'}" title="Piezas de hoy ÷ horas del turno que ya pasaron">${fmtRitmo(x.real)}</b> reales`:''} pzas/h</span>`:''}${i===ritmos.length-1?`<span class="hh-k hh-dan">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span>`:''}</div>`).join('')}</div>`:'');
-  const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(escH).join(', ')}</div>`:'';
+    +(ritmos.length?`<div class="hh-top2">${ritmos.map((x,i)=>`<div class="hh-tc">${i===0?`<span class="hh-k">Total hoy<b>${grand}</b></span>`:''}${x.R>0?`<span class="hh-k hh-rt"><i class="hh-rt-dot" style="background:${x.col}"></i>${escH(mNom(x.m))}<b style="color:var(--amber)" title="${escH(x.tip)}">${fmtRitmo(x.R)}</b> req${x.real!=null?` ·<b style="color:${x.real>=x.R?'var(--green)':'var(--amber)'}" title="Piezas de hoy ÷ horas del turno que ya pasaron">${fmtRitmo(x.real)}</b> reales`:''} pzas/h</span>`:''}${i===ritmos.length-1?`<span class="hh-k hh-dan">Dañadas<b style="color:${grandDan>0?'var(--red)':'var(--text2)'}">${grandDan}</b></span>`:''}</div>`).join('')}</div>`:'');
+  const vacias=sinDatos.length?`<div class="hh-empty">${conDatos.length?'':'Aún no hay capturas hoy. '}Sin captura hoy: ${sinDatos.map(x=>escH(mNom(x))).join(', ')}</div>`:'';
   const html=`${resumen}${panels?`<div class="hh-grid${resumen?' rt-top':''}">${panels}</div>`:''}${vacias}`;
   return {names:machineNames,html};
 }
@@ -6502,7 +6589,7 @@ function fmtRitmo(v){ return v>=10?String(Math.round(v)):String(Math.round(v*10)
 // ── REGISTRO ──
 function updateMachineAndTurno(){
   const ct=document.getElementById('reg-ct').value;
-  document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option>${m.name}</option>`).join('')||'<option>Sin máquinas</option>';
+  document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option value="${escH(m.name)}">${escH(mNom(m.name))}</option>`).join('')||'<option>Sin máquinas</option>';
   document.getElementById('reg-turno').innerHTML=TURNOS_CT[ct].map(t=>`<option>${t}</option>`).join('');
   updateInfoBox();calcOEE();
   checkHoraPanel();
@@ -6524,7 +6611,7 @@ function restoreOrDefaultMachineSelection(){
     ctSel.value=ctx.ct;
   }
   const ct=ctSel.value;
-  document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option>${m.name}</option>`).join('')||'<option>Sin máquinas</option>';
+  document.getElementById('reg-machine').innerHTML=getMachinesByCT(ct).map(m=>`<option value="${escH(m.name)}">${escH(mNom(m.name))}</option>`).join('')||'<option>Sin máquinas</option>';
   document.getElementById('reg-turno').innerHTML=TURNOS_CT[ct].map(t=>`<option>${t}</option>`).join('');
   if(ctx && ct===ctx.ct){
     const machSel=document.getElementById('reg-machine');
@@ -8337,7 +8424,7 @@ function retrabajoReportParts(ws){
     const causaRows=Object.entries(st.causas).sort((a,b)=>b[1].cons-a[1].cons).map(([c,o])=>`<tr><td>${esc(c)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('');
     const U=st.lam?'Láminas':'Tramos';
     const modRows=Object.values(st.modelos).sort((a,b)=>b.cons-a.cons).map(m=>`<tr><td>${esc(m.modelo)}</td><td>${esc(m.tubular)}</td><td class="n">${m.pzas}</td><td class="n">${m.cons.toFixed(3)}</td></tr>`).join('');
-    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${g.machines.length>1?esc(e.machine)+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(st.lam?e.calibre||'—':e.tubular||'—')}</td><td class="n">${st.lam?fmt2(e.anchoPza)+' × '+fmt2(e.largoPza):fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
+    const detRows=g.entries.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${g.machines.length>1?esc(mNom(e.machine))+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(st.lam?e.calibre||'—':e.tubular||'—')}</td><td class="n">${st.lam?fmt2(e.anchoPza)+' × '+fmt2(e.largoPza):fmt2(e.largoPza)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(rtCausaTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('');
     const mermaTxt=st.merma!=null?`Merma semanal registrada: <b>${fmt2(st.merma)} kg</b>`:`<span class="warn">Merma semanal pendiente de captura</span>`;
     return `<section>
       <h2><span class="tag ${st.lam?'lam':'tub'}">${st.lam?'LÁMINA':'TUBULAR'}</span> ${esc(g.machine)} <small>${st.n} turno${st.n===1?'':'s'} · ${st.pzas} pza${st.pzas===1?'':'s'} con retrabajo</small></h2>
@@ -8400,7 +8487,7 @@ function fpReportParts(ws){
         <table><thead><tr><th>Motivo</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th><th class="n">kg</th></tr></thead><tbody>${porMot.map(o=>`<tr><td>${esc(o.k)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td><td class="n">${o.kg>0?fmt2(o.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${tot.pzas}</td><td class="n">${tot.cons.toFixed(3)}</td><td class="n">${tot.kg>0?fmt2(tot.kg):'—'}</td></tr></tbody></table>
         <table><thead><tr><th>Pieza</th><th>${lam?'Calibre':'Tubular'}</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th></tr></thead><tbody>${porMat.map(o=>{ const [m,mt]=o.k.split('||'); return `<tr><td>${esc(m)}</td><td>${esc(mt)}</td><td class="n">${o.pzas}</td><td class="n">${o.cons.toFixed(3)}</td></tr>`; }).join('')}</tbody></table>
       </div>
-      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Pieza</th><th>${lam?'Calibre':'Tubular'}</th><th class="n">${lam?'Ancho × largo cm':'Largo cm'}</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th><th>Motivo</th><th>Operador</th></tr></thead><tbody>${det.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${machines.length>1?esc(e.machine)+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${lam?fmt2(e.anchoPza||0)+' × '+fmt2(e.largoPza||0):fmt2(e.largoPza||0)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table></div>
+      <div style="margin-top:8px"><table><thead><tr><th>Día</th><th>Turno</th><th>Franja</th><th>Pieza</th><th>${lam?'Calibre':'Tubular'}</th><th class="n">${lam?'Ancho × largo cm':'Largo cm'}</th><th class="n">Pzas</th><th class="n">${U[0].toUpperCase()+U.slice(1)}</th><th>Motivo</th><th>Operador</th></tr></thead><tbody>${det.map(e=>`<tr><td>${dayLabel(e.fecha)}</td><td>${machines.length>1?esc(mNom(e.machine))+' · ':''}${esc(shortTurno(e.turno))}</td><td>${esc(e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${lam?fmt2(e.anchoPza||0)+' × '+fmt2(e.largoPza||0):fmt2(e.largoPza||0)}</td><td class="n">${e.nPz}</td><td class="n">${e.consumo.toFixed(3)}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table></div>
     </section>`;
   }).filter(Boolean).join('');
   const aviso=sinDetPz>0?`<div class="line"><span class="warn">${sinDetPz} pieza${sinDetPz===1?'':'s'} fuera de programa sin detalle de material (${esc(Array.from(new Set(sd.map(x=>x.machine))).join(', '))}): falta capturar pieza y material en Registrar turno.</span></div>`:'';
@@ -8420,7 +8507,7 @@ function repFueraProgHtml(ct,fechas,weekly,esc,dayLa){
   const u=e=>e.tipo==='lamina'?'lám.':'tr.';
   let html=`<div class="line"><b>Piezas fuera de programa</b> <span class="muted">${tot} pza${tot===1?'':'s'}${sdn?` · <span class="warn">${sdn} sin detalle${sd.some(e=>usaRetrabajo(e.machine))?' de material':''}</span>`:''} · no cuentan contra el programa</span></div>`;
   html+=`<div class="ctline" style="margin-top:2px">${top.map(([m,n])=>`<span>${esc(m)}: <b>${n}</b></span>`).join('')}</div>`;
-  if(rows.length) html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th>Pieza</th><th>Material</th><th class="n">Pzas</th><th>Motivo</th><th class="n">Consumo</th></tr></thead><tbody>${rows.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(e.machine)}</b></td><td>${esc((e.turno?'T'+String(e.turno).replace(/^Turno\s*/i,'').slice(0,1)+' · ':'')+e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${e.nPz}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td class="n">${e.consumo>0?e.consumo.toFixed(3)+' '+u(e):'—'}</td></tr>`).join('')}</tbody></table>`;
+  if(rows.length) html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th>Pieza</th><th>Material</th><th class="n">Pzas</th><th>Motivo</th><th class="n">Consumo</th></tr></thead><tbody>${rows.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(mNom(e.machine))}</b></td><td>${esc((e.turno?'T'+String(e.turno).replace(/^Turno\s*/i,'').slice(0,1)+' · ':'')+e.franja)}</td><td>${esc(e.modelo||'—')}</td><td>${esc(fpMat(e))}</td><td class="n">${e.nPz}</td><td>${esc(fpMotivoTxt(e)||'—')}</td><td class="n">${e.consumo>0?e.consumo.toFixed(3)+' '+u(e):'—'}</td></tr>`).join('')}</tbody></table>`;
   return html;
 }
 
@@ -8540,7 +8627,7 @@ function repRechazosHtml(ct,fechas,weekly,esc,dayLa){
   const top=Object.entries(porMot).sort((a,b)=>b[1]-a[1]);
   let html=`<div class="line"><b>Piezas rechazadas</b> <span class="muted">${tot} pza${tot===1?'':'s'} en ${rows.length} franja${rows.length===1?'':'s'}${sinMot?` · <span class="warn">${sinMot} sin motivo</span>`:''}</span></div>`;
   html+=`<div class="ctline" style="margin-top:2px">${top.map(([m,n])=>`<span>${esc(m)}: <b>${n}</b></span>`).join('')}</div>`;
-  html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th class="n">Pzas</th><th>Motivo</th><th>Modelo / folio</th></tr></thead><tbody>${rows.map(x=>`<tr>${weekly?`<td>${esc(dayLa(x.fecha))}</td>`:''}<td><b>${esc(x.machine)}</b></td><td>${esc(x.turno?'T'+x.turno+' · ':'')}${esc(x.franja)}</td><td class="n">${x.n}</td><td>${x.motivo?esc(x.motivo):'<span class="warn">sin motivo</span>'}</td><td>${x.modelos.length?esc(x.modelos.join(', ')):'—'}</td></tr>`).join('')}</tbody></table>`;
+  html+=`<table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Turno · franja</th><th class="n">Pzas</th><th>Motivo</th><th>Modelo / folio</th></tr></thead><tbody>${rows.map(x=>`<tr>${weekly?`<td>${esc(dayLa(x.fecha))}</td>`:''}<td><b>${esc(mNom(x.machine))}</b></td><td>${esc(x.turno?'T'+x.turno+' · ':'')}${esc(x.franja)}</td><td class="n">${x.n}</td><td>${x.motivo?esc(x.motivo):'<span class="warn">sin motivo</span>'}</td><td>${x.modelos.length?esc(x.modelos.join(', ')):'—'}</td></tr>`).join('')}</tbody></table>`;
   return html;
 }
 // ── Aprovechamiento y consumo de material dentro de los reportes de producción ──
@@ -8601,7 +8688,7 @@ function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
   // Retrabajo
   if(rts.length){
     const sorted=rts.slice().sort((a,b)=>String(a.fecha).localeCompare(String(b.fecha))||String(a.machine).localeCompare(String(b.machine))||String(a.franja).localeCompare(String(b.franja)));
-    html+=`<div class="line"><b>Retrabajo — detalle</b></div><table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Modelo / folio</th><th>Material</th><th class="n">Pzas</th><th class="n">Material extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${sorted.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(e.machine)}</b></td><td>${esc(e.modelo||'—')}</td><td>${esc(e.tipo==='lamina'?(e.calibre||'—'):(e.tubular||'—'))}</td><td class="n">${f2(Number(e.nPz)||0)}</td><td class="n">${(Math.round(e.consumo*1000)/1000)} ${e.tipo==='lamina'?'lám.':'tramos'}</td><td>${esc(rtCausaTxt(e)||'sin causa')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table>`;
+    html+=`<div class="line"><b>Retrabajo — detalle</b></div><table style="margin-top:4px"><thead><tr>${weekly?'<th>Día</th>':''}<th>Máquina</th><th>Modelo / folio</th><th>Material</th><th class="n">Pzas</th><th class="n">Material extra</th><th>Causa</th><th>Operador</th></tr></thead><tbody>${sorted.map(e=>`<tr>${weekly?`<td>${esc(dayLa(e.fecha))}</td>`:''}<td><b>${esc(mNom(e.machine))}</b></td><td>${esc(e.modelo||'—')}</td><td>${esc(e.tipo==='lamina'?(e.calibre||'—'):(e.tubular||'—'))}</td><td class="n">${f2(Number(e.nPz)||0)}</td><td class="n">${(Math.round(e.consumo*1000)/1000)} ${e.tipo==='lamina'?'lám.':'tramos'}</td><td>${esc(rtCausaTxt(e)||'sin causa')}</td><td>${esc(e.operador||'')}</td></tr>`).join('')}</tbody></table>`;
     const by={}; rts.forEach(e=>{ const b=by[e.machine]||(by[e.machine]={lam:e.tipo==='lamina',pzas:0,cons:0,kg:0,causas:{}}); b.pzas+=Number(e.nPz)||0; b.cons+=e.consumo; b.kg+=e.kg; const c=rtCausaTxt(e)||'Sin causa'; b.causas[c]=(b.causas[c]||0)+(Number(e.nPz)||0); });
     html+=`<div class="line"><b>Retrabajo — resumen por máquina</b></div><table style="margin-top:4px"><thead><tr><th>Máquina</th><th class="n">Piezas</th><th class="n">Material extra</th><th class="n">Kg</th><th>Principales causas</th></tr></thead><tbody>${Object.entries(by).map(([m,b])=>`<tr><td><b>${esc(m)}</b></td><td class="n">${f2(b.pzas)}</td><td class="n">${(Math.round(b.cons*1000)/1000)} ${b.lam?'láminas':'tramos'}</td><td class="n">${b.kg>0?f2(b.kg):'—'}</td><td>${Object.entries(b.causas).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>esc(c)+' ('+n+')').join(' · ')}</td></tr>`).join('')}</tbody></table>`;
   }
@@ -9004,12 +9091,12 @@ function renderHistory(){
   let filtered=[...records].reverse().filter(r=>machineInRoster(r.machine));if(fct)filtered=filtered.filter(r=>r.ct===fct);if(fm)filtered=filtered.filter(r=>r.machine===fm);if(ft)filtered=filtered.filter(r=>r.turno===ft);
   const tb=document.getElementById('history-body');const em=document.getElementById('history-empty');
   if(!filtered.length){tb.innerHTML='';em.style.display='block';return;}em.style.display='none';
-  tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${r.machine}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord('${r.id}')" title="Eliminar registro">×</button></td></tr>`).join('');
+  tb.innerHTML=filtered.map(r=>`<tr><td>${r.fecha}</td><td><span class="ct-badge ${ctClass(r.ct)}">${r.ct}</span></td><td>${escH(mNom(r.machine))}</td><td style="font-size:12px;color:var(--text2)">${r.turno}</td><td>${r.op||'–'}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasProg||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasTotal||0}</td><td style="font-family:'IBM Plex Mono',monospace">${r.piezasRechazo||0}</td><td>${r.cumpl!=null?`<span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${cumplColor(r.cumpl)}">${r.cumpl}%</span>`:'–'}</td><td>${r.disp}%</td><td>${r.rend}%</td><td>${r.cal}%</td><td><span style="font-weight:600;font-family:'IBM Plex Mono',monospace;color:${oeeColor(r.oee)}">${r.oee}%</span></td><td><button class="btn-del" style="width:28px;height:28px;font-size:14px" onclick="deleteRecord('${r.id}')" title="Eliminar registro">×</button></td></tr>`).join('');
 }
 function updateFilterSelects(){
   if(!document.getElementById('filter-ct')) return;
   const fct=document.getElementById('filter-ct').value;const mlist=fct?getMachinesByCT(fct):machines;
-  document.getElementById('filter-machine').innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option>${m.name}</option>`).join('');
+  document.getElementById('filter-machine').innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option value="${escH(m.name)}">${escH(mNom(m.name))}</option>`).join('');
   const turnos=fct?TURNOS_CT[fct]:Object.values(TURNOS_CT).flat().filter((v,i,a)=>a.indexOf(v)===i);
   document.getElementById('filter-turno').innerHTML='<option value="">Todos los turnos</option>'+turnos.map(t=>`<option>${t}</option>`).join('');
 }
@@ -9023,7 +9110,7 @@ function renderConfig(){
     el.innerHTML=ctM.map(m=>`<div class="machine-config-card"><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
     <div class="machine-photo" onclick="triggerPhotoUpload('${m.id}')" title="Clic para cambiar foto">${m.photo?`<img src="${m.photo}" alt="${m.name}">`:'📷'}</div>
     ${m.photo?`<button onclick="deletePhoto('${m.id}')" style="font-size:10px;background:rgba(240,96,96,.1);border:1px solid rgba(240,96,96,.2);color:var(--red);border-radius:4px;cursor:pointer;padding:2px 0;font-family:'IBM Plex Sans',sans-serif;transition:all .15s" title="Eliminar foto">✕ Foto</button>`:''}
-  </div><div class="machine-info"><input class="machine-name-input" type="text" id="mname-${m.id}" value="${m.name}"><div class="machine-ct-label">${ct}</div><div class="machine-cap-row"><input class="machine-cap-input" type="number" id="mcap-${m.id}" value="${m.cap}" min="1"><span class="cap-unit">pzas / turno</span></div>
+  </div><div class="machine-info"><label class="mname-wrap" title="Nombre que se muestra en la plataforma. Los registros siguen ligados a «${escH(m.name)}», así no se pierde el historial."><input class="machine-name-input" type="text" id="mname-${m.id}" value="${escH(m.alias||m.name)}" placeholder="${escH(m.name)}" onchange="machineNameChanged('${m.id}',this)" onkeydown="if(event.key==='Enter')this.blur()"><span class="mname-ed">✎ Editar nombre</span></label><div class="machine-ct-label">${ct}${m.alias?` · nombre original: ${escH(m.name)}`:''}</div><div class="machine-cap-row"><input class="machine-cap-input" type="number" id="mcap-${m.id}" value="${m.cap}" min="1"><span class="cap-unit">pzas / turno</span></div>
   <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
     <input type="checkbox" id="mhora-${m.id}" ${LASER_MAQUINAS_HORA.includes(m.name)?'checked':''} onchange="toggleHoraHora('${m.id}','${m.name}',this.checked)" style="width:14px;height:14px;accent-color:var(--blue);cursor:pointer">
     <label for="mhora-${m.id}" title="Si se desactiva, solo se captura el total de piezas al final del día" style="font-size:11px;color:var(--text3);cursor:pointer">Registro hora por hora</label>
@@ -9322,7 +9409,25 @@ function deleteMachine(id){
   renderConfig();updateMachineAndTurno();updateFilterSelects();renderDashboard();
   try{ renderAll(); }catch(e){}
 }
-function saveConfig(){machines.forEach(m=>{const ni=document.getElementById('mname-'+m.id);const ci=document.getElementById('mcap-'+m.id);const oldName=m.name,oldCap=m.cap;if(ni&&ni.value.trim())m.name=ni.value.trim();if(ci&&parseInt(ci.value)>0)m.cap=parseInt(ci.value);if(m.name!==oldName||m.cap!==oldCap)syncMachineToCloud(m,false);});save('machines');const msg=document.getElementById('config-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);updateMachineAndTurno();updateFilterSelects();renderDashboard();}
+// Nombre visible de la máquina: se edita en Configuración y se publica en Maquinas_Config (columna alias). Los registros
+// (hora×hora, OEE, programas, aprovechamiento…) siguen ligados al nombre original (m.name), así cambiar el nombre no separa el
+// historial ni rompe las reglas que dependen de la máquina (GW1, GW2, Laser de Cama…).
+function setMachineAlias(id,val){
+  const m=machines.find(x=>x.id===id); if(!m) return false;
+  const v=String(val||'').trim().replace(/\s+/g,' '), nv=(v&&v!==m.name)?v:'';
+  if((m.alias||'')===nv) return false;
+  if(nv && machines.some(x=>x.id!==id && (x.name===nv||x.alias===nv))){ alert('Ya hay otra máquina que se llama «'+nv+'».'); return false; }
+  if(nv) m.alias=nv; else delete m.alias;
+  syncMachineToCloud(m,false);
+  return true;
+}
+function machineNameChanged(id,el){
+  if(!setMachineAlias(id,el.value)){ const m=machines.find(x=>x.id===id); if(m) el.value=m.alias||m.name; return; }
+  save('machines');
+  const msg=document.getElementById('config-msg'); if(msg){ msg.textContent='✓ Nombre guardado'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',3000); }
+  try{ renderConfig(); }catch(e){} try{ updateMachineAndTurno(); updateFilterSelects(); }catch(e){} try{ renderDashboard(); }catch(e){}
+}
+function saveConfig(){machines.forEach(m=>{const ni=document.getElementById('mname-'+m.id);const ci=document.getElementById('mcap-'+m.id);const oldCap=m.cap;if(ni)setMachineAlias(m.id,ni.value);if(ci&&parseInt(ci.value)>0)m.cap=parseInt(ci.value);if(m.cap!==oldCap)syncMachineToCloud(m,false);});save('machines');const msg=document.getElementById('config-msg');msg.textContent='✓ Guardado';msg.style.color='var(--green)';setTimeout(()=>msg.textContent='',3000);updateMachineAndTurno();updateFilterSelects();renderDashboard();}
 function triggerPhotoUpload(id){currentPhotoId=id;document.getElementById('photo-file-input').click();}
 // Las fotos se reducen (≈160 px, JPEG) para poder publicarlas en la hoja Maquinas_Config:
 // sin eso la foto solo existía en el equipo donde se subió y los demás no la veían.
@@ -10009,7 +10114,7 @@ function renderHoraFranjas(machine, turno){
   const capPorHora = mach ? Math.round(mach.cap / franjas.length) : 0;
   const canCapture = canCaptureHora();
   const dis = canCapture ? '' : 'disabled title="Tu cuenta no tiene permiso para capturar hora×hora — se otorga en Configuración → Usuarios → Accesos → Permisos de captura."';
-  document.getElementById('reg-hora-maquina').textContent = machine + ' · ' + turno.split(' ')[0]+' '+turno.split(' ')[1];
+  document.getElementById('reg-hora-maquina').textContent = mNom(machine) + ' · ' + turno.split(' ')[0]+' '+turno.split(' ')[1];
   const extraBtn=document.getElementById('btn-agregar-franja');
   if(extraBtn){
     extraBtn.disabled=!canCapture;
@@ -10810,7 +10915,7 @@ function populateHistMachineOptions(ctSelId, machineSelId, onlyHora){
   const pool = ct ? getMachinesByCT(ct) : machines;
   const mlist = onlyHora ? pool.filter(m=>LASER_MAQUINAS_HORA.includes(m.name)) : pool;
   const current=machineSel.value;
-  machineSel.innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option>${m.name}</option>`).join('');
+  machineSel.innerHTML='<option value="">Todas las máquinas</option>'+mlist.map(m=>`<option value="${escH(m.name)}">${escH(mNom(m.name))}</option>`).join('');
   if(mlist.some(m=>m.name===current)) machineSel.value=current;
 }
 function renderHoraHist(){
@@ -10984,7 +11089,7 @@ function diaHistCardHtml(r){
     return `<div style="background:var(--bg3);border-radius:var(--radius-lg);margin-bottom:.75rem;overflow:hidden">
       <div style="display:flex;align-items:center;gap:12px;padding:.75rem 1rem;background:var(--bg2);border-bottom:${hasDetail?'1px solid var(--border)':'none'};flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:2px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">${escH(r.machine)} — ${escH(r.fecha)}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">${escH(mNom(r.machine))} — ${escH(r.fecha)}</span>
           <span style="font-size:11px;color:var(--text3)"><span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:4px;background:rgba(245,166,35,.12);color:var(--amber)">Cierre del día</span> ${r.op?'· '+escH(r.op):''}</span>
         </div>
         <div style="display:flex;gap:14px;margin-left:auto;align-items:center;flex-wrap:wrap">
