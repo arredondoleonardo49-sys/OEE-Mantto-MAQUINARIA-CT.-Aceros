@@ -6345,6 +6345,10 @@ function renderDashboard(){
       else if(pzHoy>0) hl={lbl:'Faltante por cortar',icon:'clock',val:fmtN(pzHoy,0),col:'var(--amber)',sub:'pzas del programa de hoy · sin atraso',btn:false};
       else if(diffCT>0) hl={lbl:'Adelanto',icon:'target',val:'+'+diffCT,col:'#3ecf8e',sub:'vs. piezas programadas',btn:false};
       else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:pendL.pzsMaq>0?'sin atraso · la maquila va aparte':'todo el programa está cortado',btn:false};
+    } else if(!modoProc && autoProgramadas==null){
+      // Centros sin programa del día (Est. Muebles sin programa cargado, Mamparas, Sillas): aún no está definido cómo se
+      // registra su atraso, así que no se calcula contra la meta escrita a mano (Leonardo, 2026-11-17).
+      hl={lbl:'Atraso',icon:'clock',val:'—',col:'var(--text3)',sub:'sin programa del día: no se calcula',btn:false};
     } else {
       hl={lbl:esAdelanto?'Adelanto':(enCurso?'Faltante por cortar':'Atraso'),icon:esAdelanto?'target':(enCurso?'clock':'alertTriangle'),
         val:esAdelanto?'+'+diffCT:(enCurso?-diffCT:diffCT),col:esAdelanto?'#3ecf8e':(enCurso?'var(--amber)':'#f06060'),
