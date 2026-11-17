@@ -704,6 +704,9 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 .prog-excl-add input{flex:1 1 240px;min-width:0;font-size:12px;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text)}
 .prog-excl-add .btn{font-size:11px;padding:6px 10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2)}
 .prog-excl-note{font-size:11px;color:var(--amber)}
+.prog-ruta{white-space:nowrap}
+.prog-exb{margin-left:6px;font-size:10px;padding:1px 7px;border-radius:999px;border:1px solid rgba(240,96,96,.35);background:transparent;color:var(--text3);cursor:pointer;opacity:.75}
+.prog-exb:hover{color:#f06060;background:rgba(240,96,96,.1);opacity:1}
 .programa-row-done td{background:rgba(62,207,142,.06);color:var(--text3)}
 .programa-row-done td:first-child{background:rgba(62,207,142,.1)}
 .programa-table tbody tr:hover td{background:var(--bg3)}
@@ -1771,22 +1774,34 @@ function progKeyFor(machine,ct){
 // Modelos y familias que NO entran al programa del CT al subirlo (se guardan por CT en CT_Targets.progExcluir, en la nube).
 // De inicio, Est. Muebles excluye MAMPARAS (Leonardo, 2026-11-13). Familia: sin «PT-» y sin la «S» final, por prefijo.
 const PROG_CT_EXCLUIR_DEF={'EST. MUEBLES':{familias:['MAMPARAS'],modelos:[]}};
+// bases = modelo base de la OP (columna «Ruta»: 105 agrupa NI105, L105, I105…). Se excluye desde el renglón de la OP y,
+// además de no entrar al subir el programa, se quita al momento del programa ya cargado y de lo proyectado en el Dashboard.
 function progExclGet(ct){
   const v=safeParse((ctTargets[ct]||{}).progExcluir,null);
   const b=(v&&typeof v==='object')?v:(PROG_CT_EXCLUIR_DEF[ct]||{});
-  return {familias:(b.familias||[]).slice(),modelos:(b.modelos||[]).slice()};
+  return {familias:(b.familias||[]).slice(),modelos:(b.modelos||[]).slice(),bases:(b.bases||[]).slice()};
 }
 function progExclSet(ct,v){
   if(!ctTargets[ct]) ctTargets[ct]={piezasProgramadas:0,capacidadInstalada:0};
-  ctTargets[ct].progExcluir=JSON.stringify({familias:v.familias,modelos:v.modelos});
+  ctTargets[ct].progExcluir=JSON.stringify({familias:v.familias,modelos:v.modelos,bases:v.bases||[]});
   saveCtTarget(ct);
 }
 const progExNorm=s=>String(s==null?'':s).trim().toUpperCase().replace(/^PT-/,'');
-function progExclMotivo(ex,modelo,familia){
+function progExclMotivo(ex,modelo,familia,ruta){
+  const b=progExNorm(ruta); if(b && (ex.bases||[]).some(x=>progExNorm(x)===b)) return 'Modelo base '+b;
   const m=progExNorm(modelo), f=progExNorm(familia);
   if(m && ex.modelos.some(x=>progExNorm(x)===m)) return 'Modelo '+m;
   const fx=ex.familias.find(x=>{ const r=progExNorm(x).replace(/S$/,''); return r && f.startsWith(r); });
   return fx?'Familia '+progExNorm(fx):'';
+}
+// Programa del CT ya cargado: función que dice si una fila quedó excluida (modelo base, modelo o familia). Esas OPs no se
+// muestran ni cuentan (tabla, avance, Dashboard y atraso). Las filas no se borran: así las marcas de cada OP no se mueven.
+function progCtExclFn(rec){
+  if(!rec||!progIsCtRec(rec)||!rec.rows||!rec.rows.length) return null;
+  const ex=progExclGet(rec.ct||PROGRAMA_MACHINE_CT[rec.machine]);
+  if(!ex.familias.length && !ex.modelos.length && !ex.bases.length) return null;
+  const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iM=H.indexOf('modelo'), iF=H.indexOf('familia'), iR=H.indexOf('ruta');
+  return row=>!!progExclMotivo(ex,iM>=0?row[iM]:'',iF>=0?row[iF]:'',iR>=0?row[iR]:'');
 }
 const ROLE_LABEL={operador:'Operador',lider:'Líder',ingeniero:'Ingeniero'};
 const SK_USERS='oee_users_v1', SK_CURRENT_USER='oee_current_user_v1', SK_CHECKLIST_RECORDS='oee_checklist_records_v1';
@@ -2650,10 +2665,10 @@ function progQty(rec,r){ const ci=progCantCol(rec); if(ci<0) return 0; const v=p
 function progIsCompleted(rec){ return !!rec && String(rec.completado)==='1'; }
 function progStats(rec){
   const body=(rec&&rec.rows||[]).slice(1), ci=rec&&rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
-  let done=0,pz=0,pzDone=0;
-  const av=progAvParse(rec&&rec.avances);
-  body.forEach((row,r)=>{ const q=progQty(rec,r); pz+=q; if(row[ci]===true){ done++; pzDone+=q; } else pzDone+=Math.min(q,progAvSum(av,r)); });
-  return {total:body.length,done,pz,pzDone};
+  let done=0,pz=0,pzDone=0,total=0;
+  const av=progAvParse(rec&&rec.avances), xf=progCtExclFn(rec);
+  body.forEach((row,r)=>{ if(xf&&xf(row)) return; total++; const q=progQty(rec,r); pz+=q; if(row[ci]===true){ done++; pzDone+=q; } else pzDone+=Math.min(q,progAvSum(av,r)); });
+  return {total,done,pz,pzDone};
 }
 function normProgRec(r){
   const o={...r,rows:safeParse(r.rows,[])};
@@ -2714,6 +2729,16 @@ function progSave(rec){ saveProgramaDiaLS(); cloudUpsertRow('Programa_Dia',progC
 // Solo el Operador (con permiso de captura) registra cortes y observaciones.
 function canFinalizarPrograma(){ return !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero'); }
 function canCutPrograma(){ return !!currentUser && currentUser.role==='operador' && canCaptureHora(); }
+// Programas de Troqueles / Est. Muebles (pseudo-máquinas «Programa …»): la salida de la OP la marca el operador de cualquier
+// máquina del centro (hora por hora o cierre del día), el líder o ingeniería. No toca el hora×hora: solo es seguimiento del
+// programa, y lo que no se marque pasa a atraso al día siguiente. GW1/GW2/Laser de Cama: solo el Operador con hora×hora.
+function canCutProgramaRec(recOrKey){
+  const ctRec=typeof recOrKey==='string'?PROG_CT_MACHINES.includes(recOrKey):progIsCtRec(recOrKey);
+  if(!ctRec) return canCutPrograma();
+  if(!currentUser) return false;
+  if(currentUser.role==='lider'||currentUser.role==='ingeniero') return true;
+  return currentUser.role==='operador' && (canCaptureHora()||canCaptureDia());
+}
 function progGroupInfo(fecha,machine){
   const names=PROG_GRUPO[machine]||[machine];
   const recs=names.map(n=>progViewRecord(fecha,n)).filter(Boolean);
@@ -2939,7 +2964,7 @@ function progMoverDlgGo(from,to,sel){
 function programaToggleCut(fecha,machine,rIdx,checked,el){
   const revert=()=>{ if(el) el.checked=!checked; };
   const amber='var(--amber)';
-  if(!canCutPrograma()){ revert(); progMsg('Solo el Operador registra cortes.',amber); return; }
+  if(!canCutProgramaRec(machine)){ revert(); progMsg(PROG_CT_MACHINES.includes(machine)?'Tu cuenta no puede marcar OPs terminadas (Operador del centro, Líder o Ingeniería).':'Solo el Operador registra cortes.',amber); return; }
   const rec=getProgramaRecord(fecha,machine); if(!rec||!rec.rows[rIdx+1]){ revert(); return; }
   if(progIsCompleted(rec)){ revert(); progMsg('Este programa está completado: reábrelo para corregirlo.',amber); return; }
   if(checked && !progConfirmarAdelanto(rec)){ revert(); return; }
@@ -3674,8 +3699,8 @@ function processProgramaFile(file){
           const t=progCtTabla(wb); if(!t){ missing.push(machine); return; }
           sheetName=t.sheet; rawHeader=t.header;
           // Modelos / familias excluidos del CT: no entran al programa
-          const ex=progExclGet(PROGRAMA_MACHINE_CT[machine]), iM=t.header.indexOf('Modelo'), iF=t.header.indexOf('Familia'), cnt={};
-          rawDataRows=t.rows.filter(r=>{ const mot=progExclMotivo(ex,iM>=0?r[iM]:'',iF>=0?r[iF]:''); if(mot){ cnt[mot]=(cnt[mot]||0)+1; return false; } return true; });
+          const ex=progExclGet(PROGRAMA_MACHINE_CT[machine]), iM=t.header.indexOf('Modelo'), iF=t.header.indexOf('Familia'), iR=t.header.indexOf('Ruta'), cnt={};
+          rawDataRows=t.rows.filter(r=>{ const mot=progExclMotivo(ex,iM>=0?r[iM]:'',iF>=0?r[iF]:'',iR>=0?r[iR]:''); if(mot){ cnt[mot]=(cnt[mot]||0)+1; return false; } return true; });
           rawDataRows.forEach((r,k)=>{ r[0]=k+1; });
           exclN=t.rows.length-rawDataRows.length; exclTxt=Object.entries(cnt).map(([k,v])=>`${k} ×${v}`).join(', ');
           if(!rawDataRows.length && exclN){ todoExcl=true; return; }
@@ -3822,7 +3847,7 @@ function progDisplayCols(rec,tub,lam){
     const n=String(h).trim().toLowerCase();
     if(tub && PROG_HIDE_COLS.includes(n)) return;
     if((tub||lam) && i===rec.obsColIdx){ out.push({k:'cons',i,label:'Consumo real'}); out.push({k:'com',i,label:'Comentarios'}); out.push({k:'eq',i,label:lam?'Recortes (lám.)':'Equiv. tramos'}); return; }
-    out.push({k:'d',i,label:(i===rec.cortadoColIdx&&progIsCtRec(rec))?'Terminada':h});
+    out.push({k:'d',i,label:(i===rec.cortadoColIdx&&progIsCtRec(rec))?'Terminada':((n==='ruta'&&progIsCtRec(rec))?'Modelo base':h)});
   });
   return out;
 }
@@ -3831,7 +3856,7 @@ function renderProgramaTable(rec){
   if(!rows || !rows.length) return '<div class="empty-state">Sin datos en esta hoja.</div>';
   const body=rows.slice(1);
   const cortadoColIdx=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
-  const canCut=canCutPrograma() && !progIsCompleted(rec);
+  const canCut=canCutProgramaRec(rec) && !progIsCompleted(rec);
   const cortes=progCortesParse(rec.cortes), avs=progAvParse(rec.avances);
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   if(progIsLamRec(rec) && !(rec.obsColIdx>=0)) progEnsureObsCol(rec);
@@ -3839,6 +3864,11 @@ function renderProgramaTable(rec){
   const tub=progIsTubRec(rec) && obsColIdx>=0;
   const lam=progIsLamRec(rec) && obsColIdx>=0;
   const cols=progDisplayCols(rec,tub,lam);
+  // Programa del CT: las OPs excluidas no se muestran; Líder e Ingeniería excluyen el modelo base desde su renglón
+  const xf=progCtExclFn(rec), ctR=progIsCtRec(rec);
+  const iRuta=ctR?rows[0].findIndex(h=>String(h).trim().toLowerCase()==='ruta'):-1;
+  const canExcl=ctR && !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero');
+  const ctOf=ctR?(rec.ct||PROGRAMA_MACHINE_CT[rec.machine]||''):'';
   const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='com'?'pc-com':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
     <tr class="programa-filter-row">${cols.map((c,j)=>{
       if(c.k==='d' && c.i===cortadoColIdx){
@@ -3854,6 +3884,7 @@ function renderProgramaTable(rec){
     }).join('')}</tr>
   </thead>`;
   const tbody=`<tbody>${body.map((row,rIdx)=>{
+    if(xf && xf(row)) return '';
     const isDone=row[cortadoColIdx]===true;
     const x=tub?progConsRow(rec,rIdx):(lam?progConsRowLam(rec,rIdx):null);
     return `<tr class="${isDone?'programa-row-done':''}">${cols.map(c=>{
@@ -3862,7 +3893,7 @@ function renderProgramaTable(rec){
       const cc=cortes[rIdx]; let tip='', hora='';
       const qR=progQty(rec,rIdx), avR=Math.min(qR,progAvSum(avs,rIdx));
       if(isDone&&cc&&cc.on){ const tn=(TURNOS_CT[rec.ct]||[])[cc.t]; hora=progHoraCorte(cc,rec.fecha); tip=`Cortado el ${isoFromYmd(cc.f)}${hora?' a las '+hora.split(' ').pop():''} · ${tn?tn.split(' (')[0]:''} · ${progFranjaLabel(tn,cc.i)}${cc.q>0?' · '+cc.q+' pzas':''}${avR>0?` (+ ${avR} en avances)`:''}`; }
-      else if(!canCut) tip=currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':(progIsCompleted(rec)?'Programa completado':'');
+      else if(!canCut) tip=progIsCompleted(rec)?'Programa completado':(ctR?'Tu cuenta no puede marcar OPs terminadas':(currentUser&&currentUser.role!=='operador'?'Solo el Operador registra cortes':''));
       // Avance parcial (OPs grandes que se cortan a lo largo del día): botón para el Operador; los demás ven cuántas van
       const avTip=`Van ${avR} de ${qR} pzas cortadas`;
       if(isDone&&cc&&cc.on&&progIsCtRec(rec)) tip=tip.replace(/^Cortado el /,'Salió el ');
@@ -3900,6 +3931,10 @@ function renderProgramaTable(rec){
     if(cIdx===obsColIdx){
       const val=row[cIdx]!=null?String(row[cIdx]):'';
       return `<td><input type="text" class="programa-obs-input" value="${esc(val)}" placeholder="${canCut?'Cantidad real utilizada…':''}" ${canCut?'':'readonly'} onchange="programaSetObs('${rec.fecha}','${rec.machine}',${rIdx},this.value)"></td>`;
+    }
+    if(cIdx===iRuta && canExcl && row[cIdx]!=null && String(row[cIdx]).trim()!==''){
+      const v=String(row[cIdx]).trim(), vq=encodeURIComponent(v).replace(/'/g,'%27');
+      return `<td class="prog-ruta">${esc(v)} <button type="button" class="prog-exb" title="Excluir el modelo base ${esc(v)}: sus OPs se quitan del programa y de lo proyectado en el Dashboard, y ya no entran al subir el programa" onclick="progExclBase('${esc(ctOf)}',decodeURIComponent('${vq}'))">⊘ Excluir</button></td>`;
     }
     return `<td>${row[cIdx]!=null&&row[cIdx]!==''?esc(row[cIdx]):''}</td>`;
   }).join('')}</tr>`;
@@ -4069,7 +4104,8 @@ function refreshProgramaDiaFromCloud(done){
           const antes=programaDia.length;
           programaDia=progQuitarBorrados(mergeProgramaDia(programaDia, mapped), mapped, since);
           saveProgramaDiaLS();
-          if(programaDia.length<antes) try{ renderDashboard(); }catch(e){}   // p. ej. quita el atraso de un programa que ya se movió
+          // p. ej. quita el atraso de un programa que ya se movió; con el Dashboard abierto, muestra las OPs recién marcadas
+          if(programaDia.length<antes || document.getElementById('page-dashboard')?.classList.contains('active')) try{ renderDashboard(); }catch(e){}
           renderProgramaDia();
           try{ if(document.getElementById('page-reportes')?.classList.contains('active')&&repMode==='programa') renderReportes(); }catch(e){}
         }
@@ -4084,25 +4120,26 @@ let _progLastKey='';
 let _progExclOpen=false;
 function progExclPanelHtml(machine,rec){
   const ct=PROGRAMA_MACHINE_CT[machine], ex=progExclGet(ct), e=s=>escH(String(s));
-  const tot=ex.familias.length+ex.modelos.length;
-  const chip=(kind,v,i)=>`<span class="prog-excl-chip">${kind==='familias'?'Familia':'Modelo'} <b>${e(progExNorm(v))}</b><button type="button" title="Quitar de excluidos" onclick="progExclDel('${ct}','${kind}',${i})">×</button></span>`;
+  const tot=ex.familias.length+ex.modelos.length+ex.bases.length;
+  const chip=(kind,v,i)=>`<span class="prog-excl-chip">${kind==='familias'?'Familia':(kind==='bases'?'Modelo base':'Modelo')} <b>${e(progExNorm(v))}</b><button type="button" title="Quitar de excluidos (vuelve a entrar al programa)" onclick="progExclDel('${ct}','${kind}',${i})">×</button></span>`;
   // Del programa visible: modelos y familias para elegir, y cuántas OPs ya no saldrían la próxima vez
   let opts='', afect=0;
   if(rec&&rec.rows&&rec.rows.length>1){
-    const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iM=H.indexOf('modelo'), iF=H.indexOf('familia'), iD=H.indexOf('descripción');
+    const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iM=H.indexOf('modelo'), iF=H.indexOf('familia'), iD=H.indexOf('descripción'), iR=H.indexOf('ruta');
     const mods={}, fams={};
     rec.rows.slice(1).forEach(r=>{ const m=iM>=0?String(r[iM]).trim():'', f=iF>=0?String(r[iF]).trim():'';
       if(m&&!mods[m]) mods[m]=iD>=0?String(r[iD]).trim():''; if(f) fams[f]=1;
-      if(progExclMotivo(ex,m,f)) afect++; });
+      if(progExclMotivo(ex,m,f,iR>=0?r[iR]:'')) afect++; });
     opts=Object.keys(fams).sort().map(f=>`<option value="${e(f)}">familia</option>`).join('')+Object.keys(mods).sort().map(m=>`<option value="${e(m)}">${e(mods[m])}</option>`).join('');
   }
   return `<div class="prog-excl${_progExclOpen?' open':''}">
     <div class="prog-excl-h" onclick="_progExclOpen=!_progExclOpen;renderProgramaDia(true)"><span>⊘ Excluidos del programa de <b>${e(ct)}</b> (${tot})</span><span class="prog-excl-sub">no entran la próxima vez que se suba el programa</span><span style="margin-left:auto">${_progExclOpen?'▾':'▸'}</span></div>
     ${_progExclOpen?`<div class="prog-excl-b">
-      <div class="prog-excl-chips">${tot?ex.familias.map((v,i)=>chip('familias',v,i)).join('')+ex.modelos.map((v,i)=>chip('modelos',v,i)).join(''):'<span style="color:var(--text3)">Sin exclusiones.</span>'}</div>
+      <div class="prog-excl-chips">${tot?ex.bases.map((v,i)=>chip('bases',v,i)).join('')+ex.familias.map((v,i)=>chip('familias',v,i)).join('')+ex.modelos.map((v,i)=>chip('modelos',v,i)).join(''):'<span style="color:var(--text3)">Sin exclusiones.</span>'}</div>
+      <div class="prog-excl-note" style="margin-top:0">Lo más rápido: en la tabla, botón <b>⊘ Excluir</b> junto al <b>Modelo base</b> de la OP (se quita al momento del programa y de lo proyectado).</div>
       <div class="prog-excl-add"><input type="text" id="prog-excl-in" list="prog-excl-dl" placeholder="Modelo (p. ej. FA-6728) o familia (p. ej. MAMPARAS)" autocomplete="off"><datalist id="prog-excl-dl">${opts}</datalist>
         <button type="button" class="btn" onclick="progExclAdd('${ct}','modelos')">Excluir modelo</button><button type="button" class="btn" onclick="progExclAdd('${ct}','familias')">Excluir familia</button></div>
-      ${afect?`<div class="prog-excl-note">En el programa que ves hay <b>${afect}</b> OP${afect===1?'':'s'} que ya no ${afect===1?'saldría':'saldrían'} al volver a subirlo.</div>`:''}
+      ${afect?`<div class="prog-excl-note">En el programa que ves hay <b>${afect}</b> OP${afect===1?'':'s'} excluida${afect===1?'':'s'}: no se ${afect===1?'muestra':'muestran'} ni ${afect===1?'cuenta':'cuentan'} (tampoco en el Dashboard).</div>`:''}
     </div>`:''}
   </div>`;
 }
@@ -4117,7 +4154,25 @@ function progExclAdd(ct,kind){
 function progExclDel(ct,kind,i){
   const ex=progExclGet(ct), v=ex[kind][i]; if(v==null) return;
   ex[kind].splice(i,1); progExclSet(ct,ex);
-  renderProgramaDia(true); progMsg(`✓ ${kind==='familias'?'Familia':'Modelo'} ${progExNorm(v)} vuelve a entrar al programa`);
+  renderProgramaDia(true); try{ renderDashboard(); }catch(e){}
+  progMsg(`✓ ${kind==='familias'?'Familia':(kind==='bases'?'Modelo base':'Modelo')} ${progExNorm(v)} vuelve a entrar al programa`);
+}
+// Excluir el modelo base desde el renglón de la OP: se quita al momento del programa cargado (de hoy y de días anteriores) y de
+// lo proyectado en el Dashboard, y ya no entra cuando se vuelva a subir el programa. Se regresa desde «Excluidos del programa».
+function progExclBase(ct,base){
+  const b=progExNorm(base), key=PROG_CT_KEYS[ct]; if(!b||!key) return;
+  const ex=progExclGet(ct);
+  if(ex.bases.some(x=>progExNorm(x)===b)){ progMsg('Ese modelo base ya estaba excluido.','var(--amber)'); return; }
+  let n=0;
+  programaDia.filter(r=>r&&r.machine===key&&r.rows&&r.rows.length>1).forEach(rec=>{
+    const iR=rec.rows[0].findIndex(h=>String(h).trim().toLowerCase()==='ruta'); if(iR<0) return;
+    const cortes=progCortesParse(rec.cortes), ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
+    rec.rows.slice(1).forEach((row,r)=>{ if(progExNorm(row[iR])===b && !(row[ci]===true||(cortes[r]&&cortes[r].on))) n++; });
+  });
+  if(!confirm(`¿Excluir el modelo base ${b} del programa de ${CT_NOMBRE[ct]||ct}?\n\n`+(n?`Se quita${n===1?'':'n'} ${n} OP${n===1?'':'s'} pendiente${n===1?'':'s'} del Programa del día y de lo proyectado en el Dashboard (también del atraso). `:'')+`Ya no entrará cuando se suba el programa.\n\nSe puede regresar desde «Excluidos del programa».`)) return;
+  ex.bases.push(b); progExclSet(ct,ex);
+  renderProgramaDia(true); try{ renderDashboard(); }catch(e){}
+  progMsg(`✓ Modelo base ${b} excluido: se quitó del programa y de lo proyectado`);
 }
 function renderProgramaDia(force){
   const container=document.getElementById('programa-table-container');
@@ -4193,7 +4248,7 @@ function renderProgramaDia(force){
   const hhmm=t?t.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):'';
   const g=progGroupInfo(fecha,machine);
   const key=fecha+'|'+machine, completed=progIsCompleted(rec);
-  const canCut=canCutPrograma();
+  const canCut=canCutProgramaRec(machine);
   const c=progCtx();
   // Aviso de a qué franja del hora por hora van los cortes (o que es solo seguimiento)
   let aviso='';
@@ -4203,7 +4258,8 @@ function renderProgramaDia(force){
     const idx=progFranjaIdx(c.turno,new Date());
     aviso=`<div class="programa-aviso">⏱ Cada fila que marques suma sus piezas al hora por hora de <b>${machine}</b> · ${(c.turno||'').split(' (')[0]} · <b>${idx>=0?progFranjaLabel(c.turno,idx):'—'}</b> (${c.fecha}). Si una OP grande se corta en varias horas, usa <b>＋ avance</b> para anotar cuántas llevas.${progSub==='sig'?' <span style="color:var(--amber)">Estás cortando por adelantado el programa del '+fecha+'.</span>':''}</div>`;
   } else if(!canCut && !completed){
-    aviso=`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
+    aviso=ctMode?`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: las OPs terminadas las marca el Operador del centro, el Líder o Ingeniería.</div>`
+      :`<div class="programa-aviso" style="color:var(--text3)">👁 Modo seguimiento: puedes ver el programa y lo ya cortado. Los cortes y observaciones los registra el Operador.</div>`;
   }
   if(progSub==='ant') aviso+=`<div class="programa-aviso" style="color:var(--text2)">🕘 Programa de un día anterior (<b>${progFechaLarga(fecha)}</b>). Lo que quede sin cortar se puede cortar hoy desde aquí. Si un programa de otro día en realidad era de este, usa <b>Mover fecha</b> para pasarlo aquí.</div>`;
   // Programa fechado después de hoy pero que ya se está cortando hoy → casi seguro se subió en la pestaña equivocada
@@ -4269,6 +4325,8 @@ setInterval(()=>{
     const tab=document.getElementById('reg-tab-programa'), pg=document.getElementById('page-registro');
     const visible=tab&&(tab.classList.contains('active')||document.getElementById('reg-content')?.classList.contains('reg-split-mode'))&&pg&&pg.classList.contains('active');
     if(visible) refreshProgramaDiaFromCloud();
+    // Dashboard (proyección) de un centro con programa: las OPs cortadas o terminadas se ven en ~30 s, sin esperar el sync completo
+    else if(document.getElementById('page-dashboard')?.classList.contains('active') && (currentDashCT==='LASER'||PROG_CT_KEYS[currentDashCT]) && Date.now()-_progFetchTs>=30000) refreshProgramaDiaFromCloud();
   }catch(e){}
 },15000);
 // Suma la columna "Cant." del programa cargado (misma columna que usa la
@@ -6032,8 +6090,10 @@ function dashCtPend(ct){
     const cortes=progCortesParse(rec.cortes), cd=rec.cortadoColIdx!=null?rec.cortadoColIdx:-1;
     const isDone=(row,r)=>!!((cortes[r]&&cortes[r].on)||row[cd]===true);
     const doneIso=r=>{ const c=cortes[r]; return (c&&c.on&&c.f)?isoFromYmd(c.f):''; };
-    const pend=rows.filter((row,r)=>!isDone(row,r)).length;
-    const enCurso=rec.fecha===fecha || rows.some((row,r)=>doneIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
+    const xf=progCtExclFn(rec), incl=row=>!(xf&&xf(row));   // OPs excluidas (modelo base, modelo o familia): fuera
+    const nIncl=rows.filter(incl).length; if(!nIncl) return;
+    const pend=rows.filter((row,r)=>incl(row)&&!isDone(row,r)).length;
+    const enCurso=rec.fecha===fecha || rows.some((row,r)=>incl(row)&&doneIso(r)===fecha) || (vig&&vig.id===rec.id&&pend>0);
     const atr=String(rec.fecha)<fecha;   // programa de un día anterior: lo que siga sin terminar es atraso
     if(!enCurso && !(atr && pend>0 && String(rec.fecha)>=desde && !progIsCompleted(rec))) return;
     d.anyProg=true;
@@ -6041,9 +6101,9 @@ function dashCtPend(ct){
     const iOP=fi(/^op$/), iMo=fi(/^modelo/), iDe=fi(/^descrip/), iFa=fi(/^familia/), iRu=fi(/^ruta/), iVe=fi(/^vence/);
     const iQ=progCantCol(rec)>=0?progCantCol(rec):fi(/^cant/);
     const cel=(row,i)=>{ if(i<0) return ''; const v=row[i]; return (v==null||v===true||v===false)?'':String(v).trim(); };
-    if(!atr){ d.opsHoyTot+=rows.length; d.opsHoyDone+=rows.length-pend; }
+    if(!atr){ d.opsHoyTot+=nIncl; d.opsHoyDone+=nIncl-pend; }
     rows.forEach((row,r)=>{
-      if(isDone(row,r)) return;
+      if(!incl(row) || isDone(row,r)) return;
       const q=parseFloat(cel(row,iQ));
       const o={fecha:rec.fecha,atr,op:cel(row,iOP),mo:cel(row,iMo),de:cel(row,iDe),fa:cel(row,iFa),ru:cel(row,iRu),ve:cel(row,iVe),q:q>0?q:0};
       if(!o.op && !o.mo && !(o.q>0)) return;
@@ -6140,8 +6200,17 @@ function renderDashboard(){
     // del programa de hoy es «faltante por cortar» (se vuelve atraso si mañana sigue sin cortarse). El desglose va en
     // «Qué falta por cortar». Los demás centros: producidas vs. programadas, como siempre.
     const pendL=(ct==='LASER')?dashLaserPend():null;
+    // Troqueles / Est. Muebles con Programa del día: el atraso son las OPs de días anteriores que no se marcaron terminadas
+    // (lo de hoy sin marcar es faltante del programa y pasa a atraso al día siguiente). Sin programa, como antes.
+    const pendC=PROG_CT_KEYS[ct]?dashCtPend(ct):null, conProgCT=!!(pendC&&pendC.anyProg);
     let hl;
-    if(pendL){
+    if(conProgCT){
+      const s=n=>n===1?'':'s', opsHoy=pendC.ops-pendC.opsAtr, pzHoy=Math.max(0,pendC.pzs-pendC.pzsAtr);
+      const av=pendC.opsHoyTot?` · hoy ${pendC.opsHoyDone} de ${pendC.opsHoyTot} terminadas`:'';
+      if(pendC.opsAtr>0) hl={lbl:'Atraso',icon:'alertTriangle',val:pendC.pzsAtr>0?'-'+fmtN(pendC.pzsAtr,0):'-'+pendC.opsAtr+' OP'+s(pendC.opsAtr),col:'#f06060',sub:`${pendC.pzsAtr>0?'pzas · ':''}${pendC.opsAtr} OP${s(pendC.opsAtr)} de días anteriores sin terminar`,btn:true};
+      else if(opsHoy>0) hl={lbl:'Faltante del programa',icon:'clock',val:pzHoy>0?fmtN(pzHoy,0):opsHoy+' OP'+s(opsHoy),col:'var(--amber)',sub:`${pzHoy>0?'pzas · ':''}${opsHoy} OP${s(opsHoy)} de hoy sin terminar${av} · sin atraso`,btn:false};
+      else hl={lbl:'Atraso',icon:'target',val:'0',col:'#3ecf8e',sub:'todo el programa está terminado'+av,btn:false};
+    } else if(pendL){
       const pzHoy=Math.max(0,pendL.pzs-pendL.pzsAtr-pendL.pzsMaq);   // la maquila en plazo va en su propio indicador
       if(pendL.pzsAtr>0) hl={lbl:'Atraso',icon:'alertTriangle',val:'-'+fmtN(pendL.pzsAtr,0),col:'#f06060',sub:'pzas de días anteriores',btn:true};
       else if(pzHoy>0) hl={lbl:'Faltante por cortar',icon:'clock',val:fmtN(pzHoy,0),col:'var(--amber)',sub:'pzas del programa de hoy · sin atraso',btn:false};
@@ -6191,7 +6260,7 @@ function renderDashboard(){
             </div>
             <div class="ct-highlight-box">
               <div class="ct-highlight-label">${ic(hl.icon,12)}${hl.lbl}</div>
-              ${modoProc&&canEditMetas
+              ${modoProc&&canEditMetas&&!conProgCT
                 ?`<input type="number" step="1" class="ct-meta-input ct-adel-input" id="ct-adel-input" value="${adelMan==null?'':adelMan}" placeholder="0" style="color:${hl.col}" title="Captura el adelanto (+) o el atraso (−) del día en piezas" onchange="updateAdelantoManual('${ct}',this.value)">`
                 :`<div class="ct-highlight-val" style="color:${hl.col}">${hl.val}</div>`}
               <div class="ct-highlight-sub">${hl.sub}</div>
