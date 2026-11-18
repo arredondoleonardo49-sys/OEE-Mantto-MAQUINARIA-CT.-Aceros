@@ -985,14 +985,14 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
   </div>
   <!-- Otras plataformas: se abren en otra pestaña (cada una con su propia base de datos). Láser Tubo lee el programa del
        día que se sube aquí (localStorage 'oee_programa_dia_v1', mismo dominio): si cambia ese formato, avisar a Leonardo. -->
-  <div class="nav-section" style="padding-top:0">
+  <div class="nav-section" style="padding-top:0" data-perm="otras">
     <div class="nav-label">Otras plataformas</div>
-    <a class="nav-item nav-ext" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Abre la plataforma de Láser Tubo en otra pestaña">
+    <a class="nav-item nav-ext" data-perm="ext-laser-tubo" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Abre la plataforma de Láser Tubo en otra pestaña">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       <span>Láser Tubo ↗</span>
     </a>
     <!-- Programación Troqueles (antes «Programas de producción»; desde el 2026-11-17 solo Troqueles): su propia base en Google Sheets; claves locales «pt_» -->
-    <a class="nav-item nav-ext" href="https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/" target="_blank" rel="noopener" data-label="Programación Troqueles" title="Abre Programación Troqueles (Láser de cama y Dobladora) en otra pestaña">
+    <a class="nav-item nav-ext" data-perm="ext-prog-troq" href="https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/" target="_blank" rel="noopener" data-label="Programación Troqueles" title="Abre Programación Troqueles (Láser de cama y Dobladora) en otra pestaña">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
       <span>Programación Troqueles ↗</span>
     </a>
@@ -1033,10 +1033,10 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
   <div class="nav-item-mini" onclick="navigate('config',this)" data-label="Configuración" title="Configuración">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
   </div>
-  <a class="nav-item-mini nav-ext" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Láser Tubo ↗ (se abre en otra pestaña)">
+  <a class="nav-item-mini nav-ext" data-perm="ext-laser-tubo" href="https://arredondoleonardo49-sys.github.io/Programaci-n-de-Laser-de-Tubo/" target="_blank" rel="noopener" data-label="Láser Tubo" title="Láser Tubo ↗ (se abre en otra pestaña)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
   </a>
-  <a class="nav-item-mini nav-ext" href="https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/" target="_blank" rel="noopener" data-label="Programación Troqueles" title="Programación Troqueles ↗ (se abre en otra pestaña)">
+  <a class="nav-item-mini nav-ext" data-perm="ext-prog-troq" href="https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/" target="_blank" rel="noopener" data-label="Programación Troqueles" title="Programación Troqueles ↗ (se abre en otra pestaña)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
   </a>
 </nav>
@@ -1326,8 +1326,8 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
     <div id="reg-tab-historial" class="tab-content">
       <div id="hist-shared"><div class="form-card">
         <div class="tab-row" style="margin-bottom:.75rem">
-          <div class="tab active" onclick="switchTabScoped('hora-tab-hist',this,'hora-subtabs')">Historial hora por hora</div>
-          <div class="tab" onclick="switchTabScoped('hora-tab-eval',this,'hora-subtabs');renderEvaluacion()">Evaluación por operador</div>
+          <div class="tab active" id="hora-tab-hist-btn" onclick="switchTabScoped('hora-tab-hist',this,'hora-subtabs')">Historial hora por hora</div>
+          <div class="tab" id="hora-tab-eval-btn" onclick="if(switchTabScoped('hora-tab-eval',this,'hora-subtabs')!==false)renderEvaluacion()">Evaluación por operador</div>
         </div>
         <!-- HISTORIAL HORA POR HORA -->
         <div id="hora-tab-hist" class="tab-content active">
@@ -1512,7 +1512,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 <div id="page-reportes" class="page">
   <div class="topbar"><div class="page-title">Reportes de producción</div><div class="page-sub">Producción por máquina, cumplimiento contra lo programado y atrasos</div></div>
   <div class="content">
-    <div class="tab-row" id="rep-tabs"><div class="tab active" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" onclick="repSetMode('hora',this)" title="Piezas procesadas por máquina, hora por hora, de un periodo que tú eliges">Hora por hora</div><div class="tab" onclick="repSetMode('programa',this)">Corte de Tubular</div><div class="tab" onclick="repSetMode('lamdia',this)">Corte de lámina · diario</div><div class="tab" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Corte de lámina · semana + días</div></div>
+    <div class="tab-row" id="rep-tabs"><div class="tab active" id="rep-tab-diario-btn" onclick="repSetMode('diario',this)">Reporte diario</div><div class="tab" id="rep-tab-semanal-btn" onclick="repSetMode('semanal',this)">Reporte semanal</div><div class="tab" id="rep-tab-hora-btn" onclick="repSetMode('hora',this)" title="Piezas procesadas por máquina, hora por hora, de un periodo que tú eliges">Hora por hora</div><div class="tab" id="rep-tab-programa-btn" onclick="repSetMode('programa',this)">Corte de Tubular</div><div class="tab" id="rep-tab-lamdia-btn" onclick="repSetMode('lamdia',this)">Corte de lámina · diario</div><div class="tab" id="rep-tab-lamcomp-btn" onclick="repSetMode('lamcomp',this)" title="Un solo archivo: reporte semanal + el reporte diario de cada día de la semana">Corte de lámina · semana + días</div></div>
     <div class="filter-row" style="align-items:flex-end;flex-wrap:wrap;gap:8px">
       <div id="rep-single" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap"><button class="btn" style="border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;padding:6px 10px" onclick="repShift(-1)" title="Anterior">◀</button>
       <div style="display:flex;flex-direction:column;gap:3px"><label id="rep-fecha-lbl" style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Día</label><input type="date" id="rep-fecha" onchange="renderReportes()" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg3);color:var(--text)"></div>
@@ -2264,26 +2264,51 @@ function onLoginSuccess(fresh){
 // botón de pestaña/menú correspondiente, más el sufijo "-btn" (ej. la
 // pestaña con key 'reg-tab-programa' tiene el botón #reg-tab-programa-btn;
 // un elemento de página como 'dashboard' usa su nav-item en vez de un tab).
+// Un grupo sin página propia (ej. 'otras': ligas a otras plataformas) se
+// marca en el HTML con data-perm="<key>", igual que cada una de sus ligas.
+// Una clave que una cuenta no tiene guardada (porque se agregó después) se
+// muestra: así nadie pierde de golpe lo que ya veía.
 const PERMISSIONS_TREE=[
   {key:'dashboard', label:'Dashboard'},
   {key:'registro', label:'Registrar turno', children:[
     {key:'reg-tab-programa', label:'Programa del día'},
     {key:'reg-tab-historial', label:'Historial'},
+    {key:'hora-tab-eval', label:'Historial › Evaluación por operador', hint:'También se quita en el menú Historial'},
   ]},
   {key:'aprovechamiento', label:'Aprovechamiento', children:[
+    {key:'tab-lamina', label:'Lámina — Laser de Cama'},
     {key:'tab-tubular', label:'Tubular — Laser'},
     {key:'tab-aprov-hist', label:'Historial'},
   ]},
   {key:'historial', label:'Historial'},
-  {key:'reportes', label:'Reportes'},
+  {key:'reportes', label:'Reportes', children:[
+    {key:'rep-tab-diario', label:'Reporte diario'},
+    {key:'rep-tab-semanal', label:'Reporte semanal'},
+    {key:'rep-tab-hora', label:'Hora por hora'},
+    {key:'rep-tab-programa', label:'Corte de Tubular'},
+    {key:'rep-tab-lamdia', label:'Corte de lámina · diario'},
+    {key:'rep-tab-lamcomp', label:'Corte de lámina · semana + días'},
+  ]},
   {key:'config', label:'Configuración', children:[
+    {key:'cfg-maquinas', label:'Máquinas'},
     {key:'cfg-laminas', label:'Calibres de lámina'},
     {key:'cfg-tubulares', label:'Tipos de tubular'},
     {key:'cfg-usuarios', label:'Usuarios'},
     {key:'cfg-checklist', label:'Checklist de arranque'},
   ]},
+  {key:'otras', label:'Otras plataformas', noPage:true, hint:'Solo quita la liga del menú; cada plataforma tiene su propio acceso', children:[
+    {key:'ext-laser-tubo', label:'Láser Tubo ↗'},
+    {key:'ext-prog-troq', label:'Programación Troqueles ↗'},
+  ]},
 ];
 const ALL_PERMISSION_KEYS=(()=>{ const ks=[]; PERMISSIONS_TREE.forEach(p=>{ ks.push(p.key); (p.children||[]).forEach(c=>ks.push(c.key)); }); return ks; })();
+// Clave de permiso → su grupo padre (para las pestañas)
+const PERM_PARENT=(()=>{ const m={}; PERMISSIONS_TREE.forEach(p=>(p.children||[]).forEach(c=>{ m[c.key]=p.key; })); return m; })();
+// ¿La cuenta activa puede ver esta pestaña/elemento del árbol? (sin sesión, sí)
+function permOk(key){
+  if(!currentUser || !ALL_PERMISSION_KEYS.includes(key)) return true;
+  return (currentUser.permissions||defaultPermissions(currentUser.role))[key]!==false;
+}
 // Permisos de partida según el rol — se pueden personalizar después por
 // cuenta desde Configuración → Usuarios, esto solo decide con qué empieza
 // una cuenta nueva.
@@ -2292,7 +2317,8 @@ function defaultPermissions(role){
   ALL_PERMISSION_KEYS.forEach(k=>{ perms[k]=true; });
   if(role==='operador'){
     ALL_PERMISSION_KEYS.forEach(k=>{
-      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='aprovechamiento'||k==='tab-tubular'||k==='tab-aprov-hist'||k==='aprov-captura');
+      // (Lámina, Evaluación por operador y las ligas a otras plataformas: el operador ya las veía antes de que fueran configurables)
+      perms[k] = (k==='registro'||k==='reg-tab-programa'||k==='reg-tab-historial'||k==='hora-tab-eval'||k==='aprovechamiento'||k==='tab-lamina'||k==='tab-tubular'||k==='tab-aprov-hist'||k==='aprov-captura'||k==='otras'||k==='ext-laser-tubo'||k==='ext-prog-troq');
     });
   } else if(role==='lider'){
     perms['cfg-usuarios']=false; // administrar cuentas queda para Ingeniero, salvo que se habilite a mano
@@ -2384,8 +2410,28 @@ function applyUserPermissionsUI(){
       const btn=document.getElementById(c.key+'-btn');
       if(btn){ btn.style.display = perms[c.key]!==false ? '' : 'none'; if(btn.id==='tab-tubular-btn'||btn.id==='tab-lamina-btn'){ if(perms[c.key]===false) btn.dataset.permHidden='1'; else delete btn.dataset.permHidden; } }
     });
+    // Grupo sin página (Otras plataformas): se oculta la sección si se quitó el grupo o todas sus ligas
+    if(p.noPage){
+      const kids=p.children||[], grupoOk=perms[p.key]!==false;
+      document.querySelectorAll('[data-perm="'+p.key+'"]').forEach(el=>{ el.style.display=(grupoOk && kids.some(c=>perms[c.key]!==false))?'':'none'; });
+      kids.forEach(c=>document.querySelectorAll('[data-perm="'+c.key+'"]').forEach(el=>{ el.style.display=(grupoOk && perms[c.key]!==false)?'':'none'; }));
+    }
   });
   aprovApplyScope();
+  permFixActiveTabs();
+}
+// Si la pestaña abierta quedó oculta por los accesos, se abre la primera visible de esa misma fila
+// (ej. a una cuenta sin «Reporte diario» le abre el siguiente reporte que sí tiene).
+function permFixActiveTabs(){
+  try{
+    ALL_PERMISSION_KEYS.forEach(k=>{
+      const btn=document.getElementById(k+'-btn');
+      if(!btn || !btn.classList.contains('active') || btn.style.display!=='none') return;
+      const row=btn.closest('.tab-row'); if(!row) return;
+      const next=Array.from(row.querySelectorAll(':scope > .tab')).find(t=>t!==btn && t.style.display!=='none' && !t.classList.contains('tab-disabled'));
+      if(next) next.click();
+    });
+  }catch(e){ console.warn('permFixActiveTabs',e); }
 }
 // Si la cuenta tiene uno o más Centros de Trabajo asignados (Configuración
 // → Usuarios), ya no los selecciona manualmente uno por uno: el selector
@@ -2446,7 +2492,7 @@ function applyRolePermissions(){
   // Si la cuenta no tiene acceso al Dashboard (su destino normal al entrar),
   // aterriza en el primer menú al que sí tenga acceso.
   if(currentUser.permissions.dashboard===false){
-    const landing=PERMISSIONS_TREE.find(p=>currentUser.permissions[p.key]!==false);
+    const landing=PERMISSIONS_TREE.find(p=>!p.noPage && permAllows(currentUser.permissions,p.key) && document.getElementById('page-'+p.key));
     if(landing){
       document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
       document.querySelectorAll('.nav-item, .nav-item-mini').forEach(n=>n.classList.remove('active'));
@@ -4763,7 +4809,7 @@ function renderUsersConfig(){
       </div>
       <div id="perm-editor-${u.id}" style="display:none;padding:.6rem 0 0">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
-          ${permissionsTreeHtml('edit-permchk-'+u.id, userPerms)}
+          ${permissionsTreeHtml('edit-permchk-'+u.id, userPerms, u.role)}
         </div>
         <div style="margin-top:8px;padding:.6rem .7rem;background:var(--bg3);border-radius:var(--radius)">
           <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:3px">Permisos de captura</div>
@@ -4779,18 +4825,21 @@ function renderUsersConfig(){
 }
 // Igual que ctCheckboxesHtml, pero para el árbol de menús/pestañas —
 // cada página con sus pestañas anidadas debajo.
-function permissionsTreeHtml(groupClass, perms){
+function permissionsTreeHtml(groupClass, perms, role){
+  // «Reportes» no guardado en la cuenta: lo ve Líder/Ingeniería, el Operador no (igual que permAllows)
+  const visto=k=>(perms[k]===undefined && k==='reportes') ? role!=='operador' : perms[k]!==false;
   return PERMISSIONS_TREE.map(p=>{
     const childrenHtml=(p.children||[]).map(c=>`
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;margin-left:20px;padding:2px 0">
+      <label ${c.hint?`title="${escH(c.hint)}"`:''} style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);cursor:pointer;margin-left:20px;padding:2px 0">
         <input type="checkbox" class="${groupClass}" value="${c.key}" ${perms[c.key]!==false?'checked':''} style="width:12px;height:12px;accent-color:var(--blue);cursor:pointer">
         ${c.label}
       </label>`).join('');
     return `<div style="margin-bottom:2px">
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;font-weight:600;padding:2px 0">
-          <input type="checkbox" class="${groupClass}" value="${p.key}" ${perms[p.key]!==false?'checked':''} style="width:13px;height:13px;accent-color:var(--blue);cursor:pointer">
+        <label ${p.hint?`title="${escH(p.hint)}"`:''} style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer;font-weight:600;padding:2px 0">
+          <input type="checkbox" class="${groupClass}" value="${p.key}" ${visto(p.key)?'checked':''} style="width:13px;height:13px;accent-color:var(--blue);cursor:pointer">
           ${p.label}
         </label>
+        ${p.hint?`<div style="font-size:10px;color:var(--text3);margin:0 0 2px 20px;line-height:1.35">${escH(p.hint)}</div>`:''}
         ${childrenHtml}
       </div>`;
   }).join('');
@@ -9446,6 +9495,7 @@ function repState(){
   return {mode:repMode,fecha:g('rep-fecha')||todayStr(),ct:g('rep-ct'),desde:d,hasta:h};
 }
 function repSetMode(m,el){
+  if(!permOk('rep-tab-'+m)) return;   // reporte quitado en Configuración → Usuarios → Accesos
   repMode=m;
   document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
   const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=repIsWeek(m)?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
@@ -9945,6 +9995,7 @@ function navigate(page,el){
 
 function switchTabScoped(id, el, scopeClass){
   // Only toggle tabs within the immediate tab-row parent's sibling tab-contents
+  if(!permOk(id)) return false;   // pestaña quitada en Accesos (ej. Evaluación por operador)
   const tabRow = el.closest('.tab-row');
   if(!tabRow) return;
   const parent = tabRow.parentElement;
