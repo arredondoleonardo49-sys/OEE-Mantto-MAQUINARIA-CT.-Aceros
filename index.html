@@ -1813,8 +1813,9 @@ function progExclMotivo(ex,modelo,familia,ruta){
 const PROG_TROQ_CT='TROQUELES';
 const PROG_TROQ_URL='https://script.google.com/macros/s/AKfycbz2FkhVj77SGb93Se7AHrgryIVF01W9flBsvqpB_PxsZWdhGERtzMxCNTmTXGd-b7OqTA/exec';
 const PROG_TROQ_APP='https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/';
-const PROG_TROQ_CADA=10*60000;   // se vuelve a leer cada 10 min (y con «Actualizar»)
-const progTroq={cargado:false,cargando:null,error:'',fueraR:new Set(),fueraM:new Set(),lista:[],docs:{},at:0,firma:''};
+const PROG_TROQ_CADA=10*60000;   // lectura completa cada 10 min (y con «Actualizar»)
+const PROG_TROQ_CAMBIOS=15000;   // casi en tiempo real (Leonardo, 2026-11-18): cada 15 s solo lo que cambió, con la pestaña a la vista
+const progTroq={cargado:false,cargando:null,error:'',fueraR:new Set(),fueraM:new Set(),lista:[],docs:{},at:0,desde:0,fallas:0,firma:''};
 const progTroqNorm=s=>progExNorm(String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,''));
 let _progTroqN=0;
 function progTroqJsonp(params,ms){
@@ -1829,6 +1830,19 @@ function progTroqJsonp(params,ms){
     document.head.appendChild(sc);
   });
 }
+/** Arma los conjuntos y la lista de «fuera» desde los documentos de Troqueles de la lista */
+function progTroqArmar(){
+  const fR=new Set(), fM=new Set(), lista=[];
+  Object.entries(progTroq.docs).forEach(([k,x])=>{ if(x.estado!=='fuera') return; const v=progTroqNorm(x.valor), t=x.tipo==='ruta'?'ruta':'modelo'; if(!v) return;
+    (t==='ruta'?fR:fM).add(v); lista.push({tipo:t,valor:v,desc:String(x.desc||'').trim(),key:k,origen:String(x.origen||'')}); });
+  lista.sort((a,b)=>b.tipo.localeCompare(a.tipo)||a.valor.localeCompare(b.valor,'es',{numeric:true}));
+  Object.assign(progTroq,{fueraR:fR,fueraM:fM,lista});
+}
+/** Repinta solo si la lista (o su estado) cambió */
+function progTroqSiCambio(){
+  const firma=[progTroq.cargado,progTroq.error,[...progTroq.fueraR].join(','),[...progTroq.fueraM].join(',')].join('|');
+  if(firma!==progTroq.firma){ progTroq.firma=firma; progTroqRepintar(); }
+}
 function cargarProgTroq(){
   if(progTroq.cargando) return progTroq.cargando;
   progTroq.cargando=(async()=>{
@@ -1836,17 +1850,31 @@ function cargarProgTroq(){
       const d=await progTroqJsonp({accion:'todo'});
       const docs={};   // documentos de Troqueles de la lista (todas las claves): sirven para regresar un modelo «dentro»
       Object.entries((d.datos&&d.datos.modelos)||{}).forEach(([k,x])=>{ if(x&&x.ct===PROG_TROQ_CT) docs[k]=x; });
-      const fR=new Set(), fM=new Set(), lista=[];
-      Object.entries(docs).forEach(([k,x])=>{ if(x.estado!=='fuera') return; const v=progTroqNorm(x.valor), t=x.tipo==='ruta'?'ruta':'modelo'; if(!v) return;
-        (t==='ruta'?fR:fM).add(v); lista.push({tipo:t,valor:v,desc:String(x.desc||'').trim(),key:k,origen:String(x.origen||'')}); });
-      lista.sort((a,b)=>b.tipo.localeCompare(a.tipo)||a.valor.localeCompare(b.valor,'es',{numeric:true}));
-      Object.assign(progTroq,{fueraR:fR,fueraM:fM,lista,docs,cargado:true,error:'',at:Date.now()});
+      progTroq.docs=docs; progTroqArmar();
+      Object.assign(progTroq,{cargado:true,error:'',fallas:0,at:Date.now(),desde:(Number(d.ahora)||Date.now())-15000});
     }catch(e){ progTroq.error=(e&&e.message)||String(e); }
     progTroq.cargando=null;
-    const firma=[progTroq.cargado,progTroq.error,[...progTroq.fueraR].join(','),[...progTroq.fueraM].join(',')].join('|');
-    if(firma!==progTroq.firma){ progTroq.firma=firma; progTroqRepintar(); }
+    progTroqSiCambio();
   })();
   return progTroq.cargando;
+}
+/** Casi en tiempo real: trae solo lo que cambió en la lista desde la última lectura (lo marcado o regresado en Programación Troqueles) */
+let _progTroqCambiando=false;
+async function progTroqCambios(){
+  if(!progTroq.cargado||progTroq.cargando||_progTroqCambiando||_progTroqEscribiendo||document.hidden) return;
+  _progTroqCambiando=true;
+  try{
+    const d=await progTroqJsonp({accion:'cambios',desde:progTroq.desde},20000);
+    Object.entries((d.datos&&d.datos.modelos)||{}).forEach(([k,x])=>{ if(x&&x.ct===PROG_TROQ_CT) progTroq.docs[k]=x; else delete progTroq.docs[k]; });
+    (((d.borrados||{}).modelos)||[]).forEach(k=>{ delete progTroq.docs[k]; });
+    progTroqArmar();
+    Object.assign(progTroq,{error:'',fallas:0,at:Date.now(),desde:(Number(d.ahora)||Date.now())-15000});
+  }catch(e){
+    // una falla suelta no se avisa; si sigue sin conexión ~1 min, sale el aviso
+    if(++progTroq.fallas>=4) progTroq.error=(e&&e.message)||String(e);
+  }
+  _progTroqCambiando=false;
+  progTroqSiCambio();
 }
 function progTroqRepintar(){
   if(!currentUser) return;
@@ -1930,6 +1958,8 @@ async function progTroqRegresar(clave){
 }
 cargarProgTroq();
 setInterval(()=>{ cargarProgTroq(); },PROG_TROQ_CADA);
+setInterval(()=>{ progTroqCambios(); },PROG_TROQ_CAMBIOS);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) progTroqCambios(); });
 // ── Programa de Troqueles de la OEE → Programación Troqueles (Leonardo, 2026-11-18) ──
 // Cada vez que aquí se sube el programa de Troqueles (BC «Órdenes producción lanzadas»), el mismo archivo se lee igual que en
 // Programación Troqueles (su leerBC: hoja con «Nº ruta» y «Cód. procedencia»; día = fecha de vencimiento más común) y se deja
