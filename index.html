@@ -1869,6 +1869,68 @@ function progTroqAviso(){
 }
 cargarProgTroq();
 setInterval(()=>{ cargarProgTroq(); },PROG_TROQ_CADA);
+// ── Programa de Troqueles de la OEE → Programación Troqueles (Leonardo, 2026-11-18) ──
+// Cada vez que aquí se sube el programa de Troqueles (BC «Órdenes producción lanzadas»), el mismo archivo se lee igual que en
+// Programación Troqueles (su leerBC: hoja con «Nº ruta» y «Cód. procedencia»; día = fecha de vencimiento más común) y se deja
+// en su nube, en borradores «OEE|TROQUELES» (un buzón: no pisa el borrador que haya allá). Programación Troqueles lo toma al
+// abrir o en su siguiente sincronización: retira solos los modelos fuera y, si no hay modelos nuevos, guarda el programa;
+// con modelos nuevos queda como borrador para revisarlo.
+const PROG_TROQ_BUZON='OEE|TROQUELES';
+const progTroqNormH=s=>String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const progTroqDia=iso=>{ const [y,m,d]=String(iso||'').split('-'); return d?`${d}/${m}/${y}`:'—'; };
+/** Lee el exporte de BC igual que Programación Troqueles (leerBC). null si el archivo no trae «Nº ruta» y «Cód. procedencia». */
+function progTroqLeerBC(wb,nombre){
+  const pad=n=>String(n).padStart(2,'0');
+  for(const hoja of wb.SheetNames){
+    const ws=wb.Sheets[hoja]; if(!ws) continue;
+    const filas=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null,blankrows:true});
+    const hi=filas.slice(0,6).findIndex(f=>f&&f.some(c=>progTroqNormH(c)==='N RUTA')&&f.some(c=>/PROCEDENCIA/.test(progTroqNormH(c))));
+    if(hi<0) continue;
+    const H=filas[hi].map(progTroqNormH), col=(...re)=>H.findIndex(h=>re.some(r=>r.test(h)));
+    const cOp=col(/^N$/,/^NO$/), cMod=col(/PROCEDENCIA/), cCant=col(/^CANTIDAD$/), cDesc=col(/^DESCRIPCION$/), cRuta=col(/^N RUTA$/),
+          cIni=col(/FECHA HORA INICIAL/), cVen=col(/FECHA VENCIMIENTO/), cGr=col(/GRUPO CONTABLE PROD/), cPed=col(/PEDIDOS QUE CUBRE/);
+    const txt=(f,i)=>i>=0?String(f[i]==null?'':f[i]).trim():'';
+    const ops=[], dias={};
+    for(const f of filas.slice(hi+1)){
+      if(!f) continue;
+      const mod=txt(f,cMod), cant=Number(cMod>=0&&cCant>=0?f[cCant]:0);
+      if(!mod||!(cant>0)) continue;
+      let ini='';
+      if(cIni>=0&&typeof f[cIni]==='number'){ const d=XLSX.SSF.parse_date_code(f[cIni]); if(d) ini=`${d.y}-${pad(d.m)}-${pad(d.d)}T${pad(d.H)}:${pad(d.M)}`; }
+      if(cVen>=0&&typeof f[cVen]==='number'){ const d=XLSX.SSF.parse_date_code(f[cVen]); if(d){ const v=`${d.y}-${pad(d.m)}-${pad(d.d)}`; dias[v]=(dias[v]||0)+1; } }
+      const ruta=txt(f,cRuta).replace(/\.0+$/,'');
+      ops.push({op:txt(f,cOp),modelo:mod,cant,desc:txt(f,cDesc),ruta,rutaSrc:ruta?'BC':'',familia:txt(f,cGr).replace(/^P[T]?-(PR )?/i,''),ini,pedido:txt(f,cPed)});
+    }
+    if(!ops.length) return null;
+    const dia=(Object.entries(dias).sort((a,b)=>b[1]-a[1])[0]||[])[0]||todayStr();
+    return {origen:'bc',tipo:'BC',archivo:nombre,dia,cargado:new Date().toISOString(),ops,ctBC:{},bcRutas:null};
+  }
+  return null;
+}
+/** Manda el archivo leído al buzón de Programación Troqueles y confirma que llegó. → {ok, b} o {ok:false, txt} */
+async function progTroqEnviar(wb,nombre,fechaOEE){
+  let b=null;
+  try{ b=progTroqLeerBC(wb,nombre); }catch(e){ b=null; }
+  if(!b) return {ok:false,txt:'No se mandó a Programación Troqueles: el archivo no trae las columnas «Nº ruta» y «Cód. procedencia» de BC (cárgalo allá a mano)'};
+  const por=((currentUser&&currentUser.name)||'').slice(0,40);
+  b.deOEE={fecha:fechaOEE,por,subido:b.cargado};
+  const t0=Date.now();
+  try{
+    await fetch(PROG_TROQ_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify({accion:'guardar',por:('OEE '+por).trim(),cambios:[{col:'borradores',clave:PROG_TROQ_BUZON,json:JSON.stringify(b)}]})});
+  }catch(e){ return {ok:false,txt:'No se pudo mandar a Programación Troqueles (sin conexión): vuelve a subir el programa o cárgalo allá'}; }
+  // Confirmación (el envío es «no-cors» y no trae respuesta): la nube debe traer el buzón con esta carga, o ya tomado (borrado)
+  for(let i=0;i<4;i++){
+    await new Promise(r=>setTimeout(r,2000+i*2000));
+    try{
+      const d=await progTroqJsonp({accion:'cambios',desde:t0-10*60000},30000);
+      const x=((d.datos||{}).borradores||{})[PROG_TROQ_BUZON];
+      if(x&&x.cargado===b.cargado) return {ok:true,b};
+      if(!x&&(((d.borrados||{}).borradores)||[]).includes(PROG_TROQ_BUZON)) return {ok:true,b};
+    }catch(e){}
+  }
+  return {ok:false,txt:'No se pudo confirmar que llegó a Programación Troqueles: revisa allá en un minuto o vuelve a subir el programa'};
+}
 // Función (modelo,familia,ruta) → motivo ('' = entra) de las exclusiones del CT, o null si no hay ninguna.
 // Troqueles: la lista de Programación Troqueles; Est. Muebles: la lista propia de la OEE (modelo base, modelo o familia).
 function progExclMotivoFn(ct){
@@ -3871,6 +3933,15 @@ function processProgramaFile(file){
         const avT=troqUp?progTroqAviso():'';
         if(avT) msg.textContent+=` · ⚠ ${avT}`;
         msg.style.color=(missing.length||lost||avT)?'var(--amber)':'var(--green)';
+        // El mismo archivo se manda a Programación Troqueles (se acomoda allá con sus modelos fuera)
+        if(troqUp && found.includes(PROG_CT_KEYS[PROG_TROQ_CT])){
+          const base=msg.textContent;
+          msg.textContent=base+' · Enviando a Programación Troqueles…';
+          progTroqEnviar(wb,file.name,fecha).then(r=>{
+            msg.textContent=base+(r.ok?` · ✓ También quedó en Programación Troqueles (programa del ${progTroqDia(r.b.dia)}; ${r.b.ops.length} OPs): allá se retiran solos los modelos fuera`:` · ⚠ ${r.txt}`);
+            if(!r.ok) msg.style.color='var(--amber)';
+          });
+        }
       } else {
         msg.textContent=todoExcl?`⚠ Todas las OPs del archivo están excluidas (${exclTxt}): no se cargó nada.`:(ctKey?'⚠ No se encontró la lista de OPs: el archivo debe traer una columna de OP (Nº u OP) y una de Cantidad.':'⚠ No se encontró ninguna hoja que coincida con GW1, GW2 o Laser de Cama.');
         msg.style.color='var(--amber)';
