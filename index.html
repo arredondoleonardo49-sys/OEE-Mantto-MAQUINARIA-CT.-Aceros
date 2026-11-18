@@ -1814,7 +1814,7 @@ const PROG_TROQ_CT='TROQUELES';
 const PROG_TROQ_URL='https://script.google.com/macros/s/AKfycbz2FkhVj77SGb93Se7AHrgryIVF01W9flBsvqpB_PxsZWdhGERtzMxCNTmTXGd-b7OqTA/exec';
 const PROG_TROQ_APP='https://arredondoleonardo49-sys.github.io/Programas-de-Produccion/';
 const PROG_TROQ_CADA=10*60000;   // se vuelve a leer cada 10 min (y con «Actualizar»)
-const progTroq={cargado:false,cargando:null,error:'',fueraR:new Set(),fueraM:new Set(),lista:[],at:0,firma:''};
+const progTroq={cargado:false,cargando:null,error:'',fueraR:new Set(),fueraM:new Set(),lista:[],docs:{},at:0,firma:''};
 const progTroqNorm=s=>progExNorm(String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,''));
 let _progTroqN=0;
 function progTroqJsonp(params,ms){
@@ -1834,12 +1834,13 @@ function cargarProgTroq(){
   progTroq.cargando=(async()=>{
     try{
       const d=await progTroqJsonp({accion:'todo'});
-      const mods=Object.values((d.datos&&d.datos.modelos)||{}).filter(x=>x&&x.ct===PROG_TROQ_CT&&x.estado==='fuera');
+      const docs={};   // documentos de Troqueles de la lista (todas las claves): sirven para regresar un modelo «dentro»
+      Object.entries((d.datos&&d.datos.modelos)||{}).forEach(([k,x])=>{ if(x&&x.ct===PROG_TROQ_CT) docs[k]=x; });
       const fR=new Set(), fM=new Set(), lista=[];
-      mods.forEach(x=>{ const v=progTroqNorm(x.valor), t=x.tipo==='ruta'?'ruta':'modelo'; if(!v) return;
-        (t==='ruta'?fR:fM).add(v); lista.push({tipo:t,valor:v,desc:String(x.desc||'').trim()}); });
+      Object.entries(docs).forEach(([k,x])=>{ if(x.estado!=='fuera') return; const v=progTroqNorm(x.valor), t=x.tipo==='ruta'?'ruta':'modelo'; if(!v) return;
+        (t==='ruta'?fR:fM).add(v); lista.push({tipo:t,valor:v,desc:String(x.desc||'').trim(),key:k,origen:String(x.origen||'')}); });
       lista.sort((a,b)=>b.tipo.localeCompare(a.tipo)||a.valor.localeCompare(b.valor,'es',{numeric:true}));
-      Object.assign(progTroq,{fueraR:fR,fueraM:fM,lista,cargado:true,error:'',at:Date.now()});
+      Object.assign(progTroq,{fueraR:fR,fueraM:fM,lista,docs,cargado:true,error:'',at:Date.now()});
     }catch(e){ progTroq.error=(e&&e.message)||String(e); }
     progTroq.cargando=null;
     const firma=[progTroq.cargado,progTroq.error,[...progTroq.fueraR].join(','),[...progTroq.fueraM].join(',')].join('|');
@@ -1866,6 +1867,66 @@ function progTroqAviso(){
   if(!progTroq.cargado) return `No se pudo leer la lista de Programación Troqueles (${progTroq.error}): por ahora no se quita ningún modelo del programa de Troqueles.`;
   const t=new Date(progTroq.at);
   return `No se pudo actualizar la lista de Programación Troqueles (${progTroq.error}): se usa la leída a las ${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}.`;
+}
+// ── Excluir desde la OEE (Leonardo, 2026-11-18: «regresa la opción de excluir», Programación Troqueles aún no se usa del todo) ──
+// El «⊘ Excluir» de Troqueles en la OEE escribe en la MISMA lista de Programación Troqueles (colección «modelos» de su nube,
+// mismo formato que su «Marcar fuera»): una sola lista para la OEE, Programación Troqueles y Nidos.
+const progTroqUp=s=>String(s==null?'':s).trim().toUpperCase();                       // = up() de Programación Troqueles
+const progTroqKey=(tipo,v)=>`${PROG_TROQ_CT}|${tipo==='ruta'?'R':'M'}:${progTroqUp(v)}`;   // = keyR / keyM
+const progTroqPuede=()=>!!currentUser&&(currentUser.role==='lider'||currentUser.role==='ingeniero');
+let _progTroqEscribiendo=false;
+/** Manda cambios a la lista (cambios: [{clave, doc} | {clave, borrar:true}]) y confirma releyendo la nube. → true si quedó */
+async function progTroqGuardarModelos(cambios){
+  const por=('OEE '+((currentUser&&currentUser.name)||'')).trim().slice(0,60);
+  await fetch(PROG_TROQ_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({accion:'guardar',por,cambios:cambios.map(c=>c.borrar?{col:'modelos',clave:c.clave,borrar:true}:{col:'modelos',clave:c.clave,json:JSON.stringify(c.doc)})})});
+  let ok=false;
+  for(let i=0;i<4&&!ok;i++){
+    await new Promise(r=>setTimeout(r,1500+i*1500));
+    try{
+      const d=await progTroqJsonp({accion:'todo'},30000), m=(d.datos&&d.datos.modelos)||{};
+      ok=cambios.every(c=>c.borrar?!m[c.clave]:(m[c.clave]&&m[c.clave].estado===c.doc.estado&&m[c.clave].act===c.doc.act));
+    }catch(e){}
+  }
+  await cargarProgTroq();
+  return ok;
+}
+/** Marca fuera de Troqueles (tipo 'ruta' = modelo base, o 'modelo'). items: [{tipo, valor, desc, ruta, familia}] */
+async function progTroqExcluir(items,txtOk){
+  if(_progTroqEscribiendo){ progMsg('Espera: se está guardando el cambio anterior en Programación Troqueles.','var(--amber)'); return false; }
+  const now=new Date().toISOString(), origen=('OEE · '+((currentUser&&currentUser.name)||'')).trim();
+  const cambios=items.map(x=>{ const clave=progTroqKey(x.tipo,x.valor), prev=progTroq.docs[clave];
+    return {clave,doc:{key:clave,ct:PROG_TROQ_CT,tipo:x.tipo,valor:String(x.valor).trim(),estado:'fuera',ruta:x.tipo==='ruta'?String(x.valor).trim():String(x.ruta||'').trim(),
+      desc:String(x.desc||'').trim(),familia:String(x.familia||'').trim(),alta:(prev&&prev.alta)||now,act:now,origen}}; });
+  // se ve al momento; si la nube no lo confirma, la lista se relee y regresa a como estaba
+  cambios.forEach(c=>{ const v=progTroqNorm(c.doc.valor); (c.doc.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).add(v);
+    if(!progTroq.lista.some(x=>x.key===c.clave)) progTroq.lista.push({tipo:c.doc.tipo,valor:v,desc:c.doc.desc,key:c.clave,origen}); });
+  renderProgramaDia(true); try{ renderDashboard(); }catch(e){}
+  _progTroqEscribiendo=true; progMsg('Guardando en Programación Troqueles…','var(--text3)');
+  let ok=false, red=false; try{ ok=await progTroqGuardarModelos(cambios); }catch(e){ ok=false; red=true; }
+  _progTroqEscribiendo=false;
+  if(!ok) cambios.forEach(c=>{   // lo que la nube no tiene como «fuera» se regresa en pantalla
+    const d=progTroq.docs[c.clave]; if(d&&d.estado==='fuera') return;
+    (c.doc.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).delete(progTroqNorm(c.doc.valor)); progTroq.lista=progTroq.lista.filter(x=>x.key!==c.clave); });
+  renderProgramaDia(true); try{ renderDashboard(); }catch(e){}
+  progMsg(ok?txtOk:(red||progTroq.error?'⚠ No se pudo guardar en Programación Troqueles (sin conexión): no se excluyó. Intenta de nuevo.'
+    :'⚠ Programación Troqueles no confirmó el cambio: revisa en un minuto con «↺ Actualizar».'),ok?undefined:'var(--amber)');
+  return ok;
+}
+/** Regresa a Troqueles un modelo o modelo base de la lista (como «Regresar» de Programación Troqueles) */
+async function progTroqRegresar(clave){
+  const x=progTroq.lista.find(y=>y.key===clave); if(!x) return;
+  const nom=(x.tipo==='ruta'?'el modelo base ':'el modelo ')+x.valor;
+  if(!confirm(`¿Regresar ${nom} a Troqueles?\n\nSus OPs vuelven a aparecer en el programa y en lo proyectado. También se quita de la lista de Programación Troqueles (la misma que usa Nidos).`)) return;
+  if(_progTroqEscribiendo){ progMsg('Espera: se está guardando el cambio anterior en Programación Troqueles.','var(--amber)'); return; }
+  const prev=progTroq.docs[clave], now=new Date().toISOString();
+  const c=x.tipo==='ruta'||!prev?{clave,borrar:true}:{clave,doc:{...prev,estado:'dentro',act:now}};
+  _progTroqEscribiendo=true; progMsg('Guardando en Programación Troqueles…','var(--text3)');
+  let ok=false, red=false; try{ ok=await progTroqGuardarModelos([c]); }catch(e){ ok=false; red=true; }
+  _progTroqEscribiendo=false;
+  renderProgramaDia(true); try{ renderDashboard(); }catch(e){}
+  progMsg(ok?`✓ ${nom[3].toUpperCase()+nom.slice(4)} regresó a Troqueles`:(red||progTroq.error?'⚠ No se pudo guardar en Programación Troqueles (sin conexión): sigue fuera. Intenta de nuevo.'
+    :'⚠ Programación Troqueles no confirmó el cambio: revisa en un minuto con «↺ Actualizar».'),ok?undefined:'var(--amber)');
 }
 cargarProgTroq();
 setInterval(()=>{ cargarProgTroq(); },PROG_TROQ_CADA);
@@ -4033,8 +4094,8 @@ function renderProgramaTable(rec){
   const xf=progCtExclFn(rec), ctR=progIsCtRec(rec);
   const iRuta=ctR?rows[0].findIndex(h=>String(h).trim().toLowerCase()==='ruta'):-1;
   const ctOf=ctR?(rec.ct||PROGRAMA_MACHINE_CT[rec.machine]||''):'';
-  // Troqueles no lleva botón propio: sus modelos fuera se marcan en Programación Troqueles
-  const canExcl=ctR && ctOf!==PROG_TROQ_CT && !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero');
+  // En Troqueles el botón guarda en la lista de Programación Troqueles (la misma de Nidos); en Est. Muebles, en la lista de la OEE
+  const canExcl=ctR && !!currentUser && (currentUser.role==='lider'||currentUser.role==='ingeniero');
   const thead=`<thead><tr>${cols.map(c=>`<th class="${c.k==='cons'?'pc-cons':c.k==='com'?'pc-com':c.k==='eq'?'pc-eq':''}"${c.k==='eq'?' style="text-align:right"':''}>${c.label===''?'&nbsp;':esc(c.label)}</th>`).join('')}</tr>
     <tr class="programa-filter-row">${cols.map((c,j)=>{
       if(c.k==='d' && c.i===cortadoColIdx){
@@ -4100,7 +4161,7 @@ function renderProgramaTable(rec){
     }
     if(cIdx===iRuta && canExcl && row[cIdx]!=null && String(row[cIdx]).trim()!==''){
       const v=String(row[cIdx]).trim(), vq=encodeURIComponent(v).replace(/'/g,'%27');
-      return `<td class="prog-ruta">${esc(v)} <button type="button" class="prog-exb" title="Excluir el modelo base ${esc(v)}: sus OPs se quitan del programa y de lo proyectado en el Dashboard, y ya no entran al subir el programa" onclick="progExclBase('${esc(ctOf)}',decodeURIComponent('${vq}'))">⊘ Excluir</button></td>`;
+      return `<td class="prog-ruta">${esc(v)} <button type="button" class="prog-exb" title="${ctOf===PROG_TROQ_CT?`Marcar el modelo base ${esc(v)} fuera de Troqueles: sus OPs se quitan del programa y de lo proyectado; se guarda en la lista de Programación Troqueles (la misma de Nidos)`:`Excluir el modelo base ${esc(v)}: sus OPs se quitan del programa y de lo proyectado en el Dashboard, y ya no entran al subir el programa`}" onclick="progExclBase('${esc(ctOf)}',decodeURIComponent('${vq}'))">⊘ Excluir</button></td>`;
     }
     return `<td>${row[cIdx]!=null&&row[cIdx]!==''?esc(row[cIdx]):''}</td>`;
   }).join('')}</tr>`;
@@ -4284,25 +4345,46 @@ function refreshProgramaDiaFromCloud(done){
 let _progLastKey='';
 // Panel «Excluidos del programa» (Líder / Ingeniería, programa del CT): modelos y familias que ya no entran al subir el programa
 let _progExclOpen=false;
-// Troqueles: panel de solo lectura con la lista de Programación Troqueles (allá se marcan; aquí no hay botón propio)
+// Troqueles: la lista es la de Programación Troqueles. Líder e Ingeniería excluyen aquí (botón «⊘ Excluir» del renglón o este
+// panel) y se guarda en esa misma lista; también se marca allá («Marcar fuera»).
 function progTroqPanelHtml(rec){
-  const e=s=>escH(String(s)), L=progTroq.lista, av=progTroqAviso();
+  const e=s=>escH(String(s)), L=progTroq.lista, av=progTroqAviso(), puede=progTroqPuede();
   const hhmm=t=>{ const d=new Date(t); return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); };
-  let afect=0; const xf=progCtExclFn(rec); if(xf) rec.rows.slice(1).forEach(r=>{ if(xf(r)) afect++; });
-  const exOEE=progExclGet(PROG_TROQ_CT), viejos=[...new Set([...exOEE.bases,...exOEE.modelos,...exOEE.familias].map(progExNorm).filter(Boolean))];
+  let afect=0, opts=''; const xf=progCtExclFn(rec); if(xf) rec.rows.slice(1).forEach(r=>{ if(xf(r)) afect++; });
+  if(rec&&rec.rows&&rec.rows.length>1){   // modelos y modelos base del programa visible, para elegir
+    const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iM=H.indexOf('modelo'), iD=H.indexOf('descripción'), iR=H.indexOf('ruta'), vs={};
+    rec.rows.slice(1).forEach(r=>{ const d=iD>=0?String(r[iD]).trim():''; [iM,iR].forEach(i=>{ const v=i>=0?String(r[i]==null?'':r[i]).trim():''; if(v&&!vs[v]) vs[v]=d; }); });
+    opts=Object.keys(vs).sort().map(v=>`<option value="${e(v)}">${e(vs[v])}</option>`).join('');
+  }
+  // la lista propia que tenía la OEE para Troqueles (hasta el 17-nov): lo que aún no está en la lista de Programación Troqueles
+  const exOEE=progExclGet(PROG_TROQ_CT);
+  const viejos=[...exOEE.bases.map(v=>({tipo:'ruta',valor:progExNorm(v)})),...exOEE.modelos.map(v=>({tipo:'modelo',valor:progExNorm(v)}))]
+    .filter(x=>x.valor&&!(x.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(progTroqNorm(x.valor)));
   const cuantos=progTroq.cargado?String(L.length):(progTroq.cargando?'leyendo…':'sin lista');
-  const chips=L.map(x=>`<span class="prog-excl-chip ro"${x.desc?` title="${e(x.desc)}"`:''}>${x.tipo==='ruta'?'Modelo base':'Modelo'} <b>${e(x.valor)}</b></span>`).join('');
+  const chips=L.map(x=>`<span class="prog-excl-chip${puede?'':' ro'}" title="${e((x.desc?x.desc+' · ':'')+(x.origen?'marcado desde '+x.origen:'marcado en Programación Troqueles'))}">${x.tipo==='ruta'?'Modelo base':'Modelo'} <b>${e(x.valor)}</b>${puede?`<button type="button" title="Regresar a Troqueles (sus OPs vuelven al programa)" onclick="progTroqRegresar(decodeURIComponent('${encodeURIComponent(x.key).replace(/'/g,'%27')}'))">×</button>`:''}</span>`).join('');
   return `<div class="prog-excl${_progExclOpen?' open':''}">
-    <div class="prog-excl-h" onclick="_progExclOpen=!_progExclOpen;renderProgramaDia(true)"><span>⊘ Fuera de <b>Troqueles</b> (${e(cuantos)})</span><span class="prog-excl-sub">se marcan en Programación Troqueles y aquí se quitan solos</span><span style="margin-left:auto">${_progExclOpen?'▾':'▸'}</span></div>
+    <div class="prog-excl-h" onclick="_progExclOpen=!_progExclOpen;renderProgramaDia(true)"><span>⊘ Fuera de <b>Troqueles</b> (${e(cuantos)})</span><span class="prog-excl-sub">misma lista que Programación Troqueles y Nidos</span><span style="margin-left:auto">${_progExclOpen?'▾':'▸'}</span></div>
     ${av?`<div class="prog-excl-note" style="padding:0 12px 8px">⚠ ${e(av)}</div>`:''}
     ${_progExclOpen?`<div class="prog-excl-b">
       <div class="prog-excl-chips">${chips||`<span style="color:var(--text3)">${progTroq.cargado?'Ningún modelo marcado fuera de Troqueles.':'Sin lista.'}</span>`}</div>
-      <div class="prog-excl-add" style="font-size:11px;color:var(--text3)">Los modelos que no pasan por Troqueles se marcan en <a href="${PROG_TROQ_APP}" target="_blank" rel="noopener" style="color:var(--blue)">Programación Troqueles ↗</a> («Marcar fuera»): sus OPs se quitan del programa, de lo proyectado y del atraso.${progTroq.at?` Lista leída a las ${hhmm(progTroq.at)}.`:''}
+      ${puede?`<div class="prog-excl-note" style="margin-top:0">Lo más rápido: en la tabla, botón <b>⊘ Excluir</b> junto al <b>Modelo base</b> de la OP. Se guarda en la lista de Programación Troqueles: sale del programa, de lo proyectado y del atraso, y también de Programación Troqueles y Nidos.</div>
+      <div class="prog-excl-add"><input type="text" id="prog-excl-in" list="prog-excl-dl" placeholder="Modelo (p. ej. NI105) o modelo base (p. ej. 105)" autocomplete="off"><datalist id="prog-excl-dl">${opts}</datalist>
+        <button type="button" class="btn" onclick="progExclAdd('${PROG_TROQ_CT}','bases')">Excluir modelo base</button><button type="button" class="btn" onclick="progExclAdd('${PROG_TROQ_CT}','modelos')">Excluir modelo</button></div>`:''}
+      <div class="prog-excl-add" style="font-size:11px;color:var(--text3)">También se marcan en <a href="${PROG_TROQ_APP}" target="_blank" rel="noopener" style="color:var(--blue)">Programación Troqueles ↗</a>.${progTroq.at?` Lista leída a las ${hhmm(progTroq.at)}.`:''}
         <button type="button" class="btn" onclick="progTroqActualizar()">↺ Actualizar</button></div>
       ${afect?`<div class="prog-excl-note">En el programa que ves hay <b>${afect}</b> OP${afect===1?'':'s'} fuera de Troqueles: no se ${afect===1?'muestra':'muestran'} ni ${afect===1?'cuenta':'cuentan'} (tampoco en el Dashboard).</div>`:''}
-      ${viejos.length?`<div class="prog-excl-note" style="color:var(--text3)">La lista propia que tenía la OEE para Troqueles ya no se usa (${viejos.map(e).join(', ')}): si siguen fuera, márcalos en Programación Troqueles.</div>`:''}
+      ${viejos.length?`<div class="prog-excl-note">La OEE tenía excluidos para Troqueles que no están en la lista (${viejos.map(x=>e((x.tipo==='ruta'?'modelo base ':'modelo ')+x.valor)).join(', ')}).${puede?` <button type="button" class="btn" onclick="progTroqPasarViejos()">Pasarlos a la lista</button>`:''}</div>`:''}
     </div>`:''}
   </div>`;
+}
+/** Pasa a la lista de Programación Troqueles los excluidos que la OEE tenía para Troqueles (no borra la lista vieja) */
+async function progTroqPasarViejos(){
+  const ex=progExclGet(PROG_TROQ_CT);
+  const items=[...ex.bases.map(v=>({tipo:'ruta',valor:progExNorm(v)})),...ex.modelos.map(v=>({tipo:'modelo',valor:progExNorm(v)}))]
+    .filter(x=>x.valor&&!(x.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(progTroqNorm(x.valor)));
+  if(!items.length) return;
+  if(!confirm(`¿Marcar fuera de Troqueles ${items.length===1?'este':'estos'} ${items.length}?\n\n${items.map(x=>(x.tipo==='ruta'?'Modelo base ':'Modelo ')+x.valor).join('\n')}\n\nSe guardan en la lista de Programación Troqueles (la misma que usa Nidos).`)) return;
+  await progTroqExcluir(items,`✓ ${items.length} excluido${items.length===1?'':'s'} pasado${items.length===1?'':'s'} a la lista de Programación Troqueles`);
 }
 async function progTroqActualizar(){
   progMsg('Leyendo Programación Troqueles…','var(--text3)');
@@ -4337,9 +4419,39 @@ function progExclPanelHtml(machine,rec){
     </div>`:''}
   </div>`;
 }
-const PROG_TROQ_SOLO_ALLA='En Troqueles los modelos que no pasan se marcan en Programación Troqueles; la OEE toma esa lista sola.';
+// Troqueles: excluir desde el panel (modelo o modelo base escrito) → lista de Programación Troqueles
+function progTroqExclAdd(kind){
+  const inp=document.getElementById('prog-excl-in'), v=String((inp&&inp.value)||'').trim().replace(/^PT-/i,'');
+  if(!v){ progMsg('Escribe el modelo o el modelo base que quieres excluir.','var(--amber)'); if(inp) inp.focus(); return; }
+  const tipo=kind==='bases'?'ruta':'modelo';
+  if((tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(progTroqNorm(v))){ progMsg('Ya estaba fuera de Troqueles.','var(--amber)'); return; }
+  // descripción, ruta y familia del programa visible (si está ahí)
+  let desc='', ruta='', familia='';
+  const rec=programaDia.filter(r=>r&&r.machine===PROG_CT_KEYS[PROG_TROQ_CT]&&r.rows&&r.rows.length>1).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)))
+    .find(r=>{ const H=r.rows[0].map(h=>String(h).trim().toLowerCase()), i=H.indexOf(tipo==='ruta'?'ruta':'modelo'); return i>=0&&r.rows.slice(1).some(x=>progTroqUp(x[i])===progTroqUp(v)); });
+  if(rec){ const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), i=H.indexOf(tipo==='ruta'?'ruta':'modelo'), row=rec.rows.slice(1).find(x=>progTroqUp(x[i])===progTroqUp(v));
+    const c=n=>{ const j=H.indexOf(n); return j>=0?String(row[j]==null?'':row[j]).trim():''; }; desc=c('descripción'); ruta=c('ruta'); familia=c('familia'); }
+  if(!confirm(`¿Marcar ${tipo==='ruta'?'el modelo base':'el modelo'} ${v} fuera de Troqueles?\n\nSus OPs se quitan del Programa del día, de lo proyectado y del atraso. Se guarda en la lista de Programación Troqueles (la misma que usa Nidos).\n\nSe puede regresar desde «Fuera de Troqueles».`)) return;
+  if(inp) inp.value='';
+  return progTroqExcluir([{tipo,valor:v,desc,ruta,familia}],`✓ ${tipo==='ruta'?'Modelo base':'Modelo'} ${v} fuera de Troqueles (también en Programación Troqueles y Nidos)`);
+}
+// Troqueles: «⊘ Excluir» del renglón (modelo base de la OP) → lista de Programación Troqueles
+function progTroqExclBase(base){
+  const b=String(base==null?'':base).trim(); if(!b) return;
+  if(progTroq.fueraR.has(progTroqNorm(b))){ progMsg('Ese modelo base ya estaba fuera de Troqueles.','var(--amber)'); return; }
+  let n=0, desc='', familia='';
+  programaDia.filter(r=>r&&r.machine===PROG_CT_KEYS[PROG_TROQ_CT]&&r.rows&&r.rows.length>1).forEach(rec=>{
+    const H=rec.rows[0].map(h=>String(h).trim().toLowerCase()), iR=H.indexOf('ruta'), iD=H.indexOf('descripción'), iF=H.indexOf('familia'); if(iR<0) return;
+    const cortes=progCortesParse(rec.cortes), ci=rec.cortadoColIdx!=null?rec.cortadoColIdx:0;
+    rec.rows.slice(1).forEach((row,r)=>{ if(progTroqUp(row[iR])!==progTroqUp(b)) return;
+      if(!desc&&iD>=0) desc=String(row[iD]==null?'':row[iD]).trim(); if(!familia&&iF>=0) familia=String(row[iF]==null?'':row[iF]).trim();
+      if(!(row[ci]===true||(cortes[r]&&cortes[r].on))) n++; });
+  });
+  if(!confirm(`¿Marcar el modelo base ${b} fuera de Troqueles?\n\n`+(n?`Se quita${n===1?'':'n'} ${n} OP${n===1?'':'s'} pendiente${n===1?'':'s'} del Programa del día y de lo proyectado en el Dashboard (también del atraso). `:'')+`Se guarda en la lista de Programación Troqueles (la misma que usa Nidos).\n\nSe puede regresar desde «Fuera de Troqueles».`)) return;
+  return progTroqExcluir([{tipo:'ruta',valor:b,desc,familia}],`✓ Modelo base ${b} fuera de Troqueles: se quitó del programa y de lo proyectado (también en Programación Troqueles y Nidos)`);
+}
 function progExclAdd(ct,kind){
-  if(ct===PROG_TROQ_CT){ progMsg(PROG_TROQ_SOLO_ALLA,'var(--amber)'); return; }
+  if(ct===PROG_TROQ_CT) return progTroqExclAdd(kind);
   const inp=document.getElementById('prog-excl-in'), v=progExNorm(inp&&inp.value);
   if(!v){ progMsg('Escribe el modelo o la familia que quieres excluir.','var(--amber)'); if(inp) inp.focus(); return; }
   const ex=progExclGet(ct);
@@ -4356,7 +4468,7 @@ function progExclDel(ct,kind,i){
 // Excluir el modelo base desde el renglón de la OP: se quita al momento del programa cargado (de hoy y de días anteriores) y de
 // lo proyectado en el Dashboard, y ya no entra cuando se vuelva a subir el programa. Se regresa desde «Excluidos del programa».
 function progExclBase(ct,base){
-  if(ct===PROG_TROQ_CT){ progMsg(PROG_TROQ_SOLO_ALLA,'var(--amber)'); return; }
+  if(ct===PROG_TROQ_CT) return progTroqExclBase(base);
   const b=progExNorm(base), key=PROG_CT_KEYS[ct]; if(!b||!key) return;
   const ex=progExclGet(ct);
   if(ex.bases.some(x=>progExNorm(x)===b)){ progMsg('Ese modelo base ya estaba excluido.','var(--amber)'); return; }
