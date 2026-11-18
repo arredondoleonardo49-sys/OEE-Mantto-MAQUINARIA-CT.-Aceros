@@ -5371,15 +5371,15 @@ function fastRefreshToday(){
   if(!currentUser || currentUser.role==='operador') return;
   const today=todayStr();
   const todaySheets=[
-    {name:'OEE_Registros', assign:(d)=>{ records=mergeRecordsById(records,d); }},
+    {name:'OEE_Registros', assign:(d)=>{ records=nubeQuitarBorrados('OEE_Registros',mergeRecordsById(records,d),d,today); }},
     {name:'Maquinas_Config', assign:(d)=>applyMachineRoster(d)},
-    {name:'Cierre_Dia', assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
+    {name:'Cierre_Dia', assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=nubeQuitarBorrados('Cierre_Dia',mergeRecordsById(diaRecords,norm),norm,today); saveDiaLocal(); }},
     ...ALL_CTS.map(ct=>({
       name: ctSheet(ct),
       assign:(d)=>{
         const existing=horaRecords.filter(r=>r.ct===ct);
         const otherCts=horaRecords.filter(r=>r.ct!==ct);
-        horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
+        horaRecords=[...otherCts,...nubeQuitarBorrados(ctSheet(ct),mergeRecordsById(existing,d),d,today)];
       }
     })),
     // El material consumido del Dashboard (Laser) se lee de los registros de aprovechamiento del día
@@ -5579,23 +5579,25 @@ function mergeRecordsById(existing, incoming){
   });
   return Object.values(byId);
 }
-// Aprovechamiento: un registro que se borró en otro equipo (p. ej. el operador lo capturó con la fecha equivocada, lo borró y
-// lo volvió a capturar) seguía guardado en los equipos que ya lo tenían y salía de más en el historial y en el ahorro: la mezcla
-// por id nunca quita nada. Si la nube trae completa la ventana de fechas (desde «since») y el registro ya no está, se quita aquí;
-// salvo que este equipo aún lo esté subiendo (cola de envío) o lo haya guardado hace menos de 15 min (Leonardo, 2026-11-18).
-function aprovQuitarBorrados(lista,nube,since){
+// Registros borrados en otro equipo (p. ej. el operador capturó con la fecha equivocada, borró y volvió a capturar) seguían
+// guardados en los equipos que ya los tenían y salían de más (historial, ahorro, hora×hora, cierre del día…): la mezcla por id
+// nunca quita nada. Si la nube trae completa la ventana de fechas (desde «since», en el campo «campo») y el registro ya no está,
+// se quita aquí; salvo que este equipo aún lo esté subiendo (cola de envío de esa hoja) o lo haya guardado hace menos de
+// 15 min (Leonardo, 2026-11-18). Hojas: Aprovechamiento, Cierre_Dia, OEE_Registros, hora×hora de cada CT, Atrasos, Merma_Semanal.
+function nubeQuitarBorrados(sheet,lista,nube,since,campo){
   // Respuesta vacía o recortada por el tope de filas del Apps Script (3000): no se arriesga a quitar nada
   if(!Array.isArray(nube)||!nube.length||nube.length>=3000||!/^\d{4}-\d{2}-\d{2}$/.test(String(since||''))) return lista;
-  const ids=new Set(nube.map(r=>r&&String(r.id))), lim=Date.now()-15*60000, quitados=[];
+  const f=campo||'fecha', ids=new Set(nube.map(r=>r&&String(r.id))), lim=Date.now()-15*60000, quitados=[];
   const out=(lista||[]).filter(r=>{
-    if(!r||r.id==null||String(r.fecha||'')<since||ids.has(String(r.id))) return true;
-    if(_outbox['Aprovechamiento|'+r.id]) return true;
+    if(!r||r.id==null||String(r[f]||'')<since||ids.has(String(r.id))) return true;
+    if(_outbox[sheet+'|'+r.id]) return true;
     if((new Date(r.updatedAt||0).getTime()||0)>lim) return true;
     quitados.push(r.id); return false;
   });
-  if(quitados.length) console.info('Aprovechamiento: se quitaron '+quitados.length+' registro(s) que ya no están en la nube',quitados);
+  if(quitados.length) console.info(sheet+': se quitaron '+quitados.length+' registro(s) que ya no están en la nube',quitados);
   return out;
 }
+function aprovQuitarBorrados(lista,nube,since){ return nubeQuitarBorrados('Aprovechamiento',lista,nube,since); }
 
 // ── CIERRE DEL DÍA: PIEZAS TOTALES (máquinas sin hora por hora) ───────
 // Un solo registro por máquina y día, que se captura al terminar el día.
@@ -6014,8 +6016,8 @@ function loadFromCloud(){
     // Catálogo de calibres de lámina / tipos de tubular compartido (opcional por la misma razón).
     {name:'Materiales_Config', optional:true, always:true, assign:(d)=>applyMaterialesConfig(d)},
     {name:'Maquina_Predeterminada', optional:true, assign:(d)=>{ applyDefaultMachinesFromCloud(d); try{ refreshDefaultMachineUI(); }catch(e){} try{ aprovApplyScope(); }catch(e){} }},
-    {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=mergeRecordsById(diaRecords,norm); saveDiaLocal(); }},
-    {name:'OEE_Registros',     assign:(d)=>{ records=mergeRecordsById(records,d); save('records'); }},
+    {name:'Cierre_Dia',        assign:(d)=>{ const norm=(d||[]).filter(r=>r&&r.id).map(normalizeDiaRow); diaRecords=nubeQuitarBorrados('Cierre_Dia',mergeRecordsById(diaRecords,norm),norm,since); saveDiaLocal(); }},
+    {name:'OEE_Registros',     assign:(d)=>{ records=nubeQuitarBorrados('OEE_Registros',mergeRecordsById(records,d),d,since); save('records'); }},
     ...(canSeeAprov ? [
       {name:'Aprovechamiento', assign:(d)=>{
         // Las celdas vacías del Sheet llegan como '' y los campos JSON como
@@ -6028,7 +6030,7 @@ function loadFromCloud(){
     // el retrabajo se ve desde el historial de Registrar turno, aunque la cuenta no tenga Aprovechamiento.
     {name:'Merma_Semanal', assign:(d)=>{
       const norm=(d||[]).filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}));
-      mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,norm); save('mermaSemanalRecs');
+      mermaSemanalRecs=nubeQuitarBorrados('Merma_Semanal',mergeRecordsById(mermaSemanalRecs,norm),norm,since,'weekStart'); save('mermaSemanalRecs');
     }},
     // Actividades del checklist de arranque por máquina (las edita Ingeniería /
     // Líder en Configuración; todos los dispositivos las reciben).
@@ -6041,7 +6043,7 @@ function loadFromCloud(){
       assign:(d)=>{
         const existing=horaRecords.filter(r=>r.ct===ct);
         const otherCts=horaRecords.filter(r=>r.ct!==ct);
-        horaRecords=[...otherCts,...mergeRecordsById(existing,d)];
+        horaRecords=[...otherCts,...nubeQuitarBorrados(ctSheet(ct),mergeRecordsById(existing,d),d,since)];
         localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords));
       }
     })),
@@ -6068,7 +6070,7 @@ function loadFromCloud(){
       localStorage.setItem(SK.ctTargets, JSON.stringify(ctTargets));
     }},
     {name:'Atrasos', assign:(d)=>{
-      atrasos=mergeRecordsById(atrasos, d);
+      atrasos=nubeQuitarBorrados('Atrasos',mergeRecordsById(atrasos, d),d,since);
       localStorage.setItem(SK.atrasos, JSON.stringify(atrasos));
     }},
     // Base de medidas de piezas (largo por Modelo + Parte) para el consumo de tubular de GW1 / GW2
@@ -9504,13 +9506,14 @@ function repCargarHistorial(){
   gasRequest({action:'readAll',sheets:names.join(','),since:ini},(data)=>{
     const R=(data&&data.results)||{};
     const ok=n=>Array.isArray(R[n])?R[n]:[];
-    diaRecords=mergeRecordsById(diaRecords,ok('Cierre_Dia').filter(r=>r&&r.id).map(normalizeDiaRow)); saveDiaLocal();
-    records=mergeRecordsById(records,ok('OEE_Registros')); save('records');
-    atrasos=mergeRecordsById(atrasos,ok('Atrasos')); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
+    const nDia=ok('Cierre_Dia').filter(r=>r&&r.id).map(normalizeDiaRow);
+    diaRecords=nubeQuitarBorrados('Cierre_Dia',mergeRecordsById(diaRecords,nDia),nDia,ini); saveDiaLocal();
+    records=nubeQuitarBorrados('OEE_Registros',mergeRecordsById(records,ok('OEE_Registros')),ok('OEE_Registros'),ini); save('records');
+    atrasos=nubeQuitarBorrados('Atrasos',mergeRecordsById(atrasos,ok('Atrasos')),ok('Atrasos'),ini); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
     programaDia=mergeProgramaDia(programaDia,ok('Programa_Dia').map(normProgRec)); saveProgramaDiaLS();
     if(ok('Aprovechamiento').length){ const nb=ok('Aprovechamiento').map(normalizeAprovRow); aprovRecords=aprovQuitarBorrados(mergeRecordsById(aprovRecords,nb),nb,ini); save('aprovRecords'); }
-    if(ok('Merma_Semanal').length){ mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,ok('Merma_Semanal').filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}))); save('mermaSemanalRecs'); }
-    ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,d)]; });
+    if(ok('Merma_Semanal').length){ const nMs=ok('Merma_Semanal').filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0})); mermaSemanalRecs=nubeQuitarBorrados('Merma_Semanal',mergeRecordsById(mermaSemanalRecs,nMs),nMs,ini,'weekStart'); save('mermaSemanalRecs'); }
+    ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...nubeQuitarBorrados(ctSheet(ct),mergeRecordsById(ex,d),d,ini)]; });
     try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
     if(msg) msg.textContent='✓ Historial cargado'; renderReportes();
   },(err)=>{ if(msg) msg.textContent='⚠ No se pudo cargar: '+err; });
@@ -10532,8 +10535,8 @@ function pullHoraForGrid(ct,fecha){
     try{
       if(!data||!data.results) return;
       const h=data.results[ctSheet(ct)], o=data.results['OEE_Registros'];
-      if(Array.isArray(h)&&h.length){ const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,parseCloudRows(h))]; localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }
-      if(Array.isArray(o)&&o.length){ records=mergeRecordsById(records,parseCloudRows(o)); save('records'); }
+      if(Array.isArray(h)&&h.length){ const hp=parseCloudRows(h), ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...nubeQuitarBorrados(ctSheet(ct),mergeRecordsById(ex,hp),hp,fecha)]; localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }
+      if(Array.isArray(o)&&o.length){ const op=parseCloudRows(o); records=nubeQuitarBorrados('OEE_Registros',mergeRecordsById(records,op),op,fecha); save('records'); }
       softRestoreHora();
       if(!_hTouch.paros && !document.querySelector('#paros-list .paro-row')) loadParosForContext();
     }catch(e){ console.warn('pullHoraForGrid',e); }
