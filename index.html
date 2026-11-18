@@ -3147,7 +3147,7 @@ function progTraerAprovNube(done){
   const wd=setTimeout(go,6000);
   try{
     gasRequest({action:'read',sheet:'Aprovechamiento'},
-      (data)=>{ try{ const rows=(data&&data.rows)||[]; if(rows.length){ aprovRecords=mergeRecordsById(aprovRecords,rows.map(normalizeAprovRow)); save('aprovRecords'); } }catch(e){ console.warn('progTraerAprovNube',e); } go(); },
+      (data)=>{ try{ const rows=(data&&data.rows)||[]; if(rows.length){ const nb=rows.map(normalizeAprovRow); aprovRecords=aprovQuitarBorrados(mergeRecordsById(aprovRecords,nb),nb,isoAddDays(todayStr(),-45)); save('aprovRecords'); } }catch(e){ console.warn('progTraerAprovNube',e); } go(); },
       ()=>go());
   }catch(e){ go(); }
 }
@@ -5353,7 +5353,7 @@ function fastRefreshToday(){
       }
     })),
     // El material consumido del Dashboard (Laser) se lee de los registros de aprovechamiento del día
-    ...((currentUser.permissions||defaultPermissions(currentUser.role))['aprovechamiento']!==false?[{name:'Aprovechamiento', assign:(d)=>{ aprovRecords=mergeRecordsById(aprovRecords,(d||[]).map(normalizeAprovRow)); save('aprovRecords'); }}]:[]),
+    ...((currentUser.permissions||defaultPermissions(currentUser.role))['aprovechamiento']!==false?[{name:'Aprovechamiento', assign:(d)=>{ const nb=(d||[]).map(normalizeAprovRow); aprovRecords=aprovQuitarBorrados(mergeRecordsById(aprovRecords,nb),nb,today); save('aprovRecords'); }}]:[]),
   ];
   withGasLock(done=>{
     gasRequest(
@@ -5548,6 +5548,23 @@ function mergeRecordsById(existing, incoming){
     if(incomingTime>=currentTime) byId[r.id]=r;
   });
   return Object.values(byId);
+}
+// Aprovechamiento: un registro que se borró en otro equipo (p. ej. el operador lo capturó con la fecha equivocada, lo borró y
+// lo volvió a capturar) seguía guardado en los equipos que ya lo tenían y salía de más en el historial y en el ahorro: la mezcla
+// por id nunca quita nada. Si la nube trae completa la ventana de fechas (desde «since») y el registro ya no está, se quita aquí;
+// salvo que este equipo aún lo esté subiendo (cola de envío) o lo haya guardado hace menos de 15 min (Leonardo, 2026-11-18).
+function aprovQuitarBorrados(lista,nube,since){
+  // Respuesta vacía o recortada por el tope de filas del Apps Script (3000): no se arriesga a quitar nada
+  if(!Array.isArray(nube)||!nube.length||nube.length>=3000||!/^\d{4}-\d{2}-\d{2}$/.test(String(since||''))) return lista;
+  const ids=new Set(nube.map(r=>r&&String(r.id))), lim=Date.now()-15*60000, quitados=[];
+  const out=(lista||[]).filter(r=>{
+    if(!r||r.id==null||String(r.fecha||'')<since||ids.has(String(r.id))) return true;
+    if(_outbox['Aprovechamiento|'+r.id]) return true;
+    if((new Date(r.updatedAt||0).getTime()||0)>lim) return true;
+    quitados.push(r.id); return false;
+  });
+  if(quitados.length) console.info('Aprovechamiento: se quitaron '+quitados.length+' registro(s) que ya no están en la nube',quitados);
+  return out;
 }
 
 // ── CIERRE DEL DÍA: PIEZAS TOTALES (máquinas sin hora por hora) ───────
@@ -5974,7 +5991,7 @@ function loadFromCloud(){
         // Las celdas vacías del Sheet llegan como '' y los campos JSON como
         // texto — se normalizan antes de mezclarlos con lo local.
         const normalized=(d||[]).map(normalizeAprovRow);
-        aprovRecords=mergeRecordsById(aprovRecords,normalized); save('aprovRecords');
+        aprovRecords=aprovQuitarBorrados(mergeRecordsById(aprovRecords,normalized),normalized,since); save('aprovRecords');
       }},
     ] : []),
     // La merma semanal (aprovechamiento y retrabajo) se captura una vez por semana. Se sincroniza para toda cuenta:
@@ -9461,7 +9478,7 @@ function repCargarHistorial(){
     records=mergeRecordsById(records,ok('OEE_Registros')); save('records');
     atrasos=mergeRecordsById(atrasos,ok('Atrasos')); localStorage.setItem(SK.atrasos,JSON.stringify(atrasos));
     programaDia=mergeProgramaDia(programaDia,ok('Programa_Dia').map(normProgRec)); saveProgramaDiaLS();
-    if(ok('Aprovechamiento').length){ aprovRecords=mergeRecordsById(aprovRecords,ok('Aprovechamiento').map(normalizeAprovRow)); save('aprovRecords'); }
+    if(ok('Aprovechamiento').length){ const nb=ok('Aprovechamiento').map(normalizeAprovRow); aprovRecords=aprovQuitarBorrados(mergeRecordsById(aprovRecords,nb),nb,ini); save('aprovRecords'); }
     if(ok('Merma_Semanal').length){ mermaSemanalRecs=mergeRecordsById(mermaSemanalRecs,ok('Merma_Semanal').filter(r=>r&&r.id).map(r=>({...r,merma:parseFloat(r.merma)||0}))); save('mermaSemanalRecs'); }
     ALL_CTS.forEach(ct=>{ const d=ok(ctSheet(ct)); if(!d.length) return; const ex=horaRecords.filter(r=>r.ct===ct), oth=horaRecords.filter(r=>r.ct!==ct); horaRecords=[...oth,...mergeRecordsById(ex,d)]; });
     try{ localStorage.setItem('oee_hora_laser_v1',JSON.stringify(horaRecords)); }catch(e){}
