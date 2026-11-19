@@ -61,7 +61,7 @@
  * 3. Implementar → Administrar implementaciones → ✎ → Versión: "Nueva versión"
  *    → Implementar (la URL no cambia).
  * 4. Confirma: abre  TU_URL?action=ping&callback=x  → debe mostrar
- *    "build":"2026-11-04a-medidas-piezas".  Si no aparece, la implementación sigue
+ *    "build":"2026-11-19a-post".  Si no aparece, la implementación sigue
  *    sirviendo el código anterior: repite el paso 3.
  * 5. Cierra y vuelve a abrir el Sheet: aparece el menú "OEE Planta".
  */
@@ -70,7 +70,7 @@
 // (no cambiarlo salvo que cambie el protocolo; si no, la app avisa "backend desactualizado").
 const SCRIPT_VERSION = '2026-11-03a';
 // Identifica ESTE código (sirve para confirmar con ?action=ping que ya se actualizó).
-const BUILD = '2026-11-04a-medidas-piezas';
+const BUILD = '2026-11-19a-post';
 
 const LECTURA_MAX_FILAS = 3000;   // tope de filas (las más recientes) por lectura
 const ESPERA_BLOQUEO_MS = 20000;  // cuánto espera una escritura si hay otra en curso
@@ -134,6 +134,25 @@ function doGet(e) {
   return ContentService
     .createTextOutput(callback + '(' + JSON.stringify(payload) + ')')
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+// Mismas acciones que doGet, pero con los parámetros en el cuerpo (JSON). La app lo usa para los registros
+// grandes: Google rechaza las direcciones (GET) de más de ~11 KB y esos registros se quedaban sin subir
+// (programas de GW2 con muchos cortes, 2026-11-19). Responde JSON simple (sin callback).
+function doPost(e) {
+  let params = {};
+  try { params = JSON.parse((e && e.postData && e.postData.contents) || '{}') || {}; } catch (err) { params = {}; }
+  let payload;
+  try {
+    payload = handleRequest(params);
+  } catch (err) {
+    payload = { error: String(err && err.message ? err.message : err) };
+    if (err && err.auth) payload.auth = err.auth;
+  }
+  payload.version = SCRIPT_VERSION;
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function handleRequest(params) {

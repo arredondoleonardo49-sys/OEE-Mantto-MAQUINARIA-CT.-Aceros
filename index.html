@@ -5150,7 +5150,7 @@ function outboxRetry(){
   if(_outboxBusy || !currentUser) return;
   const keys=Object.keys(_outbox); if(!keys.length) return;
   _outboxBusy=true;
-  const watchdog=setTimeout(()=>{ _outboxBusy=false; },40000);
+  const watchdog=setTimeout(()=>{ _outboxBusy=false; },keys.length*32000+10000);
   const next=()=>{
     const k=keys.shift();
     if(!k){ clearTimeout(watchdog); _outboxBusy=false; return; }
@@ -5164,18 +5164,47 @@ function outboxRetry(){
     const params=e.action==='delete'
       ? {action:'delete',sheet:e.sheet,id:e.id}
       : {action:'upsert',sheet:e.sheet,data:JSON.stringify(e.record),ifNewer:'1'};
+    // Si un registro no recibe respuesta, a los 30 s se pasa al siguiente: uno atorado ya no detiene a los demás.
+    let paso=false; const sigue=()=>{ if(paso) return; paso=true; clearTimeout(tope); next(); }, tope=setTimeout(sigue,30000);
     gasRequest(params,
-      ()=>{ const cur=_outbox[k]; if(cur&&cur.ts===ts){ delete _outbox[k]; outboxSave(); } next(); },
+      ()=>{ const cur=_outbox[k]; if(cur&&cur.ts===ts){ delete _outbox[k]; outboxSave(); } sigue(); },
       (err)=>{
         // Sin red o rechazado por el servidor: se conserva hasta que la nube lo confirme.
-        if(String(err)!=='Network error'){ const cur=_outbox[k]; if(cur&&cur.ts===ts){ cur.srvErr=(cur.srvErr||0)+1; cur.lastErr=String(err).slice(0,200); outboxSave(); } }
-        next();
+        const cur=_outbox[k];
+        if(cur&&cur.ts===ts){ cur.lastErr=String(err).slice(0,200); if(String(err)!=='Network error') cur.srvErr=(cur.srvErr||0)+1; outboxSave(); }
+        sigue();
       });
   };
   next();
 }
 setInterval(outboxRetry,60000);
 window.addEventListener('online',()=>{ setTimeout(outboxRetry,500); });
+const GAS_GET_MAX=8000;   // dirección más larga que se manda por GET (JSONP); lo demás va por POST (doPost del Apps Script)
+// Respuesta del Apps Script (por JSONP o por POST)
+function gasAtender(data,onSuccess,onError){
+  if(data&&data.tok) setAuthToken(data.tok);   // el servidor renueva el token mientras se use
+  if(data&&data.error){
+    // Sesión rechazada: se pide entrar de nuevo. Para la cola de envío cuenta como "sin red": lo
+    // pendiente se conserva y se sube después del nuevo inicio de sesión.
+    if(data.auth==='sesion'){ sessionExpired(data.error); if(onError)onError('Network error'); return; }
+    if(onError)onError(data.error);
+  }else{if(onSuccess)onSuccess(data);}
+}
+// Petición grande por POST (el cuerpo no tiene el límite de ~11 KB de la dirección). Si el Apps Script aún no tiene
+// doPost, la respuesta no es JSON y cuenta como «sin red»: el registro sigue en la cola, como antes.
+function gasPost(p,params,onSuccess,onError){
+  const body=JSON.stringify(p), opt={method:'POST',credentials:'omit',headers:{'Content-Type':'text/plain;charset=utf-8'},body};
+  if((_unloading || document.visibilityState==='hidden') && GAS_WRITE_ACTIONS.indexOf(params.action)!==-1){
+    try{ fetch(getGasUrl(),{...opt,mode:'no-cors',keepalive:body.length<60000}).catch(()=>{}); return; }catch(e){ /* sigue con el método normal */ }
+  }
+  let fin=false; const tope=setTimeout(()=>{ if(fin) return; fin=true; if(onError) onError('Network error'); },45000);
+  fetch(getGasUrl(),opt).then(r=>r.text()).then(t=>{
+    if(fin) return; let data; try{ data=JSON.parse(t); }catch(e){ data=null; }
+    fin=true; clearTimeout(tope);
+    if(!data||typeof data!=='object'){ if(onError) onError('Network error'); return; }
+    gasAtender(data,onSuccess,onError);
+  }).catch(()=>{ if(fin) return; fin=true; clearTimeout(tope); if(onError) onError('Network error'); });
+}
 function gasRequest(params,onSuccess,onError){
   // El nombre del callback debe ser único incluso si dos peticiones se
   // disparan en el mismo milisegundo (ej. al subir el programa de GW1 y
@@ -5185,20 +5214,17 @@ function gasRequest(params,onSuccess,onError){
   // Cada petición lleva el token de la sesión (salvo ping y login): sin él, el servidor no lee ni escribe nada.
   const p=(authToken && params.action!=='ping' && params.action!=='login')?{...params,t:authToken}:params;
   const url=getGasUrl()+'?'+Object.entries({...p,callback:cbName}).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+  // Google rechaza las direcciones de más de ~11 KB (medido el 2026-11-19: 11 KB pasa, 12 KB falla como «sin red»).
+  // Un registro grande (p. ej. un programa de GW2 con muchos cortes) se quedaba para siempre «en espera de red»:
+  // ahora va por POST, sin ese límite.
+  if(url.length>GAS_GET_MAX){ gasPost(p,params,onSuccess,onError); return; }
   // Si la página se está cerrando, recargando u ocultando, una etiqueta <script> se CANCELA a medio
   // enviar y la escritura se perdía en la nube. fetch con keepalive sí termina de enviarse. No hay
   // respuesta que esperar: el registro sigue en la cola de envío y se confirma al volver a abrir.
   if((_unloading || document.visibilityState==='hidden') && GAS_WRITE_ACTIONS.indexOf(params.action)!==-1){
     try{ fetch(url,{mode:'no-cors',keepalive:true,credentials:'omit'}).catch(()=>{}); return; }catch(e){ /* sigue con el método normal */ }
   }
-  window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script);
-    if(data&&data.tok) setAuthToken(data.tok);   // el servidor renueva el token mientras se use
-    if(data&&data.error){
-      // Sesión rechazada: se pide entrar de nuevo. Para la cola de envío cuenta como "sin red": lo
-      // pendiente se conserva y se sube después del nuevo inicio de sesión.
-      if(data.auth==='sesion'){ sessionExpired(data.error); if(onError)onError('Network error'); return; }
-      if(onError)onError(data.error);
-    }else{if(onSuccess)onSuccess(data);}};
+  window[cbName]=function(data){delete window[cbName];if(script.parentNode)script.parentNode.removeChild(script); gasAtender(data,onSuccess,onError); };
   const script=document.createElement('script');script.src=url;
   script.onerror=()=>{delete window[cbName];if(onError)onError('Network error');};
   document.head.appendChild(script);
@@ -12048,9 +12074,11 @@ function clearHorasExtra(){
 // misma pantalla (el Dashboard en pantalla completa sigue en pantalla completa).
 const OEE_UPD_CADA=3*60000, OEE_UPD_QUIETO=60000, OEE_UPD_CAMPO=10*60000, OEE_UPD_VENTANA=20*60000;
 const SK_UPD_RESTORE='oee_upd_restore_v1', SK_UPD_N='oee_upd_n_v1';
-/** Firma del código de la página (los <script> en línea): cambia con cada versión publicada */
+/** Firma del código de la página: cambia con cada versión publicada. Solo cuenta el script de la OEE (el que trae esta
+ *  función): las extensiones de Chrome meten sus propios <script> en la página y, si se contaban, la página creía que
+ *  había versión nueva y se recargaba cada rato (visto en Láser Tubo, 2026-11-19). */
 function oeeCodigoFirma(doc){
-  let s=''; doc.querySelectorAll('script:not([src])').forEach(x=>{ s+=x.textContent+'\u0000'; });
+  let s=''; doc.querySelectorAll('script:not([src])').forEach(x=>{ const t=x.textContent||''; if(t.indexOf('function oeeCodigoFirma(')>=0) s+=t+'\u0000'; });
   let h1=0x811c9dc5, h2=7; for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); h1=Math.imul(h1^c,16777619); h2=(Math.imul(h2,31)+c)|0; }
   return s.length+'.'+(h1>>>0).toString(36)+'.'+(h2>>>0).toString(36);
 }
