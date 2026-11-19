@@ -4327,7 +4327,17 @@ function buildProgramaReportHtml(fecha,opts){
       </tbody></table>`:'<div class="line muted">Aún no hay programas guardados.</div>'}</section>`;
   }
   return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(tituloFull)}</title>
-${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}</style>${REP_CORTE_CSS}</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Laser</div><h1>${esc(tituloFull)}</h1>${subHead}</div>
+<div class="rp-meta"><b>${recs.length?recs.map(r=>esc(r.machine)).join(' · '):'GW1 · GW2'}</b><br>${quien?esc(quien)+'<br>':''}Generado el ${esc(generado)}</div></div>
+${kpis}
+${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un programa vigente en esta fecha (todavía no se había subido ninguno).</p>'}${sections}
+</div></body></html>`;
+}
+// Estilo de los reportes «Corte de …» (Tubular y Lámina): encabezado, tarjetas por máquina y tabla por OP
+const REP_CORTE_CSS=`<style>
 .rp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:3px solid #1b1f2a;padding-bottom:10px;margin-bottom:14px}
 .rp-kick{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:#6b7280;font-weight:700}
 .rp-head h1{font-size:26px;margin:2px 0 1px;letter-spacing:-.3px}.rp-date{font-size:14px;color:#374151;font-weight:600}.rp-prog{font-size:11.5px;color:#6b7280;margin-top:2px}
@@ -4349,15 +4359,8 @@ table.prog .n{text-align:right}table.prog td.n b{font-size:13px}
 table.prog td.op{font-family:Consolas,'Courier New',monospace;font-size:11px;color:#374151}table.prog td.mod{font-weight:700}
 .kd{display:inline-block;font-size:9.5px;font-weight:800;padding:1px 8px;border-radius:9px;letter-spacing:.4px}.kd.ptr{background:#dbeafe;color:#1d4ed8}.kd.tubo{background:#fef3c7;color:#92400e}
 table.prog tfoot td{background:#eef1f7;font-weight:800;border-top:2px solid #cfd5e2;padding:7px 8px;font-size:12px}
-@media print{.noprint{display:none}}</style></head><body>
-<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
-<div class="page">
-<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Laser</div><h1>${esc(tituloFull)}</h1>${subHead}</div>
-<div class="rp-meta"><b>${recs.length?recs.map(r=>esc(r.machine)).join(' · '):'GW1 · GW2'}</b><br>${quien?esc(quien)+'<br>':''}Generado el ${esc(generado)}</div></div>
-${kpis}
-${indexHtml}${recs.length?'':'<p class="muted" style="margin:10px 0">No hay un programa vigente en esta fecha (todavía no se había subido ninguno).</p>'}${sections}
-</div></body></html>`;
-}
+.kd.ev{background:#fef3c7;color:#92400e}.kd.fp{background:#fee2e2;color:#b91c1c}.kd.cal{background:#e0e7ff;color:#3730a3}
+@media print{.noprint{display:none}}</style>`;
 // «Descargar registro del día»: abre el reporte imprimible (imprimir o guardar como PDF).
 function exportProgramaDia(){
   const fecha=progTargetFecha();
@@ -8754,7 +8757,8 @@ function repFileName(){
   const s=repState();
   if(s.mode==='programa') return 'Corte_de_tubular_'+progReporteCorteIso(s.fecha)+'.pdf';
   if(s.mode==='hora') return 'Hora_por_hora_'+s.desde+(s.hasta!==s.desde?'_a_'+s.hasta:'')+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
-  if(repIsLam(s.mode)) return 'Corte_de_lamina_'+(s.mode==='lamcomp'?'compilado_':s.mode==='lamsem'?'semanal_':'diario_')+repKey()+'.pdf';
+  if(s.mode==='lamdia') return 'Corte_de_lamina_'+lamReporteCorteIso(s.fecha)+'.pdf';
+  if(repIsLam(s.mode)) return 'Corte_de_lamina_'+(s.mode==='lamcomp'?'compilado_':'semanal_')+repKey()+'.pdf';
   return (s.mode==='semanal'?'Reporte_semanal_'+repKey():'Reporte_diario_'+s.fecha)+(s.ct?'_'+String(s.ct).replace(/[^A-Za-z0-9]+/g,'_'):'')+'.pdf';
 }
 function repDownload(){ downloadReportPdf(repBuildHtml(repState(),false),repFileName()); }
@@ -9194,7 +9198,7 @@ function repAprovCtBlock(ct,fechas,weekly,esc,dayLa){
 function lamReporteDescargar(weekly){
   const fecha=document.getElementById('lam-fecha')?.value||todayStr(), key=weekly?getWeekRange(fecha).start:fecha;
   if(weekly==='comp') return downloadReportPdf(buildLaminaCompiladoHtml(key),'Corte_de_lamina_compilado_'+key+'.pdf');
-  downloadReportPdf(buildLaminaReportHtml(weekly,key),'Corte_de_lamina_'+(weekly?'semanal_':'diario_')+key+'.pdf');
+  downloadReportPdf(buildLaminaReportHtml(weekly,key),'Corte_de_lamina_'+(weekly?'semanal_'+key:lamReporteCorteIso(key))+'.pdf');
 }
 // Un solo archivo: el reporte semanal de lámina seguido del reporte diario de cada día de esa semana con registros
 function buildLaminaCompiladoHtml(ws){
@@ -9202,13 +9206,13 @@ function buildLaminaCompiladoHtml(ws){
   const sem=buildLaminaReportHtml(true,ws);
   const dias=repLamDays(ws).filter(f=>repLamRecs([f]).length);
   const partes=dias.map(f=>`<div class="pgbreak"></div>${inner(buildLaminaReportHtml(false,f))}`).join('');
-  const css='<style>.pgbreak{height:0;border-top:1px dashed #b8bdc9;margin:22px 0;page-break-before:always}@media print{.pgbreak{border:0;margin:0}}</style>';
+  const css='<style>.pgbreak{height:0;border-top:1px dashed #b8bdc9;margin:22px 0;page-break-before:always}@media print{.pgbreak{border:0;margin:0}}</style>'+REP_CORTE_CSS;   // los días van con el formato «Corte de Lámina»
   const head=sem.slice(0,sem.indexOf('<div class="page">')).replace('</head>',css+'</head>').replace(/<title>[^<]*<\/title>/,`<title>Corte de lámina — semana ${escH(weekLabelShort(ws))} (compilado)</title>`);
   return head+'<div class="page">'+inner(sem)+partes+'</div></body></html>';
 }
 function repLamRecs(fechas){ const set=new Set(fechas); return aprovVisibleRecords().filter(r=>r&&r.tipo==='lamina'&&set.has(r.fecha)); }
 function repLamDays(ws){ return repWeekDays(ws); }
-function buildLaminaReportHtml(weekly,key){
+function buildLaminaReportHtml(weekly,key,opts){
   const esc=escH, f2=fmt2, money=v=>(Number(v)<0?'-':'')+'$'+fmtMoney(Math.abs(Number(v)||0)), cl=v=>v>0.004?'pos':v<-0.004?'neg':'';
   const quien=currentUser?currentUser.name:'', ahora=new Date();
   const generado=`${ahora.getDate()} de ${MESES_ES[ahora.getMonth()]} de ${ahora.getFullYear()}, ${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
@@ -9278,6 +9282,8 @@ function buildLaminaReportHtml(weekly,key){
       extra=`<section><h2>Lámina adicional capturada en hora×hora <small>informativo · no se suma a los totales de arriba</small></h2><table><thead><tr><th>Calibre</th><th class="n">Retrabajo (láminas)</th><th class="n">Fuera de programa (láminas)</th><th class="n">Peso (kg)</th></tr></thead><tbody>${rows.map(o=>`<tr><td><b>${esc(o.cal)}</b></td><td class="n">${o.rt?o.rt.toFixed(3):'—'}</td><td class="n">${o.fp?o.fp.toFixed(3):'—'}</td><td class="n">${o.kg>0?f2(o.kg):'—'}</td></tr>`).join('')}<tr class="tot"><td>Total</td><td class="n">${t.rt?t.rt.toFixed(3):'—'}</td><td class="n">${t.fp?t.fp.toFixed(3):'—'}</td><td class="n">${t.kg>0?f2(t.kg):'—'}</td></tr></tbody></table><div class="muted" style="margin-top:3px">Equivalente en láminas de las piezas de retrabajo y fuera de programa capturadas en Registrar turno › hora×hora (Laser de Cama).</div></section>`;
     }
   }catch(e){ console.warn('rep lam extra',e); }
+  const sinDetD=recs.filter(r=>!(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).length;
+  if(!weekly) return lamCorteDiaHtml(key,opts,{recs,D,isProg,porCal,recort,expl,extra,sinDet:sinDetD,quien,generado});
   const titulo=weekly?'Reporte semanal de corte de lámina':'Reporte diario de corte de lámina';
   const periodo=weekly?`Semana del ${weekLabel(key)}${weekly?' <span style="font-weight:400;color:#667">(lunes a viernes)</span>':''}`:`${esc(dayLabel(key))} · ${esc(key)}`;
   const diasCon=new Set(recs.filter(r=>(r.hojasDetalle||[]).some(h=>Number(h&&h.hojas)>0)).map(r=>r.fecha)).size;
@@ -9301,6 +9307,84 @@ ${extra}
 ${sinDet?`<div class="line"><span class="warn">${sinDet} registro${sinDet===1?'':'s'} sin hojas capturadas en el periodo.</span></div>`:''}
 <div class="sign"><div>Elaboró</div><div>Revisó</div></div>
 <footer>Lámina registrada en Aprovechamiento › Lámina: consumo real del Programa del día (Laser de Cama) más los registros manuales «sin programa». Peso = hojas × peso por hoja del catálogo de calibres. Diferencia = explosionadas − (registradas − eventuales); ahorro teórico = material no consumido + recortes recuperados. El reporte se calcula con los registros actuales.</footer>
+</div></body></html>`;
+}
+// ── Corte de Lámina (reporte diario), mismo formato que «Corte de Tubular» (Leonardo, 2026-11-19) ──
+// Laser de Cama también corta con 3 días hábiles de anticipación: lo cortado el 18 es lo programado del 23 (el programa de
+// Troqueles del 18 trae las OPs que vencen el 23). El día que se elige es el día en que se cortó (día de programa); el título
+// lleva el día de corte (+3 hábiles), igual que en Tubular. La lámina se registra por calibre en Aprovechamiento › Lámina;
+// si algún día se sube un programa propio de Laser de Cama con consumo por OP, también se desglosa aquí.
+const LAM_REP_M='Laser de Cama', LAM_REP_COL='#c2410c';
+function lamReporteCorteIso(key){ return progCorteFecha(key)||key; }
+function lamCorteDiaHtml(key,opts,X){
+  opts=opts||{};
+  const esc=escH, f2=fmt2, nf=n=>(Number(n)||0).toLocaleString('es-MX',{maximumFractionDigits:0}), D=X.D;
+  const pl=(n,s,p)=>n===1?s:(p||s+'s');
+  const corte=lamReporteCorteIso(key);
+  const progT=getProgramaRecord(key,PROG_CT_KEYS[PROG_TROQ_CT]);   // programa de Troqueles de ese día (sus OPs vencen el día de corte)
+  const progL=getProgramaRecord(key,LAM_REP_M);                    // programa propio de Laser de Cama (si se sube)
+  const stT=progT?progStats(progT):null;
+  const estado=(rec,st)=>!rec?'<span class="pill sp">SIN PROGRAMA</span>':progIsCompleted(rec)?'<span class="pill ok">COMPLETADO</span>':(st.total&&st.done===st.total?'<span class="pill ok">TODO CORTADO</span>':'<span class="pill ns">EN CURSO</span>');
+  // 1) Lámina registrada ese día en Aprovechamiento › Lámina (del Programa del día y manual), por calibre
+  const lines=[]; let nReg=0;
+  X.recs.slice().sort((a,b)=>String(a.turno||'').localeCompare(String(b.turno||''))||String(a.createdAt||a.id).localeCompare(String(b.createdAt||b.id))).forEach(r=>{
+    let alguna=false;
+    (r.hojasDetalle||[]).forEach(h=>{ const n=Number(h&&h.hojas)||0; if(!(n>0)) return; alguna=true;
+      const L=getLaminaByCal(h.cal), kg=L&&L.peso>0?n*L.peso:0;
+      lines.push(`<tr><td>${esc(r.turno||'—')}</td><td class="op">${esc(r.op||'—')}</td><td><span class="kd cal">${esc(h.cal||'—')}</span>${h.origen==='eventualidad'?' <span class="kd ev">EVENTUALIDAD</span>':''}</td><td>${X.isProg(r)?'Programa del día':'Registro manual'}</td><td class="n"><b>${f3(n)}</b></td><td class="n">${kg>0?f2(kg):'—'}</td></tr>`); });
+    if(alguna) nReg++;
+  });
+  const secLam=`<section class="ps rp-m" style="--mc:${LAM_REP_COL}"><div class="rp-mh"><span class="rp-mn">LASER DE CAMA</span><span class="rp-mi">${nReg} ${pl(nReg,'registro')} · <b>${f2(D.total)} hojas</b>${D.kg>0?` · ${f2(D.kg)} kg`:''}</span><span class="rp-mi" style="margin-left:auto">Programa ${esc(fmtDMY(key))} → Corte <b>${esc(fmtDMY(corte))}</b></span></div>
+    ${lines.length?`<table class="prog"><colgroup><col style="width:13%"><col style="width:20%"><col style="width:27%"><col style="width:18%"><col style="width:10%"><col style="width:12%"></colgroup><thead><tr><th>Turno</th><th>Registró / OP</th><th>Calibre</th><th>Origen</th><th class="n">Hojas</th><th class="n">Peso (kg)</th></tr></thead><tbody>${lines.join('')}</tbody>
+    <tfoot><tr><td colspan="4">Total Laser de Cama</td><td class="n">${f2(D.total)}</td><td class="n">${D.kg>0?f2(D.kg):'—'}</td></tr></tfoot></table>`:'<div class="line muted">Aún no hay lámina registrada este día en Aprovechamiento › Lámina.</div>'}</section>`;
+  // 2) Consumo por OP de un programa propio de Laser de Cama (lo que el operador anotó en cada fila), si lo hay
+  let secOP='';
+  if(progL&&progIsLamRec(progL)){
+    const H=(progL.rows[0]||[]).map(v=>String(v).trim().toLowerCase()), fi=re=>H.findIndex(h=>re.test(h));
+    const iOp=fi(/^op$/), iMod=fi(/^modelo$/), cell=(row,i)=>i>=0&&row[i]!=null&&row[i]!==''?esc(row[i]):'';
+    const ls=[]; let hP=0, eqP=0;
+    progL.rows.slice(1).forEach((row,i)=>{ const x=progConsRowLam(progL,i); if(!x.has) return; hP+=x.h; eqP+=x.eqRec;
+      ls.push(`<tr><td class="op">${cell(row,iOp)}</td><td class="mod">${cell(row,iMod)}</td><td>${x.cal?`<span class="kd cal">${esc(x.cal)}</span>`:'<span class="muted">sin calibre</span>'}${x.c.e?' <span class="kd ev">EVENTUALIDAD</span>':''}${x.c.f?` <span class="kd fp" title="${esc(x.c.f)}">FUERA DE PROG.</span>`:''}</td><td>${esc(progConsTextLam(x))}</td><td class="n"><b>${x.h>0?f3(x.h):'—'}</b></td><td class="n">${x.recs.length?f3(x.eqRec):'—'}</td></tr>`); });
+    if(ls.length) secOP=`<section class="ps rp-m" style="--mc:#9a3412"><div class="rp-mh"><span class="rp-mn">CONSUMO POR OP</span><span class="rp-mi">${ls.length} ${pl(ls.length,'renglón','renglones')} del programa de Laser de Cama · <b>${f2(hP)} hojas</b></span></div>
+      <table class="prog"><colgroup><col style="width:13%"><col style="width:13%"><col style="width:20%"><col style="width:32%"><col style="width:10%"><col style="width:12%"></colgroup><thead><tr><th>OP</th><th>Modelo</th><th>Calibre</th><th>Consumo real</th><th class="n">Hojas</th><th class="n">Recortes (lám.)</th></tr></thead><tbody>${ls.join('')}</tbody>
+      <tfoot><tr><td colspan="4">Total por OP</td><td class="n">${f2(hP)}</td><td class="n">${eqP?f3(eqP):'—'}</td></tr></tfoot></table></section>`;
+  }
+  // Tarjetas (como Corte de Tubular: la máquina y el total)
+  const kpis=`<div class="rp-kpis"><div class="rp-k" style="--mc:${LAM_REP_COL}"><small>LASER DE CAMA</small><b>${f2(D.prog)}</b><span>hojas de programa · ${nReg} ${pl(nReg,'registro')}</span></div>
+    ${D.ev>0?`<div class="rp-k" style="--mc:#b45309"><small>EVENTUALIDAD</small><b>${f2(D.ev)}</b><span>hojas fuera de la explosión</span></div>`:''}
+    ${stT?`<div class="rp-k" style="--mc:#2563eb"><small>PROGRAMA TROQUELES</small><b>${stT.done} / ${stT.total}</b><span>OPs terminadas · ${nf(stT.pzDone)} / ${nf(stT.pz)} pzas</span></div>`:''}
+    <div class="rp-k" style="--mc:#0f766e"><small>PESO</small><b>${D.kg>0?f2(D.kg):'—'}</b><span>kg · ${D.calibres} ${pl(D.calibres,'calibre')}</span></div>
+    <div class="rp-k tot"><small>TOTAL</small><b>${f2(D.total)}</b><span>hojas · ${f2(D.prog)} de programa · ${f2(D.ev)} eventualidad</span></div></div>`;
+  // Días guardados (solo en pantalla, como «Programas guardados» de Corte de Tubular): programa de Troqueles + lámina registrada
+  let indexHtml='';
+  if(opts.index){
+    const kT=PROG_CT_KEYS[PROG_TROQ_CT], progBy={}, hojasBy={};
+    (programaDia||[]).forEach(r=>{ if(r&&r.fecha&&r.machine===kT) progBy[r.fecha]=r; });
+    aprovVisibleRecords().forEach(r=>{ if(r&&r.tipo==='lamina'&&r.fecha) hojasBy[r.fecha]=(hojasBy[r.fecha]||0)+(r.hojasDetalle||[]).reduce((s,h)=>s+(Number(h&&h.hojas)||0),0); });
+    const fs=Array.from(new Set([...Object.keys(progBy),...Object.keys(hojasBy)])).sort().reverse();
+    indexHtml=`<section class="noprint"><h2>Programas guardados <small>${fs.length} fecha${fs.length===1?'':'s'} · lo cortado ese día es lo programado ${PROG_DIAS_ADELANTO} días hábiles después · OPs del programa de Troqueles</small></h2>
+      ${fs.length?`<table><thead><tr><th>Fecha</th><th>Corte</th><th class="n">OPs terminadas</th><th class="n">Piezas</th><th class="n">Consumo real (hojas)</th><th>Estado</th></tr></thead><tbody>
+      ${fs.slice(0,90).map(f=>{ const r=progBy[f], st=r?progStats(r):null;
+        return `<tr${f===key?' style="background:#eef2ff"':''}><td><a href="#" onclick="parent.repGoFecha('${f}');return false" style="color:#1d4ed8;font-weight:600">${esc(dayLabel(f))} · ${esc(f)}</a></td><td>${esc(fmtDMY(progCorteFecha(f)))}</td><td class="n">${st?st.done+' / '+st.total:'<span class="muted">–</span>'}</td><td class="n">${st?nf(st.pzDone)+' / '+nf(st.pz):'<span class="muted">–</span>'}</td><td class="n">${hojasBy[f]>0?f2(hojasBy[f]):'–'}</td><td>${estado(r,st)}</td></tr>`; }).join('')}
+      </tbody></table>`:'<div class="line muted">Aún no hay programas ni lámina registrada.</div>'}</section>`;
+  }
+  const tituloFull=`Corte de Lámina ${fmtDMY(corte)}`;
+  const subHead=`<div class="rp-date">Día de corte: ${esc(fechaLargaEs(corte))}</div><div class="rp-prog">Día de programa: ${esc(fechaLargaEs(key))} · ${PROG_DIAS_ADELANTO} días hábiles de anticipación${stT?` · programa de Troqueles: ${stT.done} de ${stT.total} OPs terminadas`:' · sin programa de Troqueles cargado ese día'}</div>`;
+  return `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(tituloFull)}</title>
+${WEEKLY_REPORT_CSS}${REP_EXTRA_CSS}<style>@page{size:letter portrait;margin:12mm}.page{max-width:900px}</style>${REP_CORTE_CSS}</head><body>
+<div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div>
+<div class="page">
+<div class="rp-head"><div><div class="rp-kick">OEE Planta · Centro Troqueles</div><h1>${esc(tituloFull)}</h1>${subHead}</div>
+<div class="rp-meta"><b>LASER DE CAMA</b><br>${X.quien?esc(X.quien)+'<br>':''}Generado el ${esc(X.generado)}</div></div>
+${kpis}
+${indexHtml}${secLam}${secOP}
+<section><h2>Consumo por calibre <small>hojas completas</small></h2>${X.porCal}</section>
+${X.recort?`<section style="page-break-inside:auto"><h2>Recortes de recuperación <small>del día</small></h2>${X.recort}</section>`:''}
+${X.expl?`<section style="page-break-inside:auto"><h2>Consumo contra explosión</h2>${X.expl}</section>`:''}
+${X.extra}
+${X.sinDet?`<div class="line"><span class="warn">${X.sinDet} registro${X.sinDet===1?'':'s'} sin hojas capturadas en el día.</span></div>`:''}
+<div class="sign"><div>Elaboró</div><div>Revisó</div></div>
+<footer>Laser de Cama corta con ${PROG_DIAS_ADELANTO} días hábiles de anticipación: lo que se corta el día de programa es lo que vence el día de corte (programa de Troqueles de ese día). Lámina registrada en Aprovechamiento › Lámina (consumo del Programa del día y registros manuales). Peso = hojas × peso por hoja del catálogo de calibres. Diferencia = explosionadas − (registradas − eventuales); ahorro teórico = material no consumido + recortes recuperados. El reporte se calcula con los registros actuales.</footer>
 </div></body></html>`;
 }
 function buildProdReportHtml(mode,key,ctFilter){
@@ -9499,7 +9583,7 @@ let repMode='diario';
 function repIsWeek(m){ return m==='semanal'||m==='lamsem'||m==='lamcomp'; }
 function repIsLam(m){ return m==='lamdia'||m==='lamsem'||m==='lamcomp'; }
 // Reporte que corresponde al modo elegido
-function repBuildHtml(s,forScreen){ if(s.mode==='hora') return buildHoraReportHtml(s.desde,s.hasta,s.ct); if(s.mode==='programa') return buildProgramaReportHtml(s.fecha,forScreen?{index:true}:undefined); if(s.mode==='lamcomp') return buildLaminaCompiladoHtml(repKey()); if(repIsLam(s.mode)) return buildLaminaReportHtml(s.mode==='lamsem',repKey()); return buildProdReportHtml(s.mode,repKey(),s.ct); }
+function repBuildHtml(s,forScreen){ if(s.mode==='hora') return buildHoraReportHtml(s.desde,s.hasta,s.ct); if(s.mode==='programa') return buildProgramaReportHtml(s.fecha,forScreen?{index:true}:undefined); if(s.mode==='lamcomp') return buildLaminaCompiladoHtml(repKey()); if(repIsLam(s.mode)) return buildLaminaReportHtml(s.mode==='lamsem',repKey(),forScreen?{index:true}:undefined); return buildProdReportHtml(s.mode,repKey(),s.ct); }
 function repState(){
   const g=id=>document.getElementById(id)?.value||'';
   let d=g('rep-desde')||todayStr(), h=g('rep-hasta')||d; if(d>h){ const t=d; d=h; h=t; }
@@ -9509,7 +9593,7 @@ function repSetMode(m,el){
   if(!permOk('rep-tab-'+m)) return;   // reporte quitado en Configuración → Usuarios → Accesos
   repMode=m;
   document.querySelectorAll('#rep-tabs .tab').forEach(t=>t.classList.remove('active')); if(el) el.classList.add('active');
-  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=repIsWeek(m)?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':'Día');
+  const lbl=document.getElementById('rep-fecha-lbl'); if(lbl) lbl.textContent=repIsWeek(m)?'Semana que contiene el día':(m==='programa'?'Programa vigente el día':(m==='lamdia'?'Día de programa (en que se cortó)':'Día'));
   const ctSel=document.getElementById('rep-ct'); if(ctSel) ctSel.style.display=(m==='programa'||repIsLam(m))?'none':'';
   const sg=document.getElementById('rep-single'), rg=document.getElementById('rep-range');
   if(sg) sg.style.display=m==='hora'?'none':'flex'; if(rg) rg.style.display=m==='hora'?'flex':'none';
