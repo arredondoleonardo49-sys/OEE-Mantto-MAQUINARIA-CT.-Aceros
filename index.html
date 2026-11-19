@@ -4433,9 +4433,7 @@ function progTroqPanelHtml(rec){
     opts=Object.keys(vs).sort().map(v=>`<option value="${e(v)}">${e(vs[v])}</option>`).join('');
   }
   // la lista propia que tenía la OEE para Troqueles (hasta el 17-nov): lo que aún no está en la lista de Programación Troqueles
-  const exOEE=progExclGet(PROG_TROQ_CT);
-  const viejos=[...exOEE.bases.map(v=>({tipo:'ruta',valor:progExNorm(v)})),...exOEE.modelos.map(v=>({tipo:'modelo',valor:progExNorm(v)}))]
-    .filter(x=>x.valor&&!(x.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(progTroqNorm(x.valor)));
+  const viejos=progTroqViejos();
   const cuantos=progTroq.cargado?String(L.length):(progTroq.cargando?'leyendo…':'sin lista');
   const chips=L.map(x=>`<span class="prog-excl-chip${puede?'':' ro'}" title="${e((x.desc?x.desc+' · ':'')+(x.origen?'marcado desde '+x.origen:'marcado en Programación Troqueles'))}">${x.tipo==='ruta'?'Modelo base':'Modelo'} <b>${e(x.valor)}</b>${puede?`<button type="button" title="Regresar a Troqueles (sus OPs vuelven al programa)" onclick="progTroqRegresar(decodeURIComponent('${encodeURIComponent(x.key).replace(/'/g,'%27')}'))">×</button>`:''}</span>`).join('');
   return `<div class="prog-excl${_progExclOpen?' open':''}">
@@ -4454,10 +4452,20 @@ function progTroqPanelHtml(rec){
   </div>`;
 }
 /** Pasa a la lista de Programación Troqueles los excluidos que la OEE tenía para Troqueles (no borra la lista vieja) */
+// Excluidos que solo están en la lista vieja de la OEE (los escribe una pantalla con versión anterior al 17-nov):
+// no están fuera en Programación Troqueles y allá tampoco se decidió nada de ese modelo / modelo base (ej. 617: allá
+// A617AT está fuera y A617ACR «dentro», así que no se vuelve a proponer). Solo con la lista de Programación ya leída.
+function progTroqViejos(){
+  if(!progTroq.cargado) return [];
+  const ex=progExclGet(PROG_TROQ_CT), docs=Object.values(progTroq.docs||{});
+  const decidido=(tipo,v)=>docs.some(d=>d&&(progTroqNorm(d.valor)===v||(tipo==='ruta'&&progTroqNorm(d.ruta)===v)));
+  const vistos=new Set();
+  return [...ex.bases.map(v=>({tipo:'ruta',valor:progExNorm(v)})),...ex.modelos.map(v=>({tipo:'modelo',valor:progExNorm(v)}))].filter(x=>{
+    const v=progTroqNorm(x.valor), k=x.tipo+'|'+v; if(!v||vistos.has(k)) return false; vistos.add(k);
+    return !(x.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(v) && !decidido(x.tipo,v); });
+}
 async function progTroqPasarViejos(){
-  const ex=progExclGet(PROG_TROQ_CT);
-  const items=[...ex.bases.map(v=>({tipo:'ruta',valor:progExNorm(v)})),...ex.modelos.map(v=>({tipo:'modelo',valor:progExNorm(v)}))]
-    .filter(x=>x.valor&&!(x.tipo==='ruta'?progTroq.fueraR:progTroq.fueraM).has(progTroqNorm(x.valor)));
+  const items=progTroqViejos();
   if(!items.length) return;
   if(!confirm(`¿Marcar fuera de Troqueles ${items.length===1?'este':'estos'} ${items.length}?\n\n${items.map(x=>(x.tipo==='ruta'?'Modelo base ':'Modelo ')+x.valor).join('\n')}\n\nSe guardan en la lista de Programación Troqueles (la misma que usa Nidos).`)) return;
   await progTroqExcluir(items,`✓ ${items.length} excluido${items.length===1?'':'s'} pasado${items.length===1?'':'s'} a la lista de Programación Troqueles`);
@@ -6528,6 +6536,9 @@ function dashCtPendHtml(ct,d){
   // Sin la lista de Programación Troqueles no se quitan los modelos que no pasan por Troqueles: se avisa aquí
   const avT=troq?progTroqAviso():'';
   if(avT) mat+=`<span class="pend-hd-hoy" title="${escH(avT)}">⚠ ${progTroq.cargado?'Lista de Programación Troqueles sin actualizar':'Sin la lista de Programación Troqueles: no se quitan los modelos fuera'}</span>`;
+  // Una pantalla con una OEE anterior al 17-nov excluyó en la lista vieja: aquí esas OPs sí cuentan (solo Líder/Ingeniería lo ven)
+  const vjT=(troq&&progTroqPuede())?progTroqViejos():[];
+  if(vjT.length) mat+=`<span class="pend-hd-hoy" title="Una pantalla con una versión anterior de la OEE los excluyó en su lista vieja, no en Programación Troqueles, así que aquí sí cuentan. Se pasan en Registrar turno → Programa del día → «Fuera de Troqueles» → «Pasarlos a la lista».">⚠ Excluidos en una OEE anterior: ${escH(vjT.map(x=>x.valor).join(', '))}</span>`;
   if(!d.rows.length) return `<div class="pend-hd">${av}${mat}</div><div class="pend-ok">✓ Todas las OPs del programa en curso ya están terminadas.</div>`;
   const dm=iso=>`${+iso.slice(8,10)}/${+iso.slice(5,7)}`;
   const rows=d.rows.map(r=>{
@@ -10355,7 +10366,33 @@ function addChkActivity(ct,enc){
 }
 
 // ── PANTALLA COMPLETA (solo Dashboard) ──
+// Pantalla completa «simulada» (.fs-sim): tras actualizarse sola, la página no puede volver a pedir pantalla completa sin
+// que alguien toque, así que el Dashboard se queda con el mismo acomodo (mismas reglas que :fullscreen) y, al primer
+// toque o tecla, vuelve a la pantalla completa real. Esc o el botón la quitan.
+(function(){
+  try{
+    const out=[], dup=(rules,pre,post)=>{ for(const r of rules){
+      if(r.selectorText && r.selectorText.indexOf(':fullscreen')>=0) out.push(pre+r.cssText.split(':fullscreen').join('.fs-sim')+post);
+      else if(r.cssRules && r.media) dup(r.cssRules,pre+'@media '+r.media.mediaText+'{',post+'}'); } };
+    for(const sh of document.styleSheets){ let rs; try{ rs=sh.cssRules; }catch(e){ continue; } if(rs) dup(rs,'',''); }
+    out.push('#page-dashboard.fs-sim{position:fixed;inset:0;z-index:900}');
+    const st=document.createElement('style'); st.id='fs-sim-css'; st.textContent=out.join('\n'); document.head.appendChild(st);
+  }catch(e){ console.warn('fs-sim css',e); }
+})();
+function dashFsSimEntrar(){
+  const pg=document.getElementById('page-dashboard'); if(!pg||document.fullscreenElement) return;
+  pg.classList.add('fs-sim'); applyDashFsZoom(); dashFsLabel();
+  const real=ev=>{ if(ev.type==='keydown' && ev.key==='Escape'){ dashFsSimSalir(); return; }
+    if(!pg.classList.contains('fs-sim')) return;
+    const req=pg.requestFullscreen||pg.webkitRequestFullscreen; if(req) try{ const p=req.call(pg); if(p&&p.catch) p.catch(()=>{}); }catch(e){} };
+  ['pointerdown','keydown'].forEach(t=>document.addEventListener(t,real,{capture:true,once:true}));
+}
+function dashFsSimSalir(){ const pg=document.getElementById('page-dashboard'); if(pg) pg.classList.remove('fs-sim'); applyDashFsZoom(); dashFsLabel(); }
+function dashFsLabel(){ const label=document.getElementById('btn-fullscreen-label'), pg=document.getElementById('page-dashboard');
+  if(label) label.textContent=(document.fullscreenElement||(pg&&pg.classList.contains('fs-sim')))?'Salir de pantalla completa':'Pantalla completa'; }
 function toggleDashboardFullscreen(){
+  const pgS=document.getElementById('page-dashboard');
+  if(pgS && pgS.classList.contains('fs-sim') && !document.fullscreenElement){ dashFsSimSalir(); return; }
   const isFs = !!document.fullscreenElement;
   if(!isFs){
     const target = document.getElementById('page-dashboard') || document.documentElement;
@@ -10370,16 +10407,17 @@ function toggleDashboardFullscreen(){
 // así en pantallas grandes se ve más grande en vez de dejar huecos.
 function applyDashFsZoom(){
   const pg=document.getElementById('page-dashboard'); if(!pg) return;
-  if(document.fullscreenElement===pg){
+  if(document.fullscreenElement===pg || (!document.fullscreenElement && pg.classList.contains('fs-sim'))){
     const z=Math.max(0.85,Math.min(window.innerWidth/1366,window.innerHeight/768,2.2));
     pg.style.setProperty('--fsz',z.toFixed(3));
   } else pg.style.removeProperty('--fsz');
 }
 window.addEventListener('resize',applyDashFsZoom);
 document.addEventListener('fullscreenchange', ()=>{
+  // ya en pantalla completa real: se quita la simulada (y al salir de la real no regresa la simulada)
+  const pg=document.getElementById('page-dashboard'); if(pg) pg.classList.remove('fs-sim');
   applyDashFsZoom();
-  const label = document.getElementById('btn-fullscreen-label');
-  if(label) label.textContent = document.fullscreenElement ? 'Salir de pantalla completa' : 'Pantalla completa';
+  dashFsLabel();
 });
 function updateFullscreenBtnVisibility(page){
   const btn = document.getElementById('btn-fullscreen');
@@ -11916,6 +11954,93 @@ function clearHorasExtra(){
   horasExtraCount = 0;
 }
 
+// ── VERSIÓN AL DÍA EN TODOS LOS EQUIPOS, EN SEGUNDO PLANO (Leonardo, 2026-11-18) ──
+// «Que las plataformas en las otras PC se actualicen en automático… sin ventanas ni tener que seleccionar nada».
+// Causa de fallas repetidas: equipos que dejan la OEE abierta días enteros siguen con el código viejo (el 18-nov una
+// pestaña del 17 excluyó modelos de Troqueles en la lista vieja de la OEE, no en Programación Troqueles, y cada equipo
+// veía otro programa). Cada pantalla compara su código con el publicado (cada 3 min y al volver a la pestaña) y, si hay
+// versión nueva, se recarga sola y sin avisar en cuanto nadie la está usando: sin cursor en un campo, sin ventana
+// abierta y 1 min sin tocarla. No se pierde nada: la cola de envío y los borradores viven en el equipo, y vuelve a la
+// misma pantalla (el Dashboard en pantalla completa sigue en pantalla completa).
+const OEE_UPD_CADA=3*60000, OEE_UPD_QUIETO=60000, OEE_UPD_CAMPO=10*60000, OEE_UPD_VENTANA=20*60000;
+const SK_UPD_RESTORE='oee_upd_restore_v1', SK_UPD_N='oee_upd_n_v1';
+/** Firma del código de la página (los <script> en línea): cambia con cada versión publicada */
+function oeeCodigoFirma(doc){
+  let s=''; doc.querySelectorAll('script:not([src])').forEach(x=>{ s+=x.textContent+'\u0000'; });
+  let h1=0x811c9dc5, h2=7; for(let i=0;i<s.length;i++){ const c=s.charCodeAt(i); h1=Math.imul(h1^c,16777619); h2=(Math.imul(h2,31)+c)|0; }
+  return s.length+'.'+(h1>>>0).toString(36)+'.'+(h2>>>0).toString(36);
+}
+let _oeeFirma=null, _oeeNueva=false, _oeeRevisando=false, _oeeUltRev=0, _oeeUltimaAccion=Date.now(), _oeeReintento=null;
+['pointerdown','keydown','input','wheel','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ _oeeUltimaAccion=Date.now(); },{capture:true,passive:true}));
+const oeeUrlPagina=()=>location.href.split('#')[0].replace(/([?&])_v=\d+&?/,'$1').replace(/[?&]$/,'');
+async function oeeRevisarVersion(){
+  if(_oeeRevisando||_oeeNueva||navigator.onLine===false||!/^https?:/.test(location.protocol)) return;
+  _oeeRevisando=true; _oeeUltRev=Date.now();
+  try{
+    if(_oeeFirma===null) _oeeFirma=oeeCodigoFirma(document);
+    const url=oeeUrlPagina(), r=await fetch(url+(url.includes('?')?'&':'?')+'_v='+Date.now(),{cache:'no-store',credentials:'same-origin'});
+    const txt=r.ok?await r.text():'';
+    // solo cuenta una página completa de la OEE (no una página de error o a medio publicar)
+    if(/<title>OEE Planta/.test(txt) && /<\/html>\s*$/i.test(txt)){
+      const f=oeeCodigoFirma(new DOMParser().parseFromString(txt,'text/html'));
+      if(f!==_oeeFirma){ _oeeNueva=true; console.info('OEE: hay una versión nueva publicada; se actualiza sola en cuanto la pantalla esté libre.'); oeeIntentarRecargar(); }
+    }
+  }catch(e){}
+  _oeeRevisando=false;
+}
+// '' = se puede recargar ya; si no, por qué se espera
+function oeeMotivoEspera(){
+  const quieto=Date.now()-_oeeUltimaAccion, a=document.activeElement;
+  if(typeof _progTroqEscribiendo!=='undefined' && _progTroqEscribiendo) return 'guardando';
+  if(a && a!==document.body && (a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) && quieto<OEE_UPD_CAMPO) return 'campo';
+  const ventana=[...document.body.children].some(el=>{ if(el.id==='login-screen'||el.id==='loading-overlay'||el.id==='sync-panel') return false;
+    const cs=getComputedStyle(el); return cs.position==='fixed' && cs.display!=='none' && cs.visibility!=='hidden' && (parseInt(cs.zIndex)||0)>=1000 && el.offsetWidth>=innerWidth*0.6 && el.offsetHeight>=innerHeight*0.6; });
+  if(ventana && quieto<OEE_UPD_VENTANA) return 'ventana';
+  if(quieto<OEE_UPD_QUIETO && !document.hidden) return 'en uso';
+  return '';
+}
+function oeeIntentarRecargar(){
+  clearTimeout(_oeeReintento);
+  if(!_oeeNueva) return;
+  // Si en 15 min ya se recargó 3 veces y sigue igual (el servidor aún reparte la versión anterior), espera y vuelve a revisar
+  let n=[]; try{ n=JSON.parse(sessionStorage.getItem(SK_UPD_N)||'[]').filter(t=>Date.now()-t<15*60000); }catch(e){}
+  if(n.length>=3){ _oeeNueva=false; return; }
+  if(oeeMotivoEspera()){ _oeeReintento=setTimeout(oeeIntentarRecargar,15000); return; }
+  oeeRecargarAhora(n);
+}
+async function oeeRecargarAhora(n){
+  try{ flushLiveSyncNow(); }catch(e){}
+  try{ outboxSave(); }catch(e){}
+  try{
+    const pg=document.querySelector('.page.active'), dash=document.getElementById('page-dashboard');
+    sessionStorage.setItem(SK_UPD_RESTORE,JSON.stringify({ts:Date.now(),page:pg?pg.id.replace(/^page-/,''):'',ct:currentDashCT,
+      fs:!!(dash&&(document.fullscreenElement===dash||dash.classList.contains('fs-sim'))),y:Math.round(window.scrollY||0)}));
+    sessionStorage.setItem(SK_UPD_N,JSON.stringify([...(n||[]),Date.now()]));
+  }catch(e){}
+  // trae la versión nueva al caché del navegador para que la recarga no muestre la anterior
+  try{ await fetch(oeeUrlPagina(),{cache:'reload',credentials:'same-origin'}); }catch(e){}
+  setTimeout(()=>location.reload(),800);
+}
+// Después de actualizarse: misma pantalla, mismo centro del Dashboard y, si estaba, pantalla completa
+function oeeRestaurarTrasActualizar(){
+  let st=null; try{ st=JSON.parse(sessionStorage.getItem(SK_UPD_RESTORE)); sessionStorage.removeItem(SK_UPD_RESTORE); }catch(e){}
+  if(!st||!(Date.now()-st.ts<180000)||!currentUser) return;
+  try{
+    const page=String(st.page||''), pg=page&&document.getElementById('page-'+page);
+    if(pg && !pg.classList.contains('active')) navigate(page,document.querySelector(`.nav-item[onclick*="navigate('${page}'"]`));
+    if(page==='dashboard' && st.ct && CT_CONFIG[st.ct] && st.ct!==currentDashCT){
+      const g=dashGroupOf(st.ct), gb=document.querySelector(`.dash-group-btn[onclick*="'${g}'"]`);
+      if(gb && gb.style.display!=='none'){ setDashGroup(g,gb); if(g==='ESTRUCTURA') setDashCT(st.ct,document.querySelector(`.dash-ct-subbtn[data-ct="${st.ct}"]`)); }
+    }
+    if(page==='dashboard' && st.fs) dashFsSimEntrar();
+    if(st.y) setTimeout(()=>{ try{ window.scrollTo(0,st.y); }catch(e){} },400);
+  }catch(e){ console.warn('oeeRestaurarTrasActualizar',e); }
+}
+setTimeout(oeeRevisarVersion,30000);
+setInterval(oeeRevisarVersion,OEE_UPD_CADA);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && Date.now()-_oeeUltRev>60000) oeeRevisarVersion(); });
+window.addEventListener('online',()=>{ setTimeout(oeeRevisarVersion,5000); });
+
 // ── INIT ──
 const today=todayStr();
 ['reg-fecha','lam-fecha','tub-fecha'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=today;});
@@ -11936,6 +12061,7 @@ const today=todayStr();
   });
 })();
 initAuth();
+setTimeout(oeeRestaurarTrasActualizar,1200);
 </script>
 </body>
 </html>
