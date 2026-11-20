@@ -105,6 +105,23 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
 /* Tooltip on collapsed */
 .sidebar.collapsed .nav-item::after{content:attr(data-label);position:absolute;left:58px;background:var(--bg3);color:var(--text);font-size:12px;padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100}
 .sidebar.collapsed .nav-item:hover::after{opacity:1}
+/* Plegar / desplegar el menú (2026-11-20, igual que Láser Tubo). Se recuerda en cada equipo (localStorage oee_sb_plegado).
+   Plegado quedan los íconos (nombre al pasar el mouse), el avatar, el punto de color de la sincronización y el aviso
+   de captura sin guardar. */
+.sidebar-bottom{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)}
+.logo-mini{display:none;font-size:12px;font-weight:700;letter-spacing:.5px;color:var(--blue);font-family:'IBM Plex Mono',monospace}
+.sidebar.collapsed .logo-mini{display:block}
+.sb-toggle{display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:var(--radius);cursor:pointer;padding:4px 8px;margin-top:8px;transition:color .15s,border-color .15s}
+.sb-toggle:hover{color:var(--text);border-color:var(--blue)}
+.sb-toggle svg{width:14px;height:14px;transition:transform .25s}
+.sidebar.collapsed .sb-toggle svg{transform:rotate(180deg)}
+.sidebar.collapsed .sidebar-bottom{flex-direction:column;align-items:center;gap:8px}
+.sidebar.collapsed .sidebar-user{padding:0;margin:0;background:transparent;justify-content:center}
+.sidebar.collapsed #cloud-badge{display:block;opacity:1;width:11px;overflow:hidden;white-space:nowrap;margin:0!important}
+.sidebar.collapsed .sb-sync{display:none}
+.sidebar.collapsed .sb-toggle{margin-top:0}
+.sidebar.collapsed .nav-section+.nav-section{border-top:1px solid var(--border);padding-top:.5rem!important}
+.sidebar.collapsed .nav-item .nav-dot{display:block;opacity:1;width:8px;overflow:visible;position:absolute;top:6px;right:12px;margin:0}
 /* Split view */
 .main{flex:1;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
 .main-single{flex:1;overflow-y:auto}
@@ -954,6 +971,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
   <div class="sidebar-logo">
     <div class="logo-text">OEE Planta</div>
     <div class="logo-sub">Troqueles · Laser · Est. Muebles</div>
+    <div class="logo-mini" title="OEE Planta">OEE</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Menú</div>
@@ -997,7 +1015,7 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
       <span>Programación Troqueles ↗</span>
     </a>
   </div>
-  <div class="sidebar-bottom" style="margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border)">
+  <div class="sidebar-bottom">
     <div class="sidebar-user" id="sidebar-user">
       <div class="sidebar-user-avatar" id="sidebar-user-avatar">–</div>
       <div class="sidebar-user-text">
@@ -1007,10 +1025,13 @@ a.nav-item,a.nav-item-mini{text-decoration:none}
     </div>
     <div style="font-size:10px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;cursor:pointer" id="cloud-badge" onclick="openSyncPanel()" title="Clic: ver el estado de sincronización con el Sheet">● Conectando...</div>
     <div style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:6px" id="sidebar-version">v5.2 · 3 CT</div>
-    <button onclick="loadFromCloud()" style="width:100%;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:var(--radius);cursor:pointer;padding:5px 0;font-family:'IBM Plex Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'" title="Recargar datos desde la nube">↺ Sincronizar</button>
+    <button class="sb-sync" onclick="loadFromCloud()" style="width:100%;font-size:11px;background:transparent;border:1px solid var(--border);color:var(--text3);border-radius:var(--radius);cursor:pointer;padding:5px 0;font-family:'IBM Plex Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'" title="Recargar datos desde la nube">↺ Sincronizar</button>
     <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+    <button id="sb-toggle" class="sb-toggle" onclick="sbToggle()" title="Plegar / desplegar el menú" aria-label="Plegar o desplegar el menú" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
   </div>
 </nav>
+<script>/* Menú plegado: se aplica antes de pintar la página para que no brinque al abrirla. */
+try{ if(localStorage.getItem('oee_sb_plegado')==='1'){ document.getElementById('sidebar').classList.add('collapsed'); document.getElementById('sb-toggle').setAttribute('aria-expanded','false'); } }catch(e){}</script>
 <!-- Barra de navegación compacta: solo visible en vista dividida, para
      poder seguir moviéndose entre menús sin perder el espacio que gana la
      barra lateral completa al ocultarse. -->
@@ -10156,6 +10177,16 @@ function renderAll(){
   [renderDashboard,renderHistory,updateFilterSelects,renderHoraHist,renderProgramaDia,updateFullscreenBtnVisibility,renderAprovHist,()=>{ if(document.getElementById('page-reportes')?.classList.contains('active')) renderReportes(); }].forEach(fn=>{
     try{ fn(); }catch(e){ console.warn('renderAll: falló '+fn.name, e); }
   });
+}
+// ── PLEGAR / DESPLEGAR EL MENÚ LATERAL (2026-11-20, igual que Láser Tubo) ──
+// Se recuerda en cada equipo (localStorage oee_sb_plegado); el plegado inicial lo aplica el <script> corto que va
+// justo después del menú, para que no brinque al abrir. Las vistas divididas siguen usando su barra compacta.
+function sbToggle(){
+  const sb=document.getElementById('sidebar'); if(!sb) return;
+  const c=sb.classList.toggle('collapsed');
+  const b=document.getElementById('sb-toggle'); if(b) b.setAttribute('aria-expanded',c?'false':'true');
+  try{ localStorage.setItem('oee_sb_plegado',c?'1':'0'); }catch(e){}
+  setTimeout(()=>{ try{ window.dispatchEvent(new Event('resize')); }catch(e){} },300);   // gráficas y tablas toman el ancho nuevo
 }
 // ── VISTA DIVIDIDA DE REGISTRAR TURNO (Registro + Programa del día) ──
 // Pensada para que el operador vea su registro de hora×hora y su programa
