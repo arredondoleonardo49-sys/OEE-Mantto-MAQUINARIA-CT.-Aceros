@@ -4076,6 +4076,20 @@ function processProgramaFile(file){
         const ok=confirm(`⚠ ESTE ARCHIVO NO PARECE SER EL PROGRAMA DEL ${progFechaLarga(fecha).toUpperCase()}\n\n${det}\n\nSi lo subes, se reemplaza el programa que ya hay en ese día y se pierde lo cortado y su consumo.\n\nSi es el programa de otro día, cancela y súbelo en la pestaña de su día.\n\n¿Reemplazarlo de todos modos?`);
         if(!ok){ msg.textContent='Carga cancelada: el archivo no coincide con el programa que ya hay en ese día. No se cambió nada.'; msg.style.color='var(--amber)'; const fi=document.getElementById('programa-file-input'); if(fi) fi.value=''; return; }
       }
+      // Programa que se vuelve a subir con menos máquinas (Leonardo, 2026-11-23: se resubió el programa del día solo con la hoja
+      // de GW2 y el GW1 del archivo anterior se quedaba, con sus piezas). Solo se reemplazaban las hojas que trae el archivo.
+      // Si el archivo trae GW1 o GW2 y en ese día ya había programa de la otra, se pregunta si se quita: se pregunta (no se
+      // quita solo) porque un archivo también puede ser de una sola máquina a propósito, cuando se suben por separado.
+      let quitados=[];
+      { const subeTub=plan.filter(p=>PROG_TUB_MACHINES.includes(p.machine)).map(p=>p.machine);
+        const viejos=subeTub.length?PROG_TUB_MACHINES.filter(m=>!subeTub.includes(m)).map(m=>getProgramaRecord(fecha,m)).filter(Boolean):[];
+        if(viejos.length){
+          const nom=viejos.map(r=>r.machine).join(' y ');
+          const det=viejos.map(r=>{ const st=progStats(r); return `• ${r.machine}: ${st.total} OP${st.total===1?'':'s'}, `+(st.done?`${st.done} ya cortada${st.done===1?'':'s'} (lo producido se queda en el hora por hora)`:'ninguna cortada')+(r.uploadedByName?` · lo subió ${r.uploadedByName}`:''); }).join('\n');
+          if(confirm(`El archivo trae solo ${subeTub.join(' y ')}, pero en el ${progFechaLarga(fecha)} ya había programa de ${nom} de un archivo anterior:\n\n${det}\n\nAceptar = se quita el programa de ${nom} de ese día (queda solo lo que trae este archivo).\nCancelar = se conserva el de ${nom} (si lo subes por separado).`)) quitados=viejos;
+        }
+      }
+      quitados.forEach(r=>{ programaDia=programaDia.filter(x=>x!==r); cloudDeleteRow('Programa_Dia',r.id); });
       plan.forEach(({machine,rec,keptM,lostM})=>{
         programaDia=programaDia.filter(r=>!(r.fecha===fecha && r.machine===machine));
         programaDia.push(rec);
@@ -4086,7 +4100,7 @@ function processProgramaFile(file){
       });
       saveProgramaDiaLS();
       if(found.length){
-        msg.textContent=`✓ Cargado (${fecha}): ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'')+(kept?` · se conservó el avance de ${kept} fila${kept===1?'':'s'}`:'')+(lost?` · ${lost} fila${lost===1?'':'s'} cortada${lost===1?'':'s'} ya no está${lost===1?'':'n'} en el archivo (lo producido se queda en el hora por hora)`:'')+(exclN?` · ${exclN===1?'no entró 1 OP excluida':`no entraron ${exclN} OPs excluidas`} (${exclTxt})`:'')
+        msg.textContent=`✓ Cargado (${fecha}): ${found.join(', ')}`+(missing.length?` — no encontrada: ${missing.join(', ')}`:'')+(quitados.length?` · se quitó el programa anterior de ${quitados.map(r=>r.machine).join(' y ')} de ese día`:'')+(kept?` · se conservó el avance de ${kept} fila${kept===1?'':'s'}`:'')+(lost?` · ${lost} fila${lost===1?'':'s'} cortada${lost===1?'':'s'} ya no está${lost===1?'':'n'} en el archivo (lo producido se queda en el hora por hora)`:'')+(exclN?` · ${exclN===1?'no entró 1 OP excluida':`no entraron ${exclN} OPs excluidas`} (${exclTxt})`:'')
           +(troqFuera?` · ${troqFuera} OP${troqFuera===1?'':'s'} fuera de Troqueles según Programación Troqueles: no se ${troqFuera===1?'muestra':'muestran'} (${exclTxt})`:'');
         const avT=troqUp?progTroqAviso():'';
         if(avT) msg.textContent+=` · ⚠ ${avT}`;
