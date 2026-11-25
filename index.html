@@ -2242,6 +2242,7 @@ function completeLogin(user, token){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('loading-overlay').style.display='flex';
   onLoginSuccess(true);    // inicio de sesión nuevo: abre su máquina predeterminada
+  setTimeout(oeeAbrirPantallaPorURL,300);   // ?pantalla=… también al entrar con usuario y contraseña
 }
 function logout(){
   if(hasUnsavedManual() && !confirm('Tienes datos capturados SIN GUARDAR en Registrar turno.\n\nSe conservan como borrador en este equipo, pero NO están registrados todavía.\n\n¿Salir de todos modos?')) return;
@@ -12198,6 +12199,26 @@ function oeeRestaurarTrasActualizar(){
     if(st.y) setTimeout(()=>{ try{ window.scrollTo(0,st.y); }catch(e){} },400);
   }catch(e){ console.warn('oeeRestaurarTrasActualizar',e); }
 }
+// ?pantalla=<CENTRO o GRUPO>: abre el Dashboard de ese centro en pantalla completa simulada
+// (para mostrarse dentro de https://lineaitalia-pantallas.web.app). Ej.: TROQUELES, LASER, ESTRUCTURA, EST. SILLAS.
+// Sin el parámetro no hace nada.
+function oeeAbrirPantallaPorURL(){
+  const pedido=(new URLSearchParams(location.search).get('pantalla')||'').trim().toUpperCase();
+  if(!pedido||!currentUser) return;
+  try{
+    navigate('dashboard',document.querySelector(`.nav-item[onclick*="navigate('dashboard'"]`));
+    if(!document.getElementById('page-dashboard')?.classList.contains('active')) return;   // cuenta sin acceso al Dashboard
+    const ct=Object.keys(CT_CONFIG).find(k=>k.toUpperCase()===pedido);
+    const g=ct?dashGroupOf(ct):pedido;   // también acepta el grupo (ESTRUCTURA)
+    const gb=document.querySelector(`.dash-group-btn[onclick*="'${g}'"]`);
+    if(gb && gb.style.display!=='none'){
+      setDashGroup(g,gb);
+      const sb=(ct && g==='ESTRUCTURA')?document.querySelector(`.dash-ct-subbtn[data-ct="${ct}"]`):null;
+      if(sb && sb.style.display!=='none') setDashCT(ct,sb);   // sub-centro oculto para la cuenta: no se cambia
+    }
+    dashFsSimEntrar();
+  }catch(e){ console.warn('oeeAbrirPantallaPorURL',e); }
+}
 setTimeout(oeeRevisarVersion,30000);
 setInterval(oeeRevisarVersion,OEE_UPD_CADA);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && Date.now()-_oeeUltRev>60000) oeeRevisarVersion(); });
@@ -12223,7 +12244,7 @@ const today=todayStr();
   });
 })();
 initAuth();
-setTimeout(oeeRestaurarTrasActualizar,1200);
+setTimeout(()=>{ oeeRestaurarTrasActualizar(); oeeAbrirPantallaPorURL(); },1200);
 </script>
 </body>
 </html>
